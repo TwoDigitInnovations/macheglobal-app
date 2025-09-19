@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.w3.org/2000/svg">
+    <xs:element name="svg">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="g">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="g">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="g">
+                                            <xs:complexType>
+                                                <xs:sequence>
+                                                    <xs:element name="path">
+                                                        <xs:complexType>
+                                                            <xs:simpleContent>
+                                                                <xs:extension base="xs:string">
+                                                                    <xs:attribute name="d"
+                                                                        use="required" />
+                                                                    <xs:attribute name="id"
+                                                                        use="required" />
+                                                                </xs:extension>
+                                                            </xs:simpleContent>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:sequence>
+                                                <xs:attribute name="id" use="required" />
+                                                <xs:attribute name="transform" use="required" />
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:sequence>
+                                    <xs:attribute name="id" use="required" />
+                                    <xs:attribute name="transform" use="required" />
+                                    <xs:attribute name="fill" use="required" />
+                                    <xs:attribute name="fill-rule" use="required" />
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                        <xs:attribute name="id" use="required" />
+                        <xs:attribute name="stroke" use="required" />
+                        <xs:attribute name="stroke-width" type="xs:integer" use="required" />
+                        <xs:attribute name="fill" use="required" />
+                        <xs:attribute name="fill-rule" use="required" />
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+            <xs:attribute name="width" use="required" />
+            <xs:attribute name="height" use="required" />
+            <xs:attribute name="viewBox" use="required" />
+            <xs:attribute name="version" type="xs:decimal" use="required" />
+        </xs:complexType>
+    </xs:element>
+</xs:schema>
