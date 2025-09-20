@@ -1,7 +1,7 @@
 // const prodUrl = 'https://marketapi.moveex.co/v1/api/';
 // const prodUrl = 'http://192.168.220.173:3000/v1/api/';
 // const prodUrl = 'http://192.168.1.9:8000/v1/api/';
-const prodUrl = 'https://api.bachhoahouston.com/v1/api/';
+const prodUrl = 'https://api.macheGlobal.com/v1/api/';
 
 let apiUrl = prodUrl;
 export const Googlekey = 'AIzaSyCre5Sym7PzqWQjHoNz7A3Z335oqtkUa9k';
@@ -17,7 +17,7 @@ const Constants = {
   dark_black: '#000000',
   light_black: '#98A2B3',
   black: '#000000',
-  saffron: '#F38122',
+  saffron: '#FF7000',
   pink: '#5CB446',
   lightpink: '#F3812280',
   linearcolor: '#5CB446',

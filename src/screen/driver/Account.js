@@ -10,20 +10,20 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import React, {useContext, useEffect, useState} from 'react';
-import Constants, {FONTS} from '../../Assets/Helpers/constant';
-import {navigate, reset} from '../../../navigationRef';
-import {LoadContext, ToastContext, UserContext} from '../../../App';
-import {GetApi} from '../../Assets/Helpers/Service';
+import React, { useContext, useEffect, useState } from 'react';
+import Constants, { FONTS } from '../../Assets/Helpers/constant';
+import { navigate, reset } from '../../../navigationRef';
+import { LoadContext, ToastContext, UserContext } from '../../../App';
+import { GetApi } from '../../Assets/Helpers/Service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DriverHeader from '../../Assets/Component/DriverHeader';
-import {LanguageIcon, RightarrowIcon} from '../../../Theme';
-import {useTranslation} from 'react-i18next';
+import { LanguageIcon, RightarrowIcon } from '../../../Theme';
+import { useTranslation } from 'react-i18next';
 import InAppBrowser from 'react-native-inappbrowser-reborn';
 import Language from '../app/Language';
 
 const DriverAccount = props => {
-  const {t} = useTranslation();
+  const { t } = useTranslation();
   const [toast, setToast] = useContext(ToastContext);
   const [loading, setLoading] = useContext(LoadContext);
   const [user, setuser] = useContext(UserContext);
@@ -102,7 +102,7 @@ const DriverAccount = props => {
   const inappbrawser2 = async () => {
     try {
       if (await InAppBrowser.isAvailable()) {
-        await InAppBrowser.open('https://www.bachhoahouston.com/ContactUs', {
+        await InAppBrowser.open('https://www.macheGlobal.com/ContactUs', {
           // Customization options
           dismissButtonStyle: 'cancel',
           preferredBarTintColor: Constants.saffron,
@@ -115,7 +115,7 @@ const DriverAccount = props => {
         });
       } else {
         // Fallback to a regular browser if InAppBrowser is not available
-        Linking.openURL('https://www.bachhoahouston.com/ContactUs');
+        Linking.openURL('https://www.macheGlobal.com/ContactUs');
       }
     } catch (error) {
       console.error(error);
@@ -135,19 +135,19 @@ const DriverAccount = props => {
             source={
               user?.img
                 ? {
-                    uri: `${user.img}`,
-                  }
+                  uri: `${user.img}`,
+                }
                 : require('../../Assets/Images/profile.png')
             }
             style={styles.proimg}
           />
-          <View style={{marginLeft: 15}}>
+          <View style={{ marginLeft: 15 }}>
             <Text style={styles.protxt}>{user?.username}</Text>
             <Text style={styles.protxt2}>{user?.email}</Text>
             {/* <Text style={styles.protxt2}>{user?.shop_phone}</Text> */}
           </View>
         </TouchableOpacity>
-        <View style={{marginTop: 10}}>
+        <View style={{ marginTop: 10 }}>
           {/* <TouchableOpacity
                 style={styles.box}
                 onPress={() => navigate('Myorder')}>
@@ -193,7 +193,7 @@ const DriverAccount = props => {
               style={styles.aliself}
             />
           </TouchableOpacity>
-          <View style={[styles.box, {flexDirection: 'column'}]}>
+          <View style={[styles.box, { flexDirection: 'column' }]}>
             <TouchableOpacity
               style={[
                 styles.box,
@@ -207,7 +207,7 @@ const DriverAccount = props => {
                 },
               ]}
               onPress={() => setOpen(!open)}>
-                <Text style={styles.protxt}>{t('App Language')}</Text>
+              <Text style={styles.protxt}>{t('App Language')}</Text>
               <RightarrowIcon
                 color={Constants.saffron}
                 height={15}
@@ -215,9 +215,9 @@ const DriverAccount = props => {
                 style={styles.aliself}
               />
             </TouchableOpacity>
-            {open && <View style={{height: 100}}>
+            {open && <View style={{ height: 100 }}>
               <Language setOpen={setOpen} />
-              </View>}
+            </View>}
           </View>
           <TouchableOpacity
             style={styles.box}
@@ -269,7 +269,7 @@ const DriverAccount = props => {
         }}>
         <View style={styles.centeredView}>
           <View style={styles.modalView}>
-            <View style={{backgroundColor: 'white', alignItems: 'center'}}>
+            <View style={{ backgroundColor: 'white', alignItems: 'center' }}>
               <Text style={styles.textStyle}>
                 {t('Are you sure you want to sign out?')}
               </Text>
@@ -304,8 +304,8 @@ const DriverAccount = props => {
         }}>
         <View style={styles.centeredView}>
           <View style={styles.modalView}>
-            <View style={{backgroundColor: 'white', alignItems: 'center'}}>
-              <Text style={[styles.textStyle2, {color: Constants.red}]}>
+            <View style={{ backgroundColor: 'white', alignItems: 'center' }}>
+              <Text style={[styles.textStyle2, { color: Constants.red }]}>
                 {t(
                   'WARNING: You are about to delete your account. This action is permanent and cannot be undone.',
                 )}

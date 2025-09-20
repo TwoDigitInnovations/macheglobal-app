@@ -26,7 +26,7 @@
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
-			<string>com.bachhoahouston</string>
+			<string>com.macheGlobal.app</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>groceryapp</string>

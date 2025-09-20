@@ -98,7 +98,7 @@ const SignUp = props => {
   const privacy = async () => {
     try {
       if (await InAppBrowser.isAvailable()) {
-        await InAppBrowser.open('https://www.bachhoahouston.com/PrivacyPolicy', {
+        await InAppBrowser.open('https://www.macheGlobal.com/PrivacyPolicy', {
           // Customization options
           dismissButtonStyle: 'cancel',
           preferredBarTintColor: Constants.saffron,
@@ -111,7 +111,7 @@ const SignUp = props => {
         });
       } else {
         // Fallback to a regular browser if InAppBrowser is not available
-        Linking.openURL('https://www.bachhoahouston.com/PrivacyPolicy');
+        Linking.openURL('https://www.macheGlobal.com/PrivacyPolicy');
       }
     } catch (error) {
       console.error(error);
@@ -120,7 +120,7 @@ const SignUp = props => {
   const term = async () => {
     try {
       if (await InAppBrowser.isAvailable()) {
-        await InAppBrowser.open('https://www.bachhoahouston.com/Termsandcondition', {
+        await InAppBrowser.open('https://www.macheGlobal.com/Termsandcondition', {
           // Customization options
           dismissButtonStyle: 'cancel',
           preferredBarTintColor: Constants.saffron,
@@ -133,7 +133,7 @@ const SignUp = props => {
         });
       } else {
         // Fallback to a regular browser if InAppBrowser is not available
-        Linking.openURL('https://www.bachhoahouston.com/PrivacyPolicy');
+        Linking.openURL('https://www.macheGlobal.com/PrivacyPolicy');
       }
     } catch (error) {
       console.error(error);
