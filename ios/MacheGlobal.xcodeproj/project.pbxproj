@@ -9,7 +9,7 @@
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		26611F399EA8D259EB99AD36 /* libPods-OneSignalNotificationServiceExtension.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6641B93AB9AEA5A25CDBCA19 /* libPods-OneSignalNotificationServiceExtension.a */; };
-		5B7BDD292BCFA9BAC9B5F0B0 /* libPods-BachHoaHouston.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CAB63677F16D342646F0E92 /* libPods-BachHoaHouston.a */; };
+		5B7BDD292BCFA9BAC9B5F0B0 /* libPods-MacheGlobal.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CAB63677F16D342646F0E92 /* libPods-MacheGlobal.a */; };
 		61302F972E3A1E2D006859CA /* OneSignalNotificationServiceExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 61302F902E3A1E2D006859CA /* OneSignalNotificationServiceExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
@@ -45,21 +45,21 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		13B07F961A680F5B00A75B9A /* BachHoaHouston.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BachHoaHouston.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = BachHoaHouston/Images.xcassets; sourceTree = "<group>"; };
-		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = BachHoaHouston/Info.plist; sourceTree = "<group>"; };
-		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = BachHoaHouston/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		4365C9559EE066CA98585D75 /* Pods-BachHoaHouston.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BachHoaHouston.debug.xcconfig"; path = "Target Support Files/Pods-BachHoaHouston/Pods-BachHoaHouston.debug.xcconfig"; sourceTree = "<group>"; };
+		13B07F961A680F5B00A75B9A /* MacheGlobal.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "MacheGlobal.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = "MacheGlobal/Images.xcassets"; sourceTree = "<group>"; };
+		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = "MacheGlobal/Info.plist"; sourceTree = "<group>"; };
+		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = MacheGlobal/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		4365C9559EE066CA98585D75 /* Pods-MacheGlobal.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MacheGlobal.debug.xcconfig"; path = "Target Support Files/Pods-MacheGlobal/Pods-MacheGlobal.debug.xcconfig"; sourceTree = "<group>"; };
 		5AEC8A900AE6440F80EFF6AC /* Roboto-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Roboto-Medium.ttf"; path = "../src/Assets/fonts/Roboto-Medium.ttf"; sourceTree = "<group>"; };
-		5CAB63677F16D342646F0E92 /* libPods-BachHoaHouston.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-BachHoaHouston.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		61302F8B2E3A1D7F006859CA /* BachHoaHouston.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = BachHoaHouston.entitlements; path = BachHoaHouston/BachHoaHouston.entitlements; sourceTree = "<group>"; };
+		5CAB63677F16D342646F0E92 /* libPods-MacheGlobal.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-MacheGlobal.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		61302F8B2E3A1D7F006859CA /* MacheGlobal.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = MacheGlobal.entitlements; path = MacheGlobal/MacheGlobal.entitlements; sourceTree = "<group>"; };
 		61302F902E3A1E2D006859CA /* OneSignalNotificationServiceExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = OneSignalNotificationServiceExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		6408AE11334D92820C6961CC /* Pods-BachHoaHouston.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BachHoaHouston.release.xcconfig"; path = "Target Support Files/Pods-BachHoaHouston/Pods-BachHoaHouston.release.xcconfig"; sourceTree = "<group>"; };
+		6408AE11334D92820C6961CC /* Pods-MacheGlobal.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MacheGlobal.release.xcconfig"; path = "Target Support Files/Pods-MacheGlobal/Pods-MacheGlobal.release.xcconfig"; sourceTree = "<group>"; };
 		65318F8441A74F5491122DDD /* Roboto-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Roboto-Regular.ttf"; path = "../src/Assets/fonts/Roboto-Regular.ttf"; sourceTree = "<group>"; };
 		6641B93AB9AEA5A25CDBCA19 /* libPods-OneSignalNotificationServiceExtension.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-OneSignalNotificationServiceExtension.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7176AB5E8A17461827FE7FE1 /* Pods-OneSignalNotificationServiceExtension.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OneSignalNotificationServiceExtension.debug.xcconfig"; path = "Target Support Files/Pods-OneSignalNotificationServiceExtension/Pods-OneSignalNotificationServiceExtension.debug.xcconfig"; sourceTree = "<group>"; };
-		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = BachHoaHouston/AppDelegate.swift; sourceTree = "<group>"; };
-		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = BachHoaHouston/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = MacheGlobal/AppDelegate.swift; sourceTree = "<group>"; };
+		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = "MacheGlobal/LaunchScreen.storyboard"; sourceTree = "<group>"; };
 		895D820580AA7C5FAECB10C8 /* Pods-OneSignalNotificationServiceExtension.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OneSignalNotificationServiceExtension.release.xcconfig"; path = "Target Support Files/Pods-OneSignalNotificationServiceExtension/Pods-OneSignalNotificationServiceExtension.release.xcconfig"; sourceTree = "<group>"; };
 		C678222B2D934C7899C91C36 /* Roboto-Black.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Roboto-Black.ttf"; path = "../src/Assets/fonts/Roboto-Black.ttf"; sourceTree = "<group>"; };
 		DD66CE35EBFE4A4CA69FD2BF /* Roboto-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Roboto-Bold.ttf"; path = "../src/Assets/fonts/Roboto-Bold.ttf"; sourceTree = "<group>"; };
@@ -85,7 +85,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5B7BDD292BCFA9BAC9B5F0B0 /* libPods-BachHoaHouston.a in Frameworks */,
+				5B7BDD292BCFA9BAC9B5F0B0 /* libPods-MacheGlobal.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -111,24 +111,24 @@
 			name = Resources;
 			sourceTree = "<group>";
 		};
-		13B07FAE1A68108700A75B9A /* BachHoaHouston */ = {
+		13B07FAE1A68108700A75B9A /* MacheGlobal */ = {
 			isa = PBXGroup;
 			children = (
-				61302F8B2E3A1D7F006859CA /* BachHoaHouston.entitlements */,
+				61302F8B2E3A1D7F006859CA /* MacheGlobal.entitlements */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				761780EC2CA45674006654EE /* AppDelegate.swift */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */,
 			);
-			name = BachHoaHouston;
+			name = "MacheGlobal";
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				5CAB63677F16D342646F0E92 /* libPods-BachHoaHouston.a */,
+				5CAB63677F16D342646F0E92 /* libPods-MacheGlobal.a */,
 				6641B93AB9AEA5A25CDBCA19 /* libPods-OneSignalNotificationServiceExtension.a */,
 			);
 			name = Frameworks;
@@ -144,7 +144,7 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
-				13B07FAE1A68108700A75B9A /* BachHoaHouston */,
+				13B07FAE1A68108700A75B9A /* MacheGlobal */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				61302F912E3A1E2D006859CA /* OneSignalNotificationServiceExtension */,
 				83CBBA001A601CBA00E9B192 /* Products */,
@@ -160,7 +160,7 @@
 		83CBBA001A601CBA00E9B192 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				13B07F961A680F5B00A75B9A /* BachHoaHouston.app */,
+				13B07F961A680F5B00A75B9A /* MacheGlobal.app */,
 				61302F902E3A1E2D006859CA /* OneSignalNotificationServiceExtension.appex */,
 			);
 			name = Products;
@@ -169,8 +169,8 @@
 		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				4365C9559EE066CA98585D75 /* Pods-BachHoaHouston.debug.xcconfig */,
-				6408AE11334D92820C6961CC /* Pods-BachHoaHouston.release.xcconfig */,
+				4365C9559EE066CA98585D75 /* Pods-MacheGlobal.debug.xcconfig */,
+				6408AE11334D92820C6961CC /* Pods-MacheGlobal.release.xcconfig */,
 				7176AB5E8A17461827FE7FE1 /* Pods-OneSignalNotificationServiceExtension.debug.xcconfig */,
 				895D820580AA7C5FAECB10C8 /* Pods-OneSignalNotificationServiceExtension.release.xcconfig */,
 			);
@@ -180,9 +180,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		13B07F861A680F5B00A75B9A /* BachHoaHouston */ = {
+		13B07F861A680F5B00A75B9A /* MacheGlobal */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "BachHoaHouston" */;
+			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "MacheGlobal" */;
 			buildPhases = (
 				560992C7864C91C25B3BF48B /* [CP] Check Pods Manifest.lock */,
 				13B07F871A680F5B00A75B9A /* Sources */,
@@ -198,9 +198,9 @@
 			dependencies = (
 				61302F962E3A1E2D006859CA /* PBXTargetDependency */,
 			);
-			name = BachHoaHouston;
-			productName = BachHoaHouston;
-			productReference = 13B07F961A680F5B00A75B9A /* BachHoaHouston.app */;
+			name = "MacheGlobal";
+			productName = "MacheGlobal";
+			productReference = 13B07F961A680F5B00A75B9A /* MacheGlobal.app */;
 			productType = "com.apple.product-type.application";
 		};
 		61302F8F2E3A1E2D006859CA /* OneSignalNotificationServiceExtension */ = {
@@ -242,7 +242,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "BachHoaHouston" */;
+			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "MacheGlobal" */;
 			compatibilityVersion = "Xcode 12.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -255,7 +255,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				13B07F861A680F5B00A75B9A /* BachHoaHouston */,
+				13B07F861A680F5B00A75B9A /* MacheGlobal */,
 				61302F8F2E3A1E2D006859CA /* OneSignalNotificationServiceExtension */,
 			);
 		};
@@ -317,7 +317,7 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-BachHoaHouston-checkManifestLockResult.txt",
+				"$(DERIVED_FILE_DIR)/Pods-MacheGlobal-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -352,19 +352,19 @@
 			files = (
 			);
 			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-BachHoaHouston/Pods-BachHoaHouston-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-MacheGlobal/Pods-MacheGlobal-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
 			inputPaths = (
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-BachHoaHouston/Pods-BachHoaHouston-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-MacheGlobal/Pods-MacheGlobal-frameworks-${CONFIGURATION}-output-files.xcfilelist",
 			);
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-BachHoaHouston/Pods-BachHoaHouston-frameworks.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-MacheGlobal/Pods-MacheGlobal-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		FA5DB4BA71BE0B88C7B22F91 /* [CP] Copy Pods Resources */ = {
@@ -373,19 +373,19 @@
 			files = (
 			);
 			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-BachHoaHouston/Pods-BachHoaHouston-resources-${CONFIGURATION}-input-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-MacheGlobal/Pods-MacheGlobal-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
 			inputPaths = (
 			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-BachHoaHouston/Pods-BachHoaHouston-resources-${CONFIGURATION}-output-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-MacheGlobal/Pods-MacheGlobal-resources-${CONFIGURATION}-output-files.xcfilelist",
 			);
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-BachHoaHouston/Pods-BachHoaHouston-resources.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-MacheGlobal/Pods-MacheGlobal-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -419,18 +419,19 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 4365C9559EE066CA98585D75 /* Pods-BachHoaHouston.debug.xcconfig */;
+			baseConfigurationReference = 4365C9559EE066CA98585D75 /* Pods-MacheGlobal.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = BachHoaHouston/BachHoaHouston.entitlements;
+				CODE_SIGN_ENTITLEMENTS = MacheGlobal/MacheGlobal.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = P7PH9NZDDP;
 				ENABLE_BITCODE = NO;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				INFOPLIST_FILE = BachHoaHouston/Info.plist;
+				INFOPLIST_FILE = "MacheGlobal/Info.plist";
+             INFOPLIST_KEY_CFBundleDisplayName = "MacheGlobal";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -442,8 +443,8 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.bachhoahouston;
-				PRODUCT_NAME = BachHoaHouston;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.macheglobal.app";
+				PRODUCT_NAME = "MacheGlobal";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -458,17 +459,18 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 6408AE11334D92820C6961CC /* Pods-BachHoaHouston.release.xcconfig */;
+			baseConfigurationReference = 6408AE11334D92820C6961CC /* Pods-MacheGlobal.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = BachHoaHouston/BachHoaHouston.entitlements;
+				CODE_SIGN_ENTITLEMENTS = MacheGlobal/MacheGlobal.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = P7PH9NZDDP;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				INFOPLIST_FILE = BachHoaHouston/Info.plist;
+				INFOPLIST_FILE = "MacheGlobal/Info.plist";
+             INFOPLIST_KEY_CFBundleDisplayName = "MacheGlobal";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -480,8 +482,8 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.bachhoahouston;
-				PRODUCT_NAME = BachHoaHouston;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.macheglobal.app";
+				PRODUCT_NAME = "MacheGlobal";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -525,7 +527,7 @@
 				MARKETING_VERSION = 1.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.bachhoahouston.OneSignalNotificationServiceExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.macheglobal.app";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
@@ -568,7 +570,7 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
 				MTL_FAST_MATH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.bachhoahouston.OneSignalNotificationServiceExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.macheglobal.app";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -729,7 +731,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "BachHoaHouston" */ = {
+		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "MacheGlobal" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				13B07F941A680F5B00A75B9A /* Debug */,
@@ -747,7 +749,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "BachHoaHouston" */ = {
+		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "MacheGlobal" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				83CBBA201A601CBA00E9B192 /* Debug */,

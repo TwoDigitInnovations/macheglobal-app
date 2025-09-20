@@ -1,4 +1,4 @@
-package com.bachhoahouston
+package com.macheglobal.app
 
 import android.app.Application
 import com.facebook.react.PackageList
