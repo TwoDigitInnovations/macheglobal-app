@@ -41,11 +41,28 @@ const Account = props => {
   const [modalVisible2, setModalVisible2] = useState(false);
   // const [user, setuser] = useState();
   const [userDetail, setUserDetail] = useState({
-    email: '',
-    name: '',
-    phone: '',
-    avatar: '',
+    email: user?.user?.email || '',
+    name: user?.user?.name || '',
+    phone: user?.user?.phone || user?.user?.number || '',
+    avatar: user?.user?.avatar || user?.user?.profile || '',
   });
+  
+  // Update userDetail when user context changes
+  useEffect(() => {
+    
+    if (user?.user) {
+      const newAvatar = user.user.avatar || user.user.profile || '';
+    
+      setUserDetail({
+        email: user.user.email || '',
+        name: user.user.name || '',
+        phone: user.user.phone || user.user.number || '',
+        avatar: newAvatar,
+      });
+    } else {
+      console.log('No user data available in context');
+    }
+  }, [user]);
   const [open, setOpen] = useState(false);
 
   // useEffect(() => {
@@ -74,34 +91,34 @@ const Account = props => {
   //   getProfile();
   // }, []);
 
-  const getProfile = () => {
+  const getProfile = async () => {
+    console.log('Starting getProfile function');
     setLoading(true);
-    GetApi(`profile`, {}).then(
-      async res => {
-        setLoading(false);
-        console.log(res);
-        if (res.success) {
-          // setprofile(res?.data || {});
-          // await AsyncStorage.setItem('profilePic', res?.data?.profile || '');
-          // setImage(res?.data?.profile || '');
-
-          setUserDetail({
-            email: res.data.email,
-            name: res.data.name,
-            phone: res.data.phone,
-            avatar: res.data.avatar,
-          });
-          // setUser({...user, ...res.data});
-          // setVerified(res.data.verified);
-        } else {
-          // setToast(res.message);
-        }
-      },
-      err => {
-        setLoading(false);
-        console.log(err);
-      },
-    );
+    
+    try {
+      console.log('Making API call to profile endpoint');
+      const res = await GetApi(`profile`, {});
+      
+      console.log('API Response:', JSON.stringify(res, null, 2));
+      
+      if (res && res.success) {
+        console.log('Profile data received successfully');
+        setUserDetail({
+          email: res.data.email,
+          name: res.data.name,
+          phone: res.data.phone,
+          avatar: res.data.avatar,
+        });
+      } else {
+        console.log('Profile API call was not successful:', res?.message || 'No error message');
+        // setToast(res?.message || 'Failed to load profile');
+      }
+    } catch (error) {
+      console.error('Error in getProfile:', error);
+      // setToast('An error occurred while loading profile');
+    } finally {
+      setLoading(false);
+    }
   };
   const logout = async () => {
     await AsyncStorage.removeItem('userDetail');
@@ -160,21 +177,28 @@ const Account = props => {
         <TouchableOpacity
           style={styles.topcard}
           onPress={() => navigate('Profile')}>
-          <Image
-            // source={require('../../Assets/Images/profile3.png')}
-            source={
-              user?.profile
-                ? {
-                  uri: `${user.profile}`,
-                }
-                : require('../../Assets/Images/profile.png')
-            }
-            style={styles.proimg}
-          />
+          <View style={styles.profileImage}>
+            {userDetail?.avatar ? (
+              <Image
+                source={{ uri: userDetail.avatar }}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: 40,
+                }}
+                resizeMode="cover"
+                onError={(e) => console.log('Image load error:', e.nativeEvent.error)}
+                onLoad={() => console.log('Image loaded successfully')}
+              />
+            ) : (
+              <View style={styles.profilePlaceholder}>
+                <Text style={{color: '#666'}}>No Image</Text>
+              </View>
+            )}
+          </View>
           <View style={{ marginLeft: 15 }}>
-            <Text style={styles.protxt}>{user?.username}</Text>
-            <Text style={styles.protxt2}>{user?.email}</Text>
-            {/* <Text style={styles.protxt2}>{user?.shop_phone}</Text> */}
+            <Text style={styles.protxt}>{user?.name || 'User'}</Text>
+            <Text style={styles.protxt2}>{user?.email || ''}</Text>
           </View>
         </TouchableOpacity>
         <ScrollView
@@ -530,12 +554,23 @@ const styles = StyleSheet.create({
     marginBottom: 40,
     marginTop: 100,
   },
-  proimg: {
-    // marginRight: 10,
-    height: 70,
-    width: 70,
-    borderRadius: 70,
-    backgroundColor: Constants.saffron + 50,
+  profileImage: {
+    height: 80,
+    width: 80,
+    borderRadius: 40,
+    backgroundColor: '#f0f0f0',
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  profilePlaceholder: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
   },
   /////////logout model //////
   centeredView: {

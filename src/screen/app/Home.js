@@ -125,17 +125,21 @@ const Home = () => {
   const getCategory = () => {
     setLoading(true);
     const limit = Dimensions.get('window').width < 500 ? 8 : 12;
-    GetApi(`getCategory?limit=${limit}`, {}).then(
+    GetApi(`category/getCategories`, {}).then(
       async res => {
         setLoading(false);
-        console.log(res);
+        console.log('Category API Response:', JSON.stringify(res, null, 2)); // Log the full response
         if (res.status) {
+          // Log the first category to see its structure
+          if (res.data && res.data.length > 0) {
+            console.log('First category item:', JSON.stringify(res.data[0], null, 2));
+          }
           setcategorylist(res.data);
         }
       },
       err => {
         setLoading(false);
-        console.log(err);
+        console.log('Category API Error:', err);
       },
     );
   };
@@ -157,8 +161,9 @@ const Home = () => {
   };
   const getSetting = () => {
     setLoading(true);
-    GetApi(`getsetting`, {}).then(
+    GetApi(`user/getsetting`, {}).then(
       async res => {
+        console.log('getsetting', res);
         setLoading(false);
         console.log(res);
         if (res.success) {
@@ -381,17 +386,44 @@ const Home = () => {
                   onPress={() =>
                     navigate('CategoryFilter', { item: item._id, name: item.name })
                   }>
-                  <View style={styles.categorycircle}>
-                    <Image
-                      source={
-                        item?.image
-                          ? { uri: item?.image }
-                          : require('../../Assets/Images/veg.png')
-                      }
-                      style={styles.categoryimg}
-                    />
-                    <View>
-                      <Text style={styles.categorytxt2}>{item.name}</Text>
+                  <View style={styles.categoryItemContainer}>
+                    <View style={styles.categorycircle}>
+                      {(() => {
+                        console.log('Rendering category item:', item._id, 'Image URL:', item?.image);
+                        
+                        // Handle case where image might be an object with url property
+                        const imageUrl = item?.image?.url || item?.image;
+                        
+                        if (imageUrl) {
+                          console.log('Using image URL:', imageUrl);
+                          return (
+                            <Image
+                              source={{ uri: imageUrl }}
+                              style={styles.categoryimg}
+                              resizeMode="cover"
+                              onError={(e) => {
+                                console.log('Image load error:', e.nativeEvent.error);
+                                console.log('Failed to load image URL:', imageUrl);
+                              }}
+                              onLoad={() => console.log('Image loaded successfully:', imageUrl)}
+                            />
+                          );
+                        }
+                        
+                        console.log('Using fallback image');
+                        return (
+                          <Image
+                            source={require('../../Assets/Images/veg.png')}
+                            style={styles.categoryimg}
+                            resizeMode="cover"
+                          />
+                        );
+                      })()}
+                    </View>
+                    <View style={styles.categoryNameContainer}>
+                      <Text style={styles.categorytxt2} numberOfLines={2}>
+                        {item.name}
+                      </Text>
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -504,29 +536,35 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     // backgroundColor:Constants.red
   },
-  categorycircle: {
-    // height: Dimensions.get('window').width < 500 ? 120 : 150,
-    // width: Dimensions.get('window').width < 500 ? 120 : 150,
-    // borderWidth: 0.5,
-    // borderColor: Constants.customgrey3,
-    borderRadius: 10,
+  categoryItemContainer: {
     alignItems: 'center',
+    margin: 8,
+    width: 90, // Slightly wider to accommodate text
+  },
+  categorycircle: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: '#FF700040',
     justifyContent: 'center',
-    alignSelf: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
   },
   categoryimg: {
-    height: Dimensions.get('window').width < 500 ? 80 : 100,
-    width: Dimensions.get('window').width < 500 ? 80 : 100,
-    borderRadius: 5,
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+    borderRadius: 35, // Half of the container's width/height (70/2)
   },
   categorytxt2: {
-    fontSize: 14,
+    fontSize: 12,
     color: Constants.black,
     fontFamily: FONTS.Medium,
     textAlign: 'center',
-    marginVertical: 5,
-    width: Dimensions.get('window').width < 500 ? 120 : 150,
-    // textTransform: 'capitalize',
-    paddingHorizontal: 2,
+    marginTop: 5,
+    width: 90,
+    height: 30,
+    lineHeight: 15,
+    overflow: 'hidden',
   },
 });
