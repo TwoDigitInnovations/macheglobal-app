@@ -48,6 +48,7 @@
 
 /* eslint-disable react-hooks/exhaustive-deps */
 import { Root } from 'native-base';
+import { ToastProvider } from 'react-native-toast-notifications';
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -397,35 +398,48 @@ const App = () => {
         }
     }, [toast]);
     return (
-        <GestureHandlerRootView>
+        <GestureHandlerRootView style={{ flex: 1 }}>
             <PaperProvider>
-                <Context.Provider value={[initial, setInitial]}>
-                    <ToastContext.Provider value={[toast, setToast]}>
-                        <LoadContext.Provider value={[loading, setLoading]}>
-                            <UserContext.Provider value={[user, setuser]}>
-                                <CartContext.Provider value={[cartdetail, setcartdetail]}>
-                                    <CheckoutContext.Provider value={[checkoutData, setCheckoutData]}>
-                                        <AddressContext.Provider value={[locationadd, setlocationadd]}>
-                                            <StripeProvider publishableKey="pk_test_51RJ8vERoENQzVclyyZC2YrXTIvGYvx2V8NR88vGDNjqbpBTaar4lovnanf5Df38kC9rzChaYGNAf3PjwTaHL8plP00QaOyY60A">
-                                                {/* <StripeProvider publishableKey="pk_live_51RGgXqLieGlAHmAUrFrRUpFsMqVkOCXm0xL8NKzseMnVs9eH1oF0ggqzfPXqg6Kl2MBB1FLpMhKKkOKNPc2aHbM1005DSI1QLJ"> */}
-                                                <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['left', 'top', 'right'] : ['bottom', 'left', 'right', 'top']}>
-
-                                                    <Spinner color={'#fff'} visible={loading} />
-                                                    <StatusBar
-                                                        barStyle='default'
-                                                        backgroundColor={Constants.saffron}
-                                                    />
-                                                    {initial !== '' && <Navigation initial={initial} />}
-                                                </SafeAreaView>
-                                            </StripeProvider>
-                                        </AddressContext.Provider>
-                                    </CheckoutContext.Provider>
-                                </CartContext.Provider>
-                            </UserContext.Provider>
-                        </LoadContext.Provider>
-                    </ToastContext.Provider>
-                    <Toast />
-                </Context.Provider>
+                <ToastProvider 
+                    placement="bottom"
+                    duration={3000}
+                    animationType="slide-in"
+                    animationDuration={250}
+                    successColor="#4CAF50"
+                    dangerColor="#F44336"
+                    warningColor="#FFC107"
+                    normalColor="#2196F3"
+                    textStyle={{ fontSize: 16 }}
+                    offset={50}
+                    offsetTop={30}
+                    offsetBottom={40}
+                    swipeEnabled={true}
+                >
+                    <Context.Provider value={[initial, setInitial]}>
+                        <ToastContext.Provider value={[toast, setToast]}>
+                            <LoadContext.Provider value={[loading, setLoading]}>
+                                <UserContext.Provider value={[user, setuser]}>
+                                    <CartContext.Provider value={[cartdetail, setcartdetail]}>
+                                        <CheckoutContext.Provider value={[checkoutData, setCheckoutData]}>
+                                            <AddressContext.Provider value={[locationadd, setlocationadd]}>
+                                                <StripeProvider publishableKey="pk_test_51RJ8vERoENQzVclyyZC2YrXTIvGYvx2V8NR88vGDNjqbpBTaar4lovnanf5Df38kC9rzChaYGNAf3PjwTaHL8plP00QaOyY60A">
+                                                    <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['left', 'top', 'right'] : ['bottom', 'left', 'right', 'top']}>
+                                                        <Spinner color={'#fff'} visible={loading} />
+                                                        <StatusBar
+                                                            barStyle='default'
+                                                            backgroundColor={Constants.saffron}
+                                                        />
+                                                        {initial !== '' && <Navigation initial={initial} />}
+                                                    </SafeAreaView>
+                                                </StripeProvider>
+                                            </AddressContext.Provider>
+                                        </CheckoutContext.Provider>
+                                    </CartContext.Provider>
+                                </UserContext.Provider>
+                            </LoadContext.Provider>
+                        </ToastContext.Provider>
+                    </Context.Provider>
+                </ToastProvider>
             </PaperProvider>
         </GestureHandlerRootView>
     );

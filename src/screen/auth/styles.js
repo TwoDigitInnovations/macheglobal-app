@@ -369,5 +369,170 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  // Forgot Password Screen Styles
+  scrollContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
+  content: {
+    padding: 24,
+  },
+  forgotPasswordTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 32,
+    textAlign: 'center',
+  },
+  stepsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 40,
+    paddingHorizontal: 20,
+  },
+  step: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#e5e7eb',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  activeStep: {
+    backgroundColor: '#f97316',
+  },
+  stepText: {
+    color: '#6b7280',
+    fontWeight: '600',
+  },
+  activeStepText: {
+    color: '#ffffff',
+  },
+  infoText: {
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  inputContainer: {
+    marginBottom: 20,
+    position: 'relative',
+  },
+  inputLabel: {
+    position: 'absolute',
+    left: 12,
+    top: -8,
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 4,
+    color: '#6b7280',
+    fontSize: 12,
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 16,
+    top: 16,
+    padding: 4,
+  },
+  primaryButton: {
+    backgroundColor: '#f97316',
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  primaryButtonText: {
+    color: '#ffffff',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  secondaryButton: {
+    padding: 16,
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    color: '#f97316',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  resendContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  resendText: {
+    color: '#6b7280',
+  },
+  resendLink: {
+    color: '#f97316',
+    fontWeight: '600',
+  },
+  errorText: {
+    color: '#ef4444',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  input: {
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    padding: 16,
+    fontSize: 16,
+    color: '#111827',
+  },
+  inputLabel: {
+    position: 'absolute',
+    left: 12,
+    top: -8,
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 4,
+    color: '#6b7280',
+    fontSize: 12,
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 16,
+    top: 16,
+    padding: 4,
+  },
+  primaryButton: {
+    backgroundColor: '#f97316',
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  primaryButtonText: {
+    color: '#ffffff',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  secondaryButton: {
+    padding: 16,
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    color: '#f97316',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  resendContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  resendText: {
+    color: '#6b7280',
+  },
+  resendLink: {
+    color: '#f97316',
+    fontWeight: '600',
+  },
+  errorText: {
+    color: '#ef4444',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
 });
+
 export default styles;

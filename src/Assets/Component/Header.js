@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import React, { useContext, useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   DownarrIcon,
   LocationIcon,
@@ -52,13 +53,13 @@ const Header = props => {
             )}
             <DownarrIcon height={15} width={15} style={{ alignSelf: 'center' }} />
           </TouchableOpacity>
-          {user?.img ? (
+          {user?.img || user?.user?.img ? (
             <TouchableOpacity onPress={() =>
-              user.email ? navigate('Account') : navigate('Auth')
+              user?.email || user?.user?.email ? navigate('Account') : navigate('Auth')
             }>
               <Image
                 source={{
-                  uri: `${user.img}`,
+                  uri: user?.img || user?.user?.img,
                 }}
                 style={styles.hi}
               />
@@ -67,9 +68,28 @@ const Header = props => {
             <ProfileIcon
               height={25}
               width={25}
-              onPress={() =>
-                user.email ? navigate('Account') : navigate('Auth')
-              }
+              onPress={async () => {
+                try {
+                 
+                  const userData = await AsyncStorage.getItem('userDetail');
+                  const userDetail = userData ? JSON.parse(userData) : null;
+                  
+                
+                  // Check if user is logged in (either from context or AsyncStorage)
+                  const isLoggedIn = user?.email || user?.user?.email || userDetail?.email || userDetail?.user?.email;
+                  
+                  if (isLoggedIn) {
+                    console.log('Navigating to Account');
+                    navigate('Account');
+                  } else {
+                    console.log('No user found, navigating to Auth');
+                    navigate('Auth');
+                  }
+                } catch (error) {
+                  console.error('Error getting user data:', error);
+                  navigate('Auth');
+                }
+              }}
             />
           )}
         </View>

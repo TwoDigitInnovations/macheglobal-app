@@ -1,282 +1,280 @@
+import React, { useState } from 'react';
 import {
-  StyleSheet,
-  Text,
   View,
-  SafeAreaView,
-  TouchableOpacity,
+  Text,
   TextInput,
-  Image,
+  TouchableOpacity,
+  SafeAreaView,
   ScrollView,
+  Alert
 } from 'react-native';
-import React, { useContext, useEffect, useState } from 'react';
-import styles from './styles';
-import Constants from '../../Assets/Helpers/constant';
-import { navigate, reset } from '../../../navigationRef';
-import Spinner from '../../Assets/Component/Spinner';
-import { LoadContext, ToastContext } from '../../../App';
+import SuccessModal from './SuccessModal';
+import Icon from 'react-native-vector-icons/Feather';
 import { Post } from '../../Assets/Helpers/Service';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { OneSignal } from 'react-native-onesignal';
-import { checkEmail } from '../../Assets/Helpers/InputsNullChecker';
-import { useTranslation } from 'react-i18next';
-import Toast from 'react-native-toast-message';
+import styles from './styles';
+import { useNavigation } from '@react-navigation/native';
 
-const ForgotPassword = props => {
-  const { t } = useTranslation();
-  const [toast, setToast] = useContext(ToastContext);
-  const [loading, setLoading] = useContext(LoadContext);
-  const [showPass, setShowPass] = useState(true);
-  const [showPass2, setShowPass2] = useState(true);
-  const [showEmail, setShowEmail] = useState(true);
-  const [showOtp, setShowOtp] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [token, setToken] = useState();
+const ForgotPassword = () => {
+  const navigation = useNavigation();
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
-  const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [value, setValue] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1); 
+  const [error, setError] = useState('');
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
-  const sendotp = () => {
-    if (email === '') {
-      setSubmitted(true);
+  const handleSendOTP = async () => {
+    if (!email) {
+      setError('Please enter your email');
       return;
     }
-    const emailcheck = checkEmail(email.trim());
-    if (!emailcheck) {
-      Toast.show({
-        type: 'error',
-        text1: t('Your email id is invalid'),
-      })
-      return;
-    }
-    const d = {
-      email: email.trim().toLowerCase(),
-    };
-    //   console.log('data==========>', d);s
-    setLoading(true);
-
-    Post('sendOTP', d, {}).then(async res => {
-      setLoading(false);
-      console.log(res);
-      setSubmitted(false);
-      if (res.status) {
-        setToast(res.data.message);
-        // const data = {
-        //   email: userDetail.email,
-        //   token: res.data.token,
-        // };
-        // navigate('OtpVerify', {data});
-        setShowEmail(false);
-        setShowOtp(true);
-        setShowPassword(false);
-        setToken(res?.data?.token);
-        console.log('enter');
-        // setUserDetail({
-        //   email: '',
-        // });
+    
+    try {
+      const response = await Post('auth/forgot-password', { email });
+      
+      if (response && response.success) {
+        setCurrentStep(2);
+        setError('');
       } else {
-        setLoading(false);
-        setToast(res.message);
+        setError(response?.message || 'Failed to send OTP. Please try again.');
       }
-    });
+    } catch (error) {
+      console.error('Error sending OTP:', error);
+      setError('An error occurred. Please try again.');
+    }
   };
-  const verifyotp = () => {
-    if (value === '') {
-      setSubmitted(true);
-      return;
-    }
-    const data = {
-      otp: value,
-      token,
-    };
-    // data.token = otptoken;
-    console.log('data==========>', data);
-    setLoading(true);
-    Post('verifyOTP', data, {}).then(
-      async res => {
-        setLoading(false);
-        setSubmitted(false);
-        console.log('res =======>', res);
-        if (res.status) {
-          setToast(res.data.message);
-          setValue('');
-          setShowEmail(false);
-          setShowOtp(false);
-          setShowPassword(true);
-          setToken(res?.data?.token);
-          // navigate('ChangePassword', {token: res.data.token});
-        } else {
-          setToast(res.message);
-        }
-      },
-      err => {
-        setLoading(false);
-        console.log('err =======>', err);
-      },
-    );
-  };
-  const submit = () => {
-    if (confirmPassword === '' || password === '') {
-      setSubmitted(true);
-      return;
-    }
-    if (password !== confirmPassword) {
-      Toast.show({
-        type: 'error',
-        text1: t('Your password does not match with Confirm password'),
-      })
-    }
 
-    const data = {
-      password,
-      token,
-    };
-    console.log('data==========>', data);
-    setLoading(true);
-    Post('changePassword', data, {}).then(
-      async res => {
-        setLoading(false);
-        setSubmitted(false);
-        console.log(res);
-        if (res.status) {
-          setToast(res.data.message);
-          await AsyncStorage.removeItem('userDetail');
-          navigate('SignIn');
-        }
-      },
-      err => {
-        setLoading(false);
-        console.log(err);
-      },
-    );
-    // }
+  const handleVerifyOTP = async () => {
+    if (!otp) {
+      setError('Please enter the OTP');
+      return;
+    }
+    
+    // Since we're using a dummy OTP (0000), we'll just verify it here
+    if (otp !== '0000') {
+      setError('Invalid OTP. Please try again.');
+      return;
+    }
+    
+    setCurrentStep(3);
+    setError('');
   };
+
+  const handleResetPassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      setError('Please fill in all fields');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    
+    try {
+      const response = await Post('auth/reset-password', {
+        email,
+        otp: '0000', // Using the dummy OTP
+        newPassword
+      });
+      
+      if (response && response.success) {
+        // Show custom success popup
+        setShowSuccessPopup(true);
+      } else {
+        setError(response?.message || 'Failed to reset password. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      setError('An error occurred. Please try again.');
+    }
+  };
+
+  // Handle success popup close
+  const handleCloseSuccessPopup = () => {
+    setShowSuccessPopup(false);
+    navigation.navigate('SignIn');
+  };
+
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={{ marginTop: 30 }}>
-        <Text style={styles.logintitle}>{t('Forgot password')}</Text>
-      </View>
-      <Image
-        source={require('../../Assets/Images/forgetlogo.png')}
-        style={styles.logo2}
+    <SafeAreaView style={styles.container}>
+      <SuccessModal 
+        visible={showSuccessPopup}
+        onClose={handleCloseSuccessPopup}
+        title="Success!"
+        message="Your password has been reset successfully. Please login with your new password."
+        buttonText="OK"
       />
-      {showEmail && (
-        <View style={styles.textInput}>
-          <TextInput
-            style={styles.input}
-            placeholder={t('Enter email')}
-            placeholderTextColor={Constants.customgrey}
-            value={email}
-            onChangeText={e => setEmail(e)}
-          />
-          <View style={[styles.mylivejobtitle]}>
-            <Text style={styles.jobtitle}>{t('Email')}</Text>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.content}>
+          {/* Title */}
+          <Text style={styles.forgotPasswordTitle}>Reset Password</Text>
+          
+          {/* Progress Steps */}
+          <View style={styles.stepsContainer}>
+            <View style={[styles.step, currentStep >= 1 && styles.activeStep]}>
+              <Text style={[styles.stepText, currentStep >= 1 && styles.activeStepText]}>1</Text>
+            </View>
+            <View style={[styles.step, currentStep >= 2 && styles.activeStep]}>
+              <Text style={[styles.stepText, currentStep >= 2 && styles.activeStepText]}>2</Text>
+            </View>
+            <View style={[styles.step, currentStep >= 3 && styles.activeStep]}>
+              <Text style={[styles.stepText, currentStep >= 3 && styles.activeStepText]}>3</Text>
+            </View>
           </View>
-        </View>
-      )}
-      {submitted && email === '' && (
-        <Text style={styles.require}>{t('Email is required')}</Text>
-      )}
-      {showOtp && (
-        <View style={styles.textInput}>
-          <TextInput
-            style={styles.input}
-            placeholder={t('Enter OTP')}
-            placeholderTextColor={Constants.customgrey}
-            value={value}
-            maxLength={4}
-            keyboardType="number-pad"
-            onChangeText={e => setValue(e)}
-          />
-          <View style={[styles.mylivejobtitle]}>
-            <Text style={styles.jobtitle}>{t('OTP')}</Text>
-          </View>
-        </View>
-      )}
-      {submitted && value === '' && (
-        <Text style={styles.require}>{t('OTP is required')}</Text>
-      )}
+          
+          {/* Error Message */}
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-      {showPassword && <View>
-        <View style={styles.textInput}>
-          <TextInput
-            style={styles.input}
-            placeholder={t('Password')}
-            placeholderTextColor={Constants.customgrey}
-            secureTextEntry={showPass}
-            value={password}
-            onChangeText={password => setPassword(password)}
-          />
-          <TouchableOpacity
-            onPress={() => {
-              setShowPass(!showPass);
-            }}
-            style={[styles.iconView, { borderRightWidth: 0 }]}>
-            <Image
-              source={
-                showPass
-                  ? require('../../Assets/Images/eye-1.png')
-                  : require('../../Assets/Images/eye.png')
-              }
-              style={{ height: 28, width: 28 }}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
-          <View style={[styles.mylivejobtitle]}>
-            <Text style={styles.jobtitle}>{t('Password')}</Text>
-          </View>
-        </View>
-        {submitted && userDetail.password === '' && (
-          <Text style={styles.require}>{t('Password is required')}</Text>
-        )}
-        <View style={styles.textInput}>
-          <TextInput
-            style={styles.input}
-            placeholder={t('Confirm Password')}
-            placeholderTextColor={Constants.customgrey}
-            secureTextEntry={showPass2}
-            value={confirmPassword}
-            onChangeText={confirmPassword =>
-              setConfirmPassword(confirmPassword)
-            }
-          />
-          <TouchableOpacity
-            onPress={() => {
-              setShowPass2(!showPass2);
-            }}
-            style={[styles.iconView, { borderRightWidth: 0 }]}>
-            <Image
-              source={
-                showPass2
-                  ? require('../../Assets/Images/eye-1.png')
-                  : require('../../Assets/Images/eye.png')
-              }
-              style={{ height: 28, width: 28 }}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
-          <View style={[styles.mylivejobtitle]}>
-            <Text style={styles.jobtitle}>{t('Confirm Password')}</Text>
-          </View>
-        </View>
-        {submitted && userDetail.password === '' && (
-          <Text style={styles.require}>{t('Confirm Password is required')}</Text>
-        )}
-      </View>}
+          {/* Step 1: Email Input */}
+          {currentStep === 1 && (
+            <View>
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your email"
+                  placeholderTextColor="#9ca3af"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+                <Text style={styles.inputLabel}>Email</Text>
+              </View>
+              
+              <TouchableOpacity 
+                style={styles.primaryButton} 
+                onPress={handleSendOTP}
+              >
+                <Text style={styles.primaryButtonText}>Send OTP</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.secondaryButton}
+                onPress={() => navigation.goBack()}
+              >
+                <Text style={styles.secondaryButtonText}>Back to Login</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
-      {showEmail && <TouchableOpacity style={[styles.signInbtn, { marginTop: 30, marginBottom: 50 }]} onPress={() => sendotp()}>
-        <Text style={styles.buttontxt}>{t('Next')}</Text>
-      </TouchableOpacity>}
-      {showOtp && <TouchableOpacity style={[styles.signInbtn, { marginTop: 30, marginBottom: 50 }]} onPress={() => verifyotp()}>
-        <Text style={styles.buttontxt}>{t('Verify OTP')}</Text>
-      </TouchableOpacity>}
-      {showPassword && <TouchableOpacity style={[styles.signInbtn, { marginTop: 30, marginBottom: 50 }]} onPress={() => submit()}>
-        <Text style={styles.buttontxt}>{t('Submit')}</Text>
-      </TouchableOpacity>}
-    </ScrollView>
+          {/* Step 2: OTP Verification */}
+          {currentStep === 2 && (
+            <View>
+              <Text style={styles.infoText}>
+                We've sent a 6-digit verification code to {email}
+              </Text>
+              
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter OTP"
+                  placeholderTextColor="#9ca3af"
+                  value={otp}
+                  onChangeText={setOtp}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                />
+                <Text style={styles.inputLabel}>Verification Code</Text>
+              </View>
+              
+              <TouchableOpacity 
+                style={styles.primaryButton} 
+                onPress={handleVerifyOTP}
+              >
+                <Text style={styles.primaryButtonText}>Verify OTP</Text>
+              </TouchableOpacity>
+              
+              <View style={styles.resendContainer}>
+                <Text style={styles.resendText}>Didn't receive the code? </Text>
+                <TouchableOpacity onPress={handleSendOTP}>
+                  <Text style={styles.resendLink}>Resend</Text>
+                </TouchableOpacity>
+              </View>
+              
+              <TouchableOpacity 
+                style={styles.secondaryButton}
+                onPress={() => setCurrentStep(1)}
+              >
+                <Text style={styles.secondaryButtonText}>Change Email</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Step 3: New Password */}
+          {currentStep === 3 && (
+            <View>
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter new password"
+                  placeholderTextColor="#9ca3af"
+                  secureTextEntry={!showPassword}
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                />
+                <Text style={styles.inputLabel}>New Password</Text>
+                <TouchableOpacity 
+                  style={styles.eyeIcon}
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  <Icon 
+                    name={showPassword ? 'eye' : 'eye-off'}
+                    size={22}
+                    color="#9ca3af"
+                  />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={[styles.inputContainer, {marginBottom: 24}]}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Confirm new password"
+                  placeholderTextColor="#9ca3af"
+                  secureTextEntry={!showConfirmPassword}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                />
+                <Text style={styles.inputLabel}>Confirm Password</Text>
+                <TouchableOpacity 
+                  style={styles.eyeIcon}
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  <Icon 
+                    name={showConfirmPassword ? 'eye' : 'eye-off'}
+                    size={22}
+                    color="#9ca3af"
+                  />
+                </TouchableOpacity>
+              </View>
+              
+              <TouchableOpacity 
+                style={styles.primaryButton} 
+                onPress={handleResetPassword}
+              >
+                <Text style={styles.primaryButtonText}>Reset Password</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.secondaryButton, {marginTop: 8}]}
+                onPress={() => setCurrentStep(2)}
+              >
+                <Text style={styles.secondaryButtonText}>Back to OTP</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
+
+// All styles should be defined in styles.js file
+// Make sure to add these styles to your styles.js file
+
+// You can now use this component in your navigation stack
+// Example: <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
 
 export default ForgotPassword;

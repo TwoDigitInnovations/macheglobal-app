@@ -46,25 +46,74 @@ const Profile = props => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const cameraRef = createRef();
-  const getImageValue = async img => {
-    console.log(img)
-    ApiFormData(img.assets[0]).then(
-      res => {
-        console.log(res);
+  const getImageValue = async (img) => {
+    console.log('Image selected:', img);
+    if (!img?.assets?.[0]?.uri) {
+      console.log('No image URI found');
+      setToast('No image selected');
+      return;
+    }
 
-        if (res.status) {
-          setEdit(true);
-          setUserDetail({
-            ...userDetail,
-            img: res.data.file,
-          });
+    setLoading(true);
+    
+    try {
+      const imageUri = img.assets[0].uri;
+      const imageType = img.assets[0].type || 'image/jpeg';
+      const imageName = img.assets[0].fileName || `profile_${Date.now()}.jpg`;
+      
+      console.log('Preparing image for upload:', { imageUri, imageType, imageName });
+      
+      // Prepare the image data for ApiFormData
+      const imageData = {
+        uri: imageUri,
+        type: imageType,
+        name: imageName,
+        fileName: imageName
+      };
+      
+      console.log('Uploading image to server...');
+      const res = await ApiFormData(imageData);
+      
+      console.log('Image upload response:', res);
+      
+      if (res?.status && res?.data?.fileUrl) {
+        const fileUrl = res.data.fileUrl;
+        console.log('Image uploaded successfully:', fileUrl);
+        
+        // Update local state
+        setUserDetail(prev => ({
+          ...prev,
+          img: fileUrl
+        }));
+        
+        // Update context and AsyncStorage
+        const userData = await AsyncStorage.getItem('userDetail');
+        if (userData) {
+          const currentUser = JSON.parse(userData);
+          const updatedUser = {
+            ...currentUser,
+            user: {
+              ...(currentUser.user || {}),
+              avatar: fileUrl
+            }
+          };
+          await AsyncStorage.setItem('userDetail', JSON.stringify(updatedUser));
+          setuser(updatedUser);
         }
-      },
-      err => {
-        setEdit(false);
-        console.log(err);
-      },
-    );
+        
+        setToast('Profile picture updated successfully');
+        return fileUrl;
+      } else {
+        const errorMsg = res?.message || 'Failed to upload profile picture';
+        console.error('Upload failed:', errorMsg);
+        setToast(errorMsg);
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      setToast('Error uploading profile picture');
+    } finally {
+      setLoading(false);
+    }
   };
   console.log('img', userDetail.img);
   const cancel = () => {
@@ -72,36 +121,57 @@ const Profile = props => {
     cameraRef.current?.hide()
 
   };
-  const getProfile = () => {
-    setLoading(true);
-    GetApi(`getProfile`, { ...props }).then(
-      async res => {
-        setLoading(false);
-        console.log(res);
-        if (res.status) {
-          // setprofile(res?.data || {});
-          // await AsyncStorage.setItem('profilePic', res?.data?.profile || '');
-          // setImage(res?.data?.profile || '');
-
-          setUserDetail({
-            email: res.data.email,
-            username: res.data.username,
-            number: res.data.number,
-            img: res.data.profile,
-          });
-          setuser({ ...user, ...res.data });
-          // setVerified(res.data.verified);
-        } else {
-          // setToast(res.message);
+  const getProfile = async () => {
+    try {
+      setLoading(true);
+      // Try getting the profile data from the user context first
+      const userData = await AsyncStorage.getItem('userDetail');
+      const userDetail = userData ? JSON.parse(userData) : null;
+      
+      if (userDetail?.user) {
+        console.log('Using user data from context:', userDetail.user);
+        setUserDetail({
+          email: userDetail.user.email,
+          username: userDetail.user.name,
+          number: userDetail.user.phone,
+          img: userDetail.user.avatar || userDetail.user.profile
+        });
+        
+        // Also update the user state if needed
+        if (setuser) {
+          setuser(prev => ({ ...prev, ...userDetail.user }));
         }
-      },
-      err => {
-        setLoading(false);
-        console.log(err);
-      },
-    );
+      } else {
+        // Fallback to API if user data is not in context
+        console.log('Fetching profile from API...');
+        const res = await GetApi('user/profile');
+        console.log('Profile API Response:', res);
+        
+        if (res?.success) {
+          const profileData = {
+            email: res.data.email,
+            username: res.data.name,
+            number: res.data.phone,
+            img: res.data.avatar || res.data.profile
+          };
+          
+          setUserDetail(profileData);
+          
+          // Update the user state if needed
+          if (setuser) {
+            setuser(prev => ({ ...prev, ...res.data }));
+          }
+        } else {
+          console.error('Failed to fetch profile:', res?.message || 'Unknown error');
+        }
+      }
+    } catch (error) {
+      console.error('Error in getProfile:', error);
+    } finally {
+      setLoading(false);
+    }
   };
-  const submit = () => {
+  const submit = async () => {
     console.log(userDetail);
     if (
       userDetail.username === '' ||
@@ -123,53 +193,99 @@ const Profile = props => {
     }
 
     const data = {
-      userId: user._id,
-      email: userDetail.email.toLowerCase(),
-      username: userDetail.username,
-      number: userDetail.number,
+      userId: user?.user?._id,
+      name: userDetail.username,
+      phone: userDetail.number,
+      email: userDetail.email,
+      // Include avatar URL if available
+      avatar: userDetail.img || user?.user?.avatar || ''
     };
-    // {userDetail.otp&& data.otp=userDetail.otp}
+    
     if (otpval.otp) {
       data.otp = otpval.otp;
     }
+    
+    // For backward compatibility
     if (userDetail.img) {
       data.profile = userDetail.img;
     }
+    
     console.log('data==========>', data);
     setLoading(true);
-    Post('updateprofile', data, { ...props }).then(
-      async res => {
-        setLoading(false);
-        console.log(res);
+    
+   
+    const endpoints = ['auth/updateProfile'];
+    
+    let lastError = null;
+    
+    for (const endpoint of endpoints) {
+      try {
+        console.log(`Trying endpoint: ${endpoint}`);
+        const res = await Post(endpoint, data, { ...props });
+        console.log('Update response:', res);
 
-        if (res.status) {
-          // await AsyncStorage.setItem('userDetail', JSON.stringify(res.data));
-          setToast(res.data.message);
+        if (res?.status || res?.success) {
+          const responseData = res.data || res;
+          setToast(responseData.message || 'Profile updated successfully');
 
-          await AsyncStorage.setItem(
-            'userDetail', JSON.stringify(res.data),
-          );
-          setuser(res.data)
-
-          if (res.data?.otp) {
+         
+          const userData = await AsyncStorage.getItem('userDetail');
+          const currentUser = userData ? JSON.parse(userData) : {};
+          
+         
+          const updatedUser = {
+            ...currentUser,
+            user: {
+              ...(currentUser.user || {}),
+              ...responseData,
+              
+              name: data.username || currentUser.user?.name || responseData?.name || '',
+             
+              username: data.username || currentUser.user?.username || responseData?.username || '',
+         
+              phone: data.number || currentUser.user?.phone || responseData?.phone || '',
+              number: data.number || currentUser.user?.number || responseData?.number || '',
+              email: data.email || currentUser.user?.email || responseData?.email || '',
+              avatar: responseData?.avatar || responseData?.profile || currentUser.user?.avatar || ''
+            }
+          };
+          
+        
+          await AsyncStorage.setItem('userDetail', JSON.stringify(updatedUser));
+    
+          setuser(updatedUser);
+          
+       
+          setUserDetail({
+            ...userDetail,
+            username: data.username || userDetail.username,
+            email: data.email || userDetail.email,
+            number: data.number || userDetail.number,
+            img: responseData?.avatar || responseData?.profile || userDetail.img
+          });
+          
+          if (responseData?.otp) {
             setotpfield(true);
             setEdit(true);
           } else {
             setEdit(false);
             setotpfield(false);
-            getProfile();
-            setotpval({ otp: '' });
+            await getProfile();
           }
+          return; // Success, exit the function
         } else {
-          setToast(res.message);
+          lastError = res?.message || 'Failed to update profile';
         }
-      },
-      err => {
-        setLoading(false);
-        console.log(err);
-      },
-    );
-    // }
+      } catch (error) {
+        console.error(`Error with endpoint ${endpoint}:`, error);
+        lastError = error.message || 'Network error';
+      }
+    }
+    
+    // If we get here, all endpoints failed
+    setLoading(false);
+    setToast(lastError || 'Failed to update profile. Please try again.');
+    setotpval({ otp: '' });
   };
 
   const editUpdate = () => {
