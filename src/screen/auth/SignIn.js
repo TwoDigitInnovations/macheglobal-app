@@ -115,20 +115,20 @@ const LoginScreen = ({ navigation }) => {
         // Handle navigation based on user role
         if (userRole === 'seller') {
           console.log('Navigating to SellerStore', { userRole, userStatus });
-          // For all sellers, navigate to SellerStore regardless of status
+          
           navigation.reset({
             index: 0,
-            // routes: [{ name: 'SellerStore' }], isko commnet kia tha 
+             routes: [{ name: 'SellerStore' }], 
           });
         } else {
           console.log(`Navigating to App (${userRole || 'default'})`);
-          // For all other roles, go to main app
-          // navigation.replace('App'); isko commnet kia tha 
+     
+          navigation.replace('App'); 
         }
       } catch (navError) {
         console.error('Navigation error:', navError);
-        // Fallback to App if navigation fails
-        // navigation.replace('App'); isko commnet kia tha 
+      
+         navigation.replace('App'); 
       }
     } catch (error) {
       console.error('Login error:', error);

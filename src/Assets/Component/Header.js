@@ -36,7 +36,7 @@ const Header = props => {
       <StatusBar barStyle={Platform.OS === 'android' ? "dark-content" : "dark-light"} backgroundColor={Constants.saffron} />
       <View style={styles.toppart}>
         <View style={styles.firstrow}>
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={{ flexDirection: 'row' }}
             onPress={() => navigate('Shipping')}>
             <LocationIcon height={25} width={25} color={Constants.white} />
@@ -52,8 +52,8 @@ const Header = props => {
               </Text>
             )}
             <DownarrIcon height={15} width={15} style={{ alignSelf: 'center' }} />
-          </TouchableOpacity>
-          {user?.img || user?.user?.img ? (
+          </TouchableOpacity> */}
+          {/* {user?.img || user?.user?.img ? (
             <TouchableOpacity onPress={() =>
               user?.email || user?.user?.email ? navigate('Account') : navigate('Auth')
             }>
@@ -91,7 +91,7 @@ const Header = props => {
                 }
               }}
             />
-          )}
+          )} */}
         </View>
       </View>
     </View>
@@ -103,14 +103,14 @@ export default Header;
 const styles = StyleSheet.create({
   toppart: {
     backgroundColor: Constants.saffron,
-    paddingTop: 5,
+  
     // paddingBottom: 20,
   },
   firstrow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 10,
-    marginVertical: 10,
+    padding: 3,
+    marginVertical: 4,
   },
   locationtxt: {
     color: Constants.white,

@@ -21,7 +21,10 @@ import {
   OrdersIconFilled,
   OrdersIconNone,
   ReferalIcon,
+  AccountIcon,
+  AccountFilledIcon,
 } from '../../Theme';
+import Account from '../screen/app/Account';
 import Constants, { FONTS } from '../Assets/Helpers/constant';
 import Home from '../screen/app/Home';
 import Categories from '../screen/app/Categories';
@@ -67,40 +70,53 @@ export const TabNav = () => {
   const { t } = useTranslation();
   const [cartdetail, setcartdetail] = useContext(CartContext);
 
-  const TabArr = [
+  const AccountStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="AccountTab" component={Account} />
+  </Stack.Navigator>
+);
+
+const TabArr = [
     {
-      iconActive: <HomeIcon color={Constants.white} height={24} />,
+      iconActive: <HomeIcon color={Constants.saffron} height={24} />,
       iconInActive: (
-        <HomeFilledIcon color={Constants.customgrey3} height={24} />
+        <HomeFilledIcon color={Constants.black} height={24} />
       ),
       component: HomeStack,
       routeName: 'Home',
       name: 'Home',
     },
     {
-      iconActive: <CategoriesFilledIcon color={Constants.white} height={25} />,
+      iconActive: <CategoriesFilledIcon color={Constants.saffron} height={25} />,
       iconInActive: (
-        <CategoriesIcon color={Constants.customgrey3} height={24} />
+        <CategoriesIcon color={Constants.black} height={24} />
       ),
       component: CategoriesStack,
       routeName: 'Categories',
       name: 'Categories',
     },
     {
-      iconActive: <OrdersIconFilled color={Constants.white} height={33} />,
+      iconActive: <OrdersIconFilled color={Constants.saffron} height={33} />,
       iconInActive: (
-        <OrdersIconNone color={Constants.customgrey3} height={30} />
+        <OrdersIconNone color={Constants.black} height={30} />
       ),
       component: OrdersStack,
       routeName: 'Orders',
       name: 'Orders',
     },
     {
-      iconActive: <CartFilledIcon color={Constants.white} height={26} />,
-      iconInActive: <CartIcon color={Constants.customgrey3} height={26} />,
+      iconActive: <CartFilledIcon color={Constants.saffron} height={26} />,
+      iconInActive: <CartIcon color={Constants.black} height={26} />,
       component: CartStack,
       routeName: 'Cart',
       name: 'Cart',
+    },
+    {
+      iconActive: <AccountFilledIcon color={Constants.saffron} height={26} />,
+      iconInActive: <AccountIcon color={Constants.black} height={26} />,
+      component: AccountStack,
+      routeName: 'Account',
+      name: 'Account',
     },
   ];
 
@@ -117,7 +133,7 @@ export const TabNav = () => {
               onPress={onclick ? onclick : onPress}
               style={[
                 styles.tabBtn,
-                // isSelected ? styles.tabBtnActive : styles.tabBtnInActive,
+                isSelected ? styles.tabBtnActive : styles.tabBtnInActive,
               ]}>
               {isSelected ? item.iconActive : item.iconInActive}
             </TouchableOpacity>
@@ -132,7 +148,7 @@ export const TabNav = () => {
           <Text
             style={[
               styles.tabtxt,
-              { color: isSelected ? Constants.white : Constants.customgrey3 },
+              { color: isSelected ? Constants.saffron : Constants.black },
             ]}>
             {t(item.name)}
           </Text>
@@ -153,13 +169,16 @@ export const TabNav = () => {
           position: 'absolute',
           width: '100%',
           minHeight: Platform?.OS === 'android' ? 70 : 90,
-          backgroundColor: Constants.saffron,
+          backgroundColor: 'white',
           borderTopRightRadius: 15,
           borderTopLeftRadius: 15,
           borderTopWidth: 0,
           paddingTop: 20,
-
-          //   paddingTop: Platform.OS === 'ios' ? 10 : 0,
+          elevation: 10, // For Android shadow
+          shadowColor: '#000', // For iOS shadow
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 5,
         },
       }}>
       {TabArr.map((item, index) => {
@@ -194,19 +213,21 @@ const styles = StyleSheet.create({
   tabBtn: {
     height: 40,
     width: 40,
-    borderRadius: 15,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'transparent',
   },
   tabBtnActive: {
-    backgroundColor: Constants.white,
+    backgroundColor: 'transparent',
   },
   tabBtnInActive: {
-    backgroundColor: 'white',
+    backgroundColor: 'transparent',
   },
   tabtxt: {
     color: Constants.black,
-    // fontWeight:'400',
+    fontSize: 12,
+    marginTop: 4,
     fontFamily: FONTS.Medium,
   },
   badge: {

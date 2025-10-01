@@ -24,18 +24,37 @@ const ForgotPassword = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [currentStep, setCurrentStep] = useState(1); 
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [verificationToken, setVerificationToken] = useState('');
 
   const handleSendOTP = async () => {
     if (!email) {
       setError('Please enter your email');
       return;
     }
-    
+
+    setIsLoading(true);
+    setError('');
+
     try {
       const response = await Post('auth/forgot-password', { email });
       
       if (response && response.success) {
+        // Save the verification token from the response
+        if (response.data?.token) {
+          setVerificationToken(response.data.token);
+          console.log('Received verification token in response.data.token');
+        } else if (response.token) {
+          // Handle case where token is at the root level
+          setVerificationToken(response.token);
+          console.log('Received verification token in response.token');
+        } else {
+          console.error('No token found in response:', response);
+          setError('Failed to get verification token. Please try again.');
+          return;
+        }
+        
         setCurrentStep(2);
         setError('');
       } else {
@@ -44,6 +63,8 @@ const ForgotPassword = () => {
     } catch (error) {
       console.error('Error sending OTP:', error);
       setError('An error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -53,14 +74,51 @@ const ForgotPassword = () => {
       return;
     }
     
-    // Since we're using a dummy OTP (0000), we'll just verify it here
-    if (otp !== '0000') {
-      setError('Invalid OTP. Please try again.');
+    if (!verificationToken) {
+      setError('Verification token not found. Please request a new OTP.');
       return;
     }
     
-    setCurrentStep(3);
+    setIsLoading(true);
     setError('');
+    
+    try {
+      console.log('Verifying OTP with token:', verificationToken);
+      
+      // Verify the OTP with the backend
+      const response = await Post('auth/verifyOTP', { 
+        otp: otp.trim(),
+        token: verificationToken.trim()
+      });
+      
+      console.log('OTP verification response:', response);
+      
+      if (response && (response.status === true || response.success === true)) {
+        // Update the verification token with the one from the response
+        if (response.data?.token) {
+          setVerificationToken(response.data.token);
+        } else if (response.token) {
+          // Handle case where token is at the root level
+          setVerificationToken(response.token);
+        } else {
+          console.error('No token found in verify OTP response:', response);
+          setError('Verification failed. Please try again.');
+          return;
+        }
+        setCurrentStep(3);
+        setError('');
+      } else {
+        // If there's a specific error message, show it
+        const errorMessage = response?.message || 'Invalid OTP. Please try again.';
+        console.error('OTP verification failed:', errorMessage);
+        setError(errorMessage);
+      }
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
+      setError(error.response?.data?.message || 'An error occurred while verifying OTP. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleResetPassword = async () => {
@@ -73,22 +131,38 @@ const ForgotPassword = () => {
       return;
     }
     
+    if (!verificationToken) {
+      setError('Verification token not found. Please start the password reset process again.');
+      return;
+    }
+    
+    setIsLoading(true);
+    setError('');
+    
     try {
+      console.log('Resetting password with token:', verificationToken);
+      
       const response = await Post('auth/reset-password', {
-        email,
-        otp: '0000', // Using the dummy OTP
-        newPassword
+        otp: otp.trim(),
+        newPassword,
+        token: verificationToken
       });
       
-      if (response && response.success) {
-        // Show custom success popup
+      console.log('Password reset response:', response);
+      
+      if (response && (response.status === true || response.success === true)) {
+        // Show success popup
         setShowSuccessPopup(true);
       } else {
-        setError(response?.message || 'Failed to reset password. Please try again.');
+        const errorMessage = response?.message || 'Failed to reset password. Please try again.';
+        console.error('Password reset failed:', errorMessage);
+        setError(errorMessage);
       }
     } catch (error) {
       console.error('Error resetting password:', error);
-      setError('An error occurred. Please try again.');
+      setError(error.response?.data?.message || 'An error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 

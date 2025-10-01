@@ -52,6 +52,7 @@ const Home = () => {
   const [topsellinglist, settopsellinglist] = useState([]);
   const [carosalimg, setcarosalimg] = useState([]);
   const [isSale, setIsSale] = useState(false);
+  const [activeTab, setActiveTab] = useState('Products');
   // const dumydata = [
   //   {
   //     name: 'Tata Salt',
@@ -120,7 +121,6 @@ const Home = () => {
       return () => { }; // cleanup if needed
     }, [])
   );
-
 
   const getCategory = () => {
     setLoading(true);
@@ -235,13 +235,44 @@ const Home = () => {
   return (
     <>
       <Header />
+      <View style={{ backgroundColor: Constants.saffron, paddingHorizontal: 20, paddingTop: 10, paddingBottom: 15 }}>
+        <View style={{ flexDirection: 'row', gap: 15 }}>
+          <TouchableOpacity
+            onPress={() => setActiveTab('Products')}>
+            <Text
+              style={{
+                fontSize: 18,
+                fontFamily: FONTS.Bold,
+                color: Constants.white,
+                textDecorationLine: activeTab === 'Products' ? 'underline' : 'none',
+                textDecorationColor: Constants.white,
+              }}>
+              {t('Products')}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => setActiveTab('Manufacturers')}>
+            <Text
+              style={{
+                fontSize: 17,
+                fontFamily: FONTS.Bold,
+                color: Constants.white,
+                textDecorationLine: activeTab === 'Manufacturers' ? 'underline' : 'none',
+                textDecorationColor: Constants.white,
+              }}>
+              {t('Manufacturers')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
       <TouchableOpacity style={{ backgroundColor: Constants.saffron, paddingBottom: 15 }}
         onPress={() => navigate('Searchpage')}
       >
         <View
-          style={[styles.inpcov, { height: 45 }]}
+          style={[styles.inpcov, { height: 50 }]}
         >
-          <SearchIcon height={20} width={20} />
+          {/* <SearchIcon height={20} width={20} /> */}
           <Text style={{ color: Constants.light_black, marginLeft: 10, fontSize: 18 }}>{t('Search')}</Text>
           {/* <TextInput
             style={styles.input}
@@ -256,7 +287,7 @@ const Home = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingBottom: Platform.OS === 'android' ? 70 : 40,
-          backgroundColor: Constants.white
+          backgroundColor: '#F3F3F3'
         }}
         ListHeaderComponent={
           <>
@@ -271,60 +302,73 @@ const Home = () => {
               </Text>
             </LinearGradient> */}
 
-            {/* Carousel */}
-            <View style={{ marginVertical: 20 }}>
-              <SwiperFlatList
-                autoplay
-                autoplayDelay={2}
-                autoplayLoop
-                data={carosalimg || []}
-                renderItem={({ item, index }) => (
-                  <TouchableOpacity
-                    style={{ width: width, alignItems: 'center' }}
-                    onPress={() => {
-                      item.product_id &&
-                        navigate(
-                          'posterDetail',
-                          item.product_id
-                        );
-                    }}>
-                    <Image
-                      source={{ uri: item.image }}
-                      style={{
-                        height: 180,
-                        width: width2,
-                        borderRadius: 20,
-                        alignSelf: 'center',
-                      }}
-                      resizeMode="stretch"
-                      key={index}
-                    />
-                  </TouchableOpacity>
-                )}
+            <View style={{ position: 'relative' }}>
+              {/* Orange background - absolute positioned */}
+              <View
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 120,
+                  backgroundColor: Constants.saffron,
+                  zIndex: -1
+                }}
               />
+              {/* Carousel on top */}
+              <View style={{ marginTop: 10, marginBottom: 20 }}>
+                <SwiperFlatList
+                  autoplay
+                  autoplayDelay={2}
+                  autoplayLoop
+                  data={carosalimg || []}
+                  renderItem={({ item, index }) => (
+                    <TouchableOpacity
+                      style={{ width: width, alignItems: 'center' }}
+                      onPress={() => {
+                        item.product_id &&
+                          navigate('posterDetail', item.product_id);
+                      }}>
+                      <Image
+                        source={{ uri: item.image }}
+                        style={{
+                          height: 180,
+                          width: width2,
+                          borderRadius: 20,
+                          alignSelf: 'center',
+                        }}
+                        resizeMode="stretch"
+                        key={index}
+                      />
+                    </TouchableOpacity>
+                  )}
+                />
+              </View>
             </View>
 
-            <Sale setIsSale={setIsSale} />
-
             {/* Top Selling Header */}
-            <View style={styles.covline}>
-              <Text style={styles.categorytxt}>{t('Top Selling Items')}</Text>
-              <TouchableOpacity
-                style={{ flexDirection: 'row' }}
-                onPress={() =>
-                  navigate('Products', {
-                    name: 'Top Selling Items',
-                    type: 'topselling',
-                  })
-                }>
-                <Text style={styles.seealltxt}>{t('See all')}</Text>
-                <RightarrowIcon
-                  height={17}
-                  width={17}
-                  style={{ alignSelf: 'center' }}
-                  color={Constants.pink}
-                />
-              </TouchableOpacity>
+            <View style={{ paddingTop: 20, }}>
+              {/* <Sale setIsSale={setIsSale} /> */}
+
+              {/* <View style={styles.covline}>
+                <Text style={styles.categorytxt}>{t('Top Selling Items')}</Text>
+                <TouchableOpacity
+                  style={{ flexDirection: 'row' }}
+                  onPress={() =>
+                    navigate('Products', {
+                      name: 'Top Selling Items',
+                      type: 'topselling',
+                    })
+                  }>
+                  <Text style={styles.seealltxt}>{t('See all')}</Text>
+                  <RightarrowIcon
+                    height={17}
+                    width={17}
+                    style={{ alignSelf: 'center' }}
+                    color="#1F2937"
+                  />
+                </TouchableOpacity>
+              </View> */}
             </View>
           </>
         }
@@ -354,82 +398,74 @@ const Home = () => {
           );
         }}
         ListFooterComponent={
-          <>
-            {/* Explore Categories Header */}
-            <View style={styles.covline}>
-              <Text style={styles.categorytxt}>
-                {t('Explore By Categories')}
-              </Text>
-              <TouchableOpacity
-                style={{ flexDirection: 'row' }}
-                onPress={() => navigate('CategoryFilter', { item: 'All', name: 'All Categories' })}>
-                <Text style={styles.seealltxt}>{t('See all')}</Text>
-                <RightarrowIcon
-                  height={17}
-                  width={17}
-                  style={{ alignSelf: 'center' }}
-                  color={Constants.pink}
-                />
-              </TouchableOpacity>
-            </View>
-
-            {/* Category Grid */}
-            <FlatList
-              data={categorylist}
-              scrollEnabled={false}
-              numColumns={Dimensions.get('window').width < 500 ? 4 : 6}
-              keyExtractor={(item, index) => item._id || index.toString()}
-              style={{ width: '100%', gap: 5, marginVertical: 10, marginBottom: 100 }}
-              renderItem={({ item }) => (
+          <View >
+            {/* Categories Section */}
+            <View style={styles.sectionContainer}>
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, {marginLeft: 4, marginTop: -20}]}>Categories</Text>
                 <TouchableOpacity
-                  style={{ flex: 1, marginVertical: 10 }}
-                  onPress={() =>
-                    navigate('CategoryFilter', { item: item._id, name: item.name })
-                  }>
-                  <View style={styles.categoryItemContainer}>
-                    <View style={styles.categorycircle}>
-                      {(() => {
-                        console.log('Rendering category item:', item._id, 'Image URL:', item?.image);
-                        
-                        // Handle case where image might be an object with url property
-                        const imageUrl = item?.image?.url || item?.image;
-                        
-                        if (imageUrl) {
-                          console.log('Using image URL:', imageUrl);
-                          return (
-                            <Image
-                              source={{ uri: imageUrl }}
-                              style={styles.categoryimg}
-                              resizeMode="cover"
-                              onError={(e) => {
-                                console.log('Image load error:', e.nativeEvent.error);
-                                console.log('Failed to load image URL:', imageUrl);
-                              }}
-                              onLoad={() => console.log('Image loaded successfully:', imageUrl)}
-                            />
-                          );
-                        }
-                        
-                        console.log('Using fallback image');
-                        return (
-                          <Image
-                            source={require('../../Assets/Images/veg.png')}
-                            style={styles.categoryimg}
-                            resizeMode="cover"
-                          />
-                        );
-                      })()}
-                    </View>
-                    <View style={styles.categoryNameContainer}>
-                      <Text style={styles.categorytxt2} numberOfLines={2}>
+                  style={styles.seeAllButton}
+                  onPress={() => navigate('CategoryFilter', { item: 'All', name: 'All Categories' })}>
+                  <Text style={styles.seeAllText}>See all</Text>
+                  <RightarrowIcon
+                    height={14}
+                    width={14}
+                    color="#1F2937"
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* Categories Grid - Show only 4 categories */}
+              <View style={styles.categoriesGrid}>
+                {categorylist?.slice(0, 4).map((item) => {
+                  const imageUrl = item?.image?.url || item?.image;
+                  return (
+                    <TouchableOpacity
+                      key={item._id}
+                      style={styles.categoryItem}
+                      onPress={() => navigate('CategoryFilter', { item: item._id, name: item.name })}
+                    >
+                      <View style={styles.categoryCircle}>
+                        <Image
+                          source={imageUrl ? { uri: imageUrl } : require('../../Assets/Images/veg.png')}
+                          style={styles.categoryImage}
+                          resizeMode="cover"
+                          onError={(e) => console.log('Image load error')}
+                        />
+                      </View>
+                      <Text style={styles.categoryName} numberOfLines={2}>
                         {item.name}
                       </Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              )}
-            />
-          </>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <View style={styles.sectionContainer}>
+  <View style={styles.sectionHeader}>
+    <Text style={styles.sectionTitle}>Local Industries</Text>
+    
+  </View>
+  <View style={styles.discoverHeading}>
+    <Text style={styles.discoverHeadingText}>Discover the products and craftsmanship of our regions</Text>
+  </View>
+
+  {/* Local Industries Card */}
+  <TouchableOpacity 
+  style={styles.localIndustryCard}
+  onPress={() => navigate('LocalIndustryDetail', { type: 'haiti-crafts' })}>
+  <ImageBackground
+    source={require('../../Assets/Images/box.png')} 
+    style={styles.localIndustryBg}
+    imageStyle={styles.localIndustryBgImage}>
+    <View style={styles.localIndustryOverlay}>
+     
+    </View>
+  </ImageBackground>
+</TouchableOpacity>
+</View>
+            </View>
+
+          </View>
         }
       />
     </>
@@ -447,11 +483,63 @@ const styles = StyleSheet.create({
     // borderWidth: 1,
     borderColor: Constants.customgrey,
     backgroundColor: Constants.white,
-    borderRadius: 10,
+    borderRadius: 22,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
     marginHorizontal: 20,
+  },
+  localIndustryCard: {
+    height: 180,
+    width: '100%',
+    alignSelf: 'center',
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 20,
+  },
+  localIndustryBg: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  localIndustryBgImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+    borderRadius: 16,
+  },
+  localIndustryOverlay: {
+    flex: 1,
+   
+ 
+    justifyContent: 'space-between',
+  },
+  localIndustryHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  discoverHeading: {
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  discoverHeadingText: {
+    fontSize: 14,
+    color: Constants.black,
+    fontFamily: FONTS.Medium,
+    lineHeight: 20,
+  },
+  localIndustryTitle: {
+    fontSize: 24,
+    fontFamily: FONTS.Black,
+    color: Constants.white,
+    marginBottom: 5,
+  },
+  localIndustrySubtitle: {
+    fontSize: 14,
+    fontFamily: FONTS.Medium,
+    color: Constants.white,
+    opacity: 0.9,
   },
   input: {
     flex: 1,
@@ -527,7 +615,7 @@ const styles = StyleSheet.create({
   categorytxt: {
     fontSize: 20,
     color: Constants.black,
-    fontFamily: FONTS.Bold,
+    fontFamily: FONTS.extrabold,
   },
   covline: {
     flexDirection: 'row',
@@ -535,26 +623,68 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginVertical: 10,
     // backgroundColor:Constants.red
+    // marginTop:80
   },
-  categoryItemContainer: {
+  // Categories Section Styles
+  sectionContainer: {
+    marginTop: -2,
+    paddingHorizontal: 10,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    margin: 8,
-    width: 90, // Slightly wider to accommodate text
+    
   },
-  categorycircle: {
+  sectionTitle: {
+    fontSize: 18,
+    fontFamily: 'Roboto-Black',
+    color: Constants.black,
+    fontWeight: '900',
+  },
+  seeAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+   
+  },
+  seeAllText: {
+    color: 'black', // gray-800
+    marginRight: 5,
+    fontSize: 14,
+    fontFamily: FONTS.bold,
+  },
+  // Categories Grid
+  categoriesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  categoryItem: {
+    width: '23%',
+    alignItems: 'center',
+    marginBottom: 10,
+    marginHorizontal: 1,
+  },
+  categoryCircle: {
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: '#FF700040',
+    backgroundColor: '#FF700080', 
     justifyContent: 'center',
     alignItems: 'center',
-    overflow: 'hidden',
+    marginBottom: 6,
   },
-  categoryimg: {
+  categoryImage: {
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
-    borderRadius: 35, // Half of the container's width/height (70/2)
+  },
+  categoryName: {
+    fontSize: 12,
+    textAlign: 'center',
+    color: Constants.black,
+    fontFamily: FONTS.medium,
   },
   categorytxt2: {
     fontSize: 12,
