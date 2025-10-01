@@ -17,7 +17,7 @@ const Constants = {
   dark_black: '#000000',
   light_black: '#98A2B3',
   black: '#000000',
-  saffron: '#F38122',
+  saffron: '#FF7000',
   pink: '#5CB446',
   lightpink: '#F3812280',
   linearcolor: '#5CB446',

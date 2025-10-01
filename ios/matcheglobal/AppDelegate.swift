@@ -12,7 +12,7 @@ class AppDelegate: RCTAppDelegate {
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
-    self.moduleName = "BachHoaHouston"
+    self.moduleName = "matcheglobal"
     GMSServices.provideAPIKey("AIzaSyCre5Sym7PzqWQjHoNz7A3Z335oqtkUa9k")
     self.dependencyProvider = RCTAppDependencyProvider()
 

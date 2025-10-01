@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "BachHoaHouston.app"
-               BlueprintName = "BachHoaHouston"
-               ReferencedContainer = "container:BachHoaHouston.xcodeproj">
+               BuildableName = "matcheglobal.app"
+               BlueprintName = "matcheglobal"
+               ReferencedContainer = "container:matcheglobal.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "BachHoaHoustonTests.xctest"
-               BlueprintName = "BachHoaHoustonTests"
-               ReferencedContainer = "container:BachHoaHouston.xcodeproj">
+               BuildableName = "matcheglobalTests.xctest"
+               BlueprintName = "matcheglobalTests"
+               ReferencedContainer = "container:matcheglobal.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -55,9 +55,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "BachHoaHouston.app"
-            BlueprintName = "BachHoaHouston"
-            ReferencedContainer = "container:BachHoaHouston.xcodeproj">
+            BuildableName = "matcheglobal.app"
+            BlueprintName = "matcheglobal"
+            ReferencedContainer = "container:matcheglobal.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "BachHoaHouston.app"
-            BlueprintName = "BachHoaHouston"
-            ReferencedContainer = "container:BachHoaHouston.xcodeproj">
+            BuildableName = "matcheglobal.app"
+            BlueprintName = "matcheglobal"
+            ReferencedContainer = "container:matcheglobal.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

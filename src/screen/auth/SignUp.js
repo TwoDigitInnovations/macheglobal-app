@@ -30,10 +30,10 @@ const SuccessPopup = ({ visible, onClose }) => {
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-           
+
             <Text style={styles.modalTitle}>Success!</Text>
             <Text style={styles.modalText}>Registration Successful</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.modalButton}
               onPress={onClose}
               activeOpacity={0.8}
@@ -72,7 +72,7 @@ export default function SignupScreen({ navigation }) {
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.name.trim()) newErrors.name = 'Name is required';
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
@@ -106,7 +106,7 @@ export default function SignupScreen({ navigation }) {
     try {
       setIsLoading(true);
       const response = await Post('auth/register', payload);
-      
+
       if (response.success) {
         setShowSuccess(true);
         // Auto navigate after 2 seconds
@@ -135,29 +135,29 @@ export default function SignupScreen({ navigation }) {
 
         {/* User Type Selection */}
         <View style={styles.toggleContainer}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[
-              styles.userButton, 
+              styles.userButton,
               userType === 'user' ? styles.activeButton : styles.inactiveButton
             ]}
             onPress={() => setUserType('user')}
           >
             <Text style={[
-              styles.userButtonText, 
+              styles.userButtonText,
               userType === 'user' ? styles.activeText : styles.inactiveText
             ]}>
               User
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[
-              styles.sellerButton, 
+              styles.sellerButton,
               userType === 'seller' ? styles.activeButton : styles.inactiveButton
             ]}
             onPress={() => setUserType('seller')}
           >
             <Text style={[
-              styles.sellerButtonText, 
+              styles.sellerButtonText,
               userType === 'seller' ? styles.activeText : styles.inactiveText
             ]}>
               Seller
@@ -195,13 +195,13 @@ export default function SignupScreen({ navigation }) {
         {/* Phone Number Input */}
         <View style={styles.inputContainer}>
           <View style={styles.phoneInputContainer}>
-          <PhoneInput
-  ref={phoneInput}
-  defaultValue={formData.phone}
-  defaultCode="IN"
-  layout="first"
-  withShadow={false}
-  withDarkTheme={false}
+            <PhoneInput
+              ref={phoneInput}
+              defaultValue={formData.phone}
+              defaultCode="IN"
+              layout="first"
+              withShadow={false}
+              withDarkTheme={false}
               containerStyle={{
                 flex: 1,
                 backgroundColor: 'transparent',
@@ -266,14 +266,14 @@ export default function SignupScreen({ navigation }) {
             value={formData.password}
             onChangeText={(text) => handleInputChange('password', text)}
           />
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.eyeIcon}
             onPress={() => setShowPassword(!showPassword)}
           >
-            <Icon 
-              name={showPassword ? 'eye-off' : 'eye'} 
-              size={20} 
-              color="#6B7280" 
+            <Icon
+              name={showPassword ? 'eye-off' : 'eye'}
+              size={20}
+              color="#6B7280"
             />
           </TouchableOpacity>
           {errors.password && <Text style={{ color: 'red' }}>{errors.password}</Text>}
@@ -287,8 +287,8 @@ export default function SignupScreen({ navigation }) {
         </TouchableOpacity>
 
         {/* Sign Up Button */}
-        <TouchableOpacity 
-          style={[styles.signupButton, isLoading && styles.disabledButton]} 
+        <TouchableOpacity
+          style={[styles.signupButton, isLoading && styles.disabledButton]}
           onPress={handleSignup}
           disabled={isLoading}
         >
@@ -338,13 +338,13 @@ export default function SignupScreen({ navigation }) {
           </View>
         </View>
       </View>
-      
-      <SuccessPopup 
-        visible={showSuccess} 
+
+      <SuccessPopup
+        visible={showSuccess}
         onClose={() => {
           setShowSuccess(false);
           navigation.navigate('SignIn');
-        }} 
+        }}
       />
     </SafeAreaView>
   );
@@ -428,10 +428,10 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 24,
     borderRadius: 24,
-    backgroundColor:'#f3f4f6',
-    marginHorizontal: 20, 
-    paddingLeft:20,
-    paddingRight:20,
+    backgroundColor: '#f3f4f6',
+    marginHorizontal: 20,
+    paddingLeft: 20,
+    paddingRight: 20,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -552,7 +552,7 @@ const styles = StyleSheet.create({
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom:32
+    marginBottom: 32
   },
   dividerLine: {
     flex: 1,
@@ -563,7 +563,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     color: '#6b7280',
     fontSize: 14,
-    marginTop:8
+    marginTop: 8
   },
   socialContainer: {
     flexDirection: 'row',
@@ -573,8 +573,8 @@ const styles = StyleSheet.create({
   socialButton: {
     width: 48,
     height: 48,
-   
-  
+
+
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 12,
@@ -582,7 +582,7 @@ const styles = StyleSheet.create({
   googleIcon: {
     width: 24,
     height: 24,
-    
+
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
   appleIcon: {
     width: 24,
     height: 24,
-   
+
     alignItems: 'center',
     justifyContent: 'center',
   },

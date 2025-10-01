@@ -128,7 +128,7 @@ const Account = props => {
   const inappbrawser = async () => {
     try {
       if (await InAppBrowser.isAvailable()) {
-        await InAppBrowser.open('https://www.bachhoahouston.com/ReturnPolicy', {
+        await InAppBrowser.open('https://www.macheGlobal.com/ReturnPolicy', {
           // Customization options
           dismissButtonStyle: 'cancel',
           preferredBarTintColor: Constants.saffron,
@@ -141,7 +141,7 @@ const Account = props => {
         });
       } else {
         // Fallback to a regular browser if InAppBrowser is not available
-        Linking.openURL('https://www.bachhoahouston.com/ReturnPolicy');
+        Linking.openURL('https://www.macheGlobal.com/ReturnPolicy');
       }
     } catch (error) {
       console.error(error);
@@ -150,7 +150,7 @@ const Account = props => {
   const inappbrawser2 = async () => {
     try {
       if (await InAppBrowser.isAvailable()) {
-        await InAppBrowser.open('https://www.bachhoahouston.com/ContactUs', {
+        await InAppBrowser.open('https://www.macheGlobal.com/ContactUs', {
           // Customization options
           dismissButtonStyle: 'cancel',
           preferredBarTintColor: Constants.saffron,
@@ -163,7 +163,7 @@ const Account = props => {
         });
       } else {
         // Fallback to a regular browser if InAppBrowser is not available
-        Linking.openURL('https://www.bachhoahouston.com/ContactUs');
+        Linking.openURL('https://www.macheGlobal.com/ContactUs');
       }
     } catch (error) {
       console.error(error);
