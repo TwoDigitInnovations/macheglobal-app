@@ -33,12 +33,14 @@ const OrderStatus = props => {
   }, [data]);
   const getOrderById = () => {
     setLoading(true);
-    GetApi(`getProductRequest/${data}`, {}).then(
+    GetApi(`orders/details/${data}`, {}).then(
       async res => {
         setLoading(false);
-        console.log(res);
-        if (res.status) {
+        console.log('Order details:', res);
+        if (res.success && res.data) {
           setorderdata(res.data);
+        } else {
+          console.error('Failed to fetch order details');
         }
       },
       err => {

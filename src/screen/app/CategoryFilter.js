@@ -60,10 +60,10 @@ const CategoryFilter = props => {
     }, []);
     const getCategory = () => {
 
-        GetApi(`getCategory`, {}).then(
+        GetApi(`category/getCategories`, {}).then(
             async res => {
 
-                console.log(res);
+                console.log("categorylist",res);
                 if (res.status) {
                     let newCat = res.data.map(f => { return { ...f, label: f.name, value: f._id } })
                     setcategorylist([{ label: 'All Categories', value: 'All' }, ...newCat]);

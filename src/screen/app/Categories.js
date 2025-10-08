@@ -26,28 +26,37 @@ import {
   SearchIcon,
 } from '../../../Theme';
 // import LinearGradient from 'react-native-linear-gradient';
-import { navigate } from '../../../navigationRef';
+// import { navigate } from '../../../navigationRef';
 import { GetApi } from '../../Assets/Helpers/Service';
 import { LoadContext, ToastContext } from '../../../App';
 import Header from '../../Assets/Component/Header';
 import { useTranslation } from 'react-i18next';
 
-const Categories = () => {
+const Categories = ({ navigation }) => {
+  console.log('Categories component mounted');
   const { t } = useTranslation();
   const [toast, setToast] = useContext(ToastContext);
   const [loading, setLoading] = useContext(LoadContext);
   const [categorylist, setcategorylist] = useState();
+  
   useEffect(() => {
+    console.log('useEffect running, calling getCategory');
     getCategory();
   }, []);
+  
+  useEffect(() => {
+    console.log('categorylist updated:', categorylist);
+  }, [categorylist]);
 
   const getCategory = () => {
+    console.log('getCategory called');
     setLoading(true);
     GetApi(`getCategory`, {}).then(
       async res => {
+        console.log('API Response:', res);
         setLoading(false);
-        console.log(res);
         if (res.status) {
+          console.log('Setting category list with data:', res.data);
           setcategorylist(res.data);
         }
       },
@@ -100,7 +109,11 @@ const Categories = () => {
             <TouchableOpacity
               style={{ flex: 1, marginVertical: 10 }}
               onPress={() =>
-                navigate('CategoryFilter', { item: item._id, name: item.name })
+                navigation.navigate('CategorySubCat', { 
+                  categoryId: item._id, 
+                  categoryName: item.name,
+                  categoryImage: item.image
+                })
               }>
               <View style={styles.categorycircle}>
                 <Image

@@ -1,151 +1,141 @@
-import React, { createRef, useContext, useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Dimensions,
   FlatList,
   Image,
   SafeAreaView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
-  ActivityIndicator,
-  Pressable,
+  ScrollView,
+  StatusBar,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { BackIcon } from '../../../Theme';
 import { MinusIcon, Plus2Icon, PlusIcon } from '../../../Theme';
 import Constants, { Currency, FONTS } from '../../Assets/Helpers/constant';
 import { CartContext, LoadContext, ToastContext } from '../../../App';
 import { GetApi } from '../../Assets/Helpers/Service';
-import { goBack, navigate } from '../../../navigationRef';
+import { navigate } from '../../../navigationRef';
+import { useIsFocused } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import DriverHeader from '../../Assets/Component/DriverHeader';
 import { useTranslation } from 'react-i18next';
 import i18n from 'i18next';
-import {
-  BackIcon,
-  CartFilledIcon,
-  SearchIcon,
-} from '../../../Theme';
 
-const { width } = Dimensions.get('window');
-
-const Searchpage = () => {
+const SubcategoryProducts = props => {
   const { t } = useTranslation();
-  const inputRef = useRef(null);
+  const [cartdetail, setcartdetail] = useContext(CartContext);
   const [toast, setToast] = useContext(ToastContext);
   const [loading, setLoading] = useContext(LoadContext);
-  const [cartdetail, setcartdetail] = useContext(CartContext);
   const [productlist, setProductlist] = useState([]);
-  const [searchkey, setSearchkey] = useState('');
+  const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({
     totalPages: 1,
     currentPage: 1,
     itemsPerPage: 10
   });
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [searchTimeout, setSearchTimeout] = useState(null);
+  const isFocused = useIsFocused();
+  const navigation = useNavigation();
+  const subcategoryId = props?.route?.params?.item;
+  const subcategoryName = props?.route?.params?.name;
 
   useEffect(() => {
-    setTimeout(() => {
-      if (inputRef.current) {
-        inputRef.current.focus();
-      }
-    }, 200);
+    if (isFocused && subcategoryId) {
+      getProducts(1);
+    }
+  }, [isFocused, subcategoryId]);
 
-    return () => {
-      if (searchTimeout) {
-        clearTimeout(searchTimeout);
-      }
-    };
-  }, []);
-
-  const getSearchProducts = async (p = 1, searchText = '') => {
+  const getProducts = async (p = 1, limit = 10) => {
     try {
       if (p === 1) {
         setLoading(true);
-      } else {
-        setIsLoadingMore(true);
+        setProductlist([]);
       }
 
-      if (searchText.trim().length >= 2) {
-        const res = await GetApi(`product/productSearch?page=${p}&key=${encodeURIComponent(searchText)}`);
+     
+      const url = `product/getProduct?page=${p}&limit=100`; 
+      
+      
+      const res = await GetApi(url, {});
+     
+
+      if (res?.status) {
+      
+        let products = Array.isArray(res.data) ? res.data : [];
+        
+        if (subcategoryId) {
+          products = products.filter(product => {
+           
+            return product.subcategory === subcategoryId || 
+                   (product.category?.Subcategory?.some(sub => sub._id === subcategoryId));
+          });
+        }
+        
+        
         
         if (p === 1) {
-          setLoading(false);
+          setProductlist(products);
         } else {
-          setIsLoadingMore(false);
+          setProductlist(prev => [...prev, ...products]);
         }
         
-        if (res && res.status) {
-          if (p === 1) {
-            setProductlist(res.data || []);
-          } else {
-            setProductlist(prevProducts => [...prevProducts, ...(res.data || [])]);
-          }
-          
-          if (res.pagination) {
-            setPagination(res.pagination);
-          }
-        }
-      } else if (p === 1) {
-        setProductlist([]);
-        setLoading(false);
-      }
-    } catch (err) {
-      setLoading(false);
-      setIsLoadingMore(false);
-      console.error('Error searching products:', err);
-    }
-  };
-
-  const handleSearch = (text) => {
-    setSearchkey(text);
-    
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
-
-    const timeout = setTimeout(() => {
-      if (text.trim().length > 0) {
-        getSearchProducts(1, text);
+        // Update pagination
+        setPagination({
+          totalPages: Math.ceil(products.length / limit),
+          currentPage: p,
+          itemsPerPage: limit
+        });
       } else {
-        setProductlist([]);
+        console.log('No products found', res?.message || 'No products available');
+        if (p === 1) {
+          setProductlist([]);
+        }
+        setToast(res?.message || 'No products found for this category');
       }
-    }, 500);
 
-    setSearchTimeout(timeout);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      if (p === 1) {
+        setProductlist([]);
+        setToast('Failed to load products. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const cartdata = async (productdata) => {
+  const cartdata = async productdata => {
     const existingCart = Array.isArray(cartdetail) ? cartdetail : [];
-    const existingProduct = existingCart.find(
-      f => f.productid === productdata._id
-    );
+    const existingProduct = existingCart.find(item => item.productid === productdata._id);
 
-    if (!existingProduct) {
-      const newProduct = {
-        productid: productdata._id,
-        productname: productdata.name,
-        vietnamiesName: productdata?.vietnamiesName,
-        price: productdata?.price_slot?.[0]?.other_price || 0,
-        offer: productdata?.price_slot?.[0]?.our_price || 0,
-        image: productdata.varients?.[0]?.image?.[0] || '',
-        price_slot: productdata?.price_slot?.[0] || {},
-        qty: 1,
-        seller_id: productdata.userid,
-        slug: productdata.slug,
-      };
-
-      const updatedCart = [...existingCart, newProduct];
-      setcartdetail(updatedCart);
-      await AsyncStorage.setItem('cartdata', JSON.stringify(updatedCart));
-    } else {
-      const updatedCart = cartdetail.map(item => 
-        item.productid === productdata._id 
-          ? { ...item, qty: (item.qty || 0) + 1 } 
+    if (existingProduct) {
+      const updatedCart = existingCart.map(item =>
+        item.productid === productdata._id
+          ? { ...item, qty: (item.qty || 1) + 1 }
           : item
       );
       setcartdetail(updatedCart);
       await AsyncStorage.setItem('cartdata', JSON.stringify(updatedCart));
+    } else {
+      const newCart = [
+        ...existingCart,
+        {
+          productid: productdata._id,
+          name: productdata.name,
+          vietnamiesName: productdata.vietnamiesName,
+          price: productdata.price_slot?.[0]?.our_price || 0,
+          image: productdata.varients?.[0]?.image?.[0] || '',
+          qty: 1,
+          moq: productdata.pieces || 1,
+          unit: productdata.price_slot?.[0]?.unit || '',
+          value: productdata.price_slot?.[0]?.value || ''
+        }
+      ];
+      setcartdetail(newCart);
+      await AsyncStorage.setItem('cartdata', JSON.stringify(newCart));
     }
     setToast(t('Successfully added to cart.'));
   };
@@ -167,7 +157,7 @@ const Searchpage = () => {
       <TouchableOpacity
         key={item._id || index.toString()}
         style={styles.productCard}
-        onPress={() => navigate('Preview', item.slug)}
+        onPress={() => navigate('Preview', { slug: item.slug })}
         activeOpacity={0.8}>
         {/* Product Image */}
         <View style={styles.imageContainer}>
@@ -219,35 +209,45 @@ const Searchpage = () => {
 
   const numColumns = Dimensions.get('window').width >= 600 ? 3 : 2;
 
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <TouchableOpacity
+        onPress={() => navigation.goBack()}
+        style={styles.backButton}
+        activeOpacity={0.7}
+      >
+        <BackIcon width={24} height={24} color="#000" />
+      </TouchableOpacity>
+      <Text style={styles.headerTitle} numberOfLines={1}>
+        {subcategoryName ? t(subcategoryName) : t('Products')}
+
+      </Text>
+      <View style={styles.headerRight} />
+    </View>
+  );
+
+  if (loading && productlist.length === 0) {
+    return (
+      <SafeAreaView style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color={Constants.primaryColor} />
+      </SafeAreaView>
+    );
+  }
+
+  if (productlist.length === 0 && !loading) {
+    return (
+      <SafeAreaView style={[styles.container, styles.centerContent]}>
+        <Text style={styles.noProductsText}>{t('No products found')}</Text>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Search Header */}
-      <View style={styles.searchHeader}>
-        <TouchableOpacity onPress={goBack} style={styles.backButton}>
-          <BackIcon width={24} height={24} color="#000" />
-        </TouchableOpacity>
-        <View style={styles.searchContainer}>
-          <SearchIcon width={20} height={20} style={styles.searchIcon} />
-          <TextInput
-            ref={inputRef}
-            style={styles.searchInput}
-            placeholder={t('What are you looking for?')}
-            placeholderTextColor="#999"
-            value={searchkey}
-            onChangeText={handleSearch}
-            returnKeyType="search"
-            autoCapitalize="none"
-          />
-        </View>
-        <TouchableOpacity 
-          onPress={() => navigate('App', { screen: 'Cart' })}
-          style={styles.cartButton}>
-          <CartFilledIcon width={24} height={24} color="#000" />
-        </TouchableOpacity>
-      </View>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      {renderHeader()}
 
-      {/* Product List */}
-      {loading ? (
+      {loading && page === 1 ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Constants.primary} />
         </View>
@@ -262,13 +262,13 @@ const Searchpage = () => {
           showsVerticalScrollIndicator={false}
           columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : null}
           onEndReached={() => {
-            if (pagination.currentPage < pagination.totalPages && !isLoadingMore) {
-              getSearchProducts(pagination.currentPage + 1, searchkey);
+            if (pagination.currentPage < pagination.totalPages && !loading) {
+              getProducts(pagination.currentPage + 1);
             }
           }}
           onEndReachedThreshold={0.5}
           ListFooterComponent={
-            isLoadingMore ? (
+            loading && page > 1 ? (
               <View style={styles.loadingMore}>
                 <ActivityIndicator size="small" color={Constants.primary} />
               </View>
@@ -277,57 +277,50 @@ const Searchpage = () => {
         />
       ) : (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>
-            {searchkey ? t('No products found') : t('Search for products')}
-          </Text>
+          <Text style={styles.emptyText}>{t('No products found')}</Text>
         </View>
       )}
     </SafeAreaView>
   );
 };
 
-export default Searchpage;
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: '#fff',
   },
-  searchHeader: {
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noProductsText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginHorizontal: 20,
+  },
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    paddingTop: Platform.OS === 'android' ? 10 : 0,
+    borderBottomColor: '#f0f0f0',
   },
   backButton: {
-    padding: 5,
-    marginRight: 10,
-  },
-  searchContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    height: 40,
-  },
-  searchIcon: {
+    padding: 8,
     marginRight: 8,
   },
-  searchInput: {
+  headerTitle: {
     flex: 1,
-    height: 40,
+    fontSize: 18,
+    fontFamily: 'Roboto-Bold',
     color: '#000',
-    fontFamily: FONTS.Regular,
-    padding: 0,
+    marginLeft: 8,
   },
-  cartButton: {
-    padding: 5,
-    marginLeft: 10,
+  headerRight: {
+    width: 40,
   },
   loadingContainer: {
     flex: 1,
@@ -375,15 +368,15 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.Black,
     fontWeight: '700',
     color: Constants.black,
-    marginBottom: -2, 
-    minHeight: 32,    
+    marginBottom: -2,
+    minHeight: 32,
     lineHeight: 20,
   },
   categoryText: {
     fontSize: 13,
     fontFamily: FONTS.Medium,
     color: '#666',
-    marginTop: -2,   
+    marginTop: -2,
     marginBottom: 0,
     lineHeight: 16,
   },
@@ -421,14 +414,14 @@ const styles = StyleSheet.create({
     color: '#374151'
   },
   emptyContainer: {
-    alignItems: 'center',
+    flex: 1,
     justifyContent: 'center',
-    height: Dimensions.get('window').height - 200,
+    alignItems: 'center',
   },
   emptyText: {
-    color: Constants.black,
-    fontSize: 18,
     fontFamily: FONTS.Medium,
+    fontSize: 16,
+    color: '#666',
   },
   loadingMore: {
     paddingVertical: 20,
@@ -436,3 +429,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+
+export default SubcategoryProducts;

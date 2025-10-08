@@ -29,10 +29,11 @@ import Constants, { FONTS } from '../Assets/Helpers/constant';
 import Home from '../screen/app/Home';
 import Categories from '../screen/app/Categories';
 import Referal from '../screen/app/Referal';
-import Cart from '../screen/app/Cart';
+import NewCart from '../screen/app/NewCart';
 import { useTranslation } from 'react-i18next';
 import Myorder from '../screen/app/Myorder';
 import Products from '../screen/app/Products';
+import SubcategoryProducts from '../screen/app/SubcategoryProducts';
 import { createStackNavigator } from '@react-navigation/stack';
 import { CartContext } from '../../App';
 
@@ -40,16 +41,23 @@ const Tab = createBottomTabNavigator();
 
 const Stack = createStackNavigator();
 
+import Preview from '../screen/app/Preview';
+
 const HomeStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="HomeScreen" component={Home} />
     <Stack.Screen name="Products" component={Products} />
+    <Stack.Screen name="SubcategoryProducts" component={SubcategoryProducts} />
+    <Stack.Screen name="Preview" component={Preview} />
   </Stack.Navigator>
 );
 
+import CategorySubCat from '../screen/app/CategorySubCat';
+
 const CategoriesStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="CategoriesTab" component={Categories} />
+    <Stack.Screen name="CategoriesTab" component={CategorySubCat} />
+    <Stack.Screen name="CategoriesList" component={Categories} />
     <Stack.Screen name="Products" component={Products} />
   </Stack.Navigator>
 );
@@ -62,7 +70,7 @@ const OrdersStack = () => (
 
 const CartStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="CartTab" component={Cart} />
+    <Stack.Screen name="CartTab" component={NewCart} />
   </Stack.Navigator>
 );
 
@@ -138,7 +146,7 @@ const TabArr = [
               {isSelected ? item.iconActive : item.iconInActive}
             </TouchableOpacity>
             {isCartTab && cartCount > 0 && (
-              <View style={styles.badge}>
+              <View style={[styles.badge, { backgroundColor: '#FF7000' }]}>
                 <Text style={styles.badgeText}>
                   {cartCount > 99 ? '99+' : cartCount}
                 </Text>
@@ -174,8 +182,8 @@ const TabArr = [
           borderTopLeftRadius: 15,
           borderTopWidth: 0,
           paddingTop: 20,
-          elevation: 10, // For Android shadow
-          shadowColor: '#000', // For iOS shadow
+          elevation: 10, 
+          shadowColor: '#000', 
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.1,
           shadowRadius: 5,

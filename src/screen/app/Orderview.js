@@ -1,7 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react-native/no-inline-styles */
 import {
-  Dimensions,
   FlatList,
   Image,
   Modal,
@@ -14,19 +13,17 @@ import {
   View,
 } from 'react-native';
 import React, { createRef, useContext, useEffect, useState } from 'react';
-import Constants, { Currency, FONTS } from '../../Assets/Helpers/constant';
+import { Currency, FONTS, Constants } from '../../Assets/Helpers/constant';
 import { useIsFocused } from '@react-navigation/native';
 import { LoadContext, ToastContext } from '../../../App';
-import { ApiFormData, GetApi, Patch, Post } from '../../Assets/Helpers/Service';
+import { GetApi, Patch } from '../../Assets/Helpers/Service';
 import moment from 'moment';
-import { Cross2Icon, CrossIcon, PriceTagIcon, UploadIcon } from '../../../Theme';
+import { CrossIcon, UploadIcon } from '../../../Theme';
 import DriverHeader from '../../Assets/Component/DriverHeader';
 import { useTranslation } from 'react-i18next';
-import { goBack, navigate } from '../../../navigationRef';
+import { goBack } from '../../../navigationRef';
 import CameraGalleryPeacker from '../../Assets/Component/CameraGalleryPeacker';
-import Barcode from '../../Assets/Component/Barcode';
 import i18n from 'i18next';
-// import StarRating from 'react-native-star-rating-widget';
 
 const Orderview = props => {
   const { t } = useTranslation();
@@ -51,11 +48,16 @@ const Orderview = props => {
 
   const getorderdetail = () => {
     setLoading(true);
-    GetApi(`getProductRequest/${id}`, {}).then(
+    GetApi(`orders/details/${id}`, {}).then(
       async res => {
         setLoading(false);
-        console.log('xyz', res);
-        setorderview(res.data);
+        console.log('Order details:', res);
+        if (res.success && res.data) {
+          setorderview(res.data);
+        } else {
+          console.error('Failed to fetch order details');
+          setToast('Failed to load order details');
+        }
       },
       err => {
         setLoading(false);
@@ -91,267 +93,198 @@ const Orderview = props => {
     });
   };
 
+  const renderOrderItem = ({ item, index }) => (
+    <View key={index} style={styles.productContainer}>
+      <Image
+        source={item.image ? { uri: item.image } : require('../../Assets/Images/veg.png')}
+        style={styles.productImage}
+        resizeMode="cover"
+      />
+      <View style={styles.productDetails}>
+        <Text style={styles.productName}>
+          {i18n.language === 'vi' ? (item.product?.vietnamiesName || item.name) : item.name}
+        </Text>
+        <View style={styles.priceContainer}>
+          <Text style={styles.productPrice}>
+            {Currency} {Number(item.price).toFixed(2)}
+          </Text>
+          <Text style={styles.quantityText}>Qty: {item.qty}</Text>
+        </View>
+      </View>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <DriverHeader item={t('Order Detail')} showback={true} />
-        {/* <View style={styles.toppart}>
-          <Image
-            source={require('../../Assets/Images/logosmall.png')}
-            style={styles.logoimg}
-          />
-          <Text style={styles.ordertxt}>Order View</Text>
-          <Image
-            source={require('../../Assets/Images/profile3.png')}
-            style={styles.logoimg}
-          />
-        </View> */}
-        {orderview && (
-          <View
-            style={{
-              flexDirection: 'row',
-              marginHorizontal: 20,
-              justifyContent: 'space-between',
-              marginTop: 10,
-            }}>
-            <View>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={styles.txt1}>{t('Order ID')}</Text>
-                <Text style={styles.txt1}>
-                  :- {orderview?.orderId || orderview?._id}
-                </Text>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={styles.txt1}>{t('Date')}</Text>
-                <Text style={styles.txt1}>
-                  :- {moment(orderview?.created_at).format('DD MMM, hh:mm A')}
-                </Text>
-              </View>
+      <DriverHeader item={t('Order Details')} showback={true} />
+      
+      {orderview ? (
+        <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 20 }}>
+          {/* Order Summary Card */}
+          <View style={styles.card}>
+           <View style={styles.sectionHeader}>
+  <Text style={styles.sectionTitle}>{t('Order Summary')}</Text>
+  <View style={[styles.statusBadge, { 
+    backgroundColor: orderview.status === 'Completed' ? '#10B981' : 
+      orderview.status === 'Pending' ? '#F59E0B' : 
+      orderview.status === 'Cancelled' ? '#EF4444' : '#F59E0B' 
+  }]}>
+    <Text style={styles.statusText}>
+      {orderview.status || 'Processing'}
+    </Text>
+  </View>
+</View>
+            
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>{t('Order ID')}:</Text>
+              <Text style={styles.infoValue}>#{orderview.orderId || orderview._id?.substring(0, 8)}</Text>
             </View>
-            <Text style={styles.delevered}>{orderview?.status}</Text>
+            
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>{t('Order Date')}:</Text>
+              <Text style={styles.infoValue}>
+                {moment(orderview.createdAt).format('MMM D, YYYY h:mm A')}
+              </Text>
+            </View>
+            
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>{t('Payment Method')}:</Text>
+              <Text style={styles.infoValue}>
+                {orderview.paymentMethod === 'card' ? 'Credit/Debit Card' : 
+                 orderview.paymentMethod === 'cod' ? 'Cash on Delivery' : 
+                 orderview.paymentMethod || 'N/A'}
+              </Text>
+            </View>
+            
+            <View style={[styles.divider, { marginVertical: 12 }]} />
+            
+            <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>{t('Delivery Address')}</Text>
+            {orderview.shippingAddress && (
+              <View style={styles.addressContainer}>
+                <Text style={styles.addressName}>{orderview.shippingAddress.name}</Text>
+                <Text style={styles.addressText}>{orderview.shippingAddress.address}</Text>
+                <Text style={styles.addressText}>
+                  {orderview.shippingAddress.city}, {orderview.shippingAddress.country} {orderview.shippingAddress.postalCode}
+                </Text>
+                <Text style={styles.addressText}>Phone: {orderview.shippingAddress.phone}</Text>
+              </View>
+            )}
           </View>
-        )}
-        {/* <View style={styles.optcov}>
-          <Text style={[styles.opttxt,{borderBottomColor:Constants.black,paddingBottom:5,borderBottomWidth:selectrate==='ORDER'?1:0}]} onPress={()=>setselectrate('ORDER')}>Rate Order</Text>
-          <Text style={[styles.opttxt,{borderBottomColor:Constants.black,paddingBottom:5,borderBottomWidth:selectrate==='DRIVER'?1:0}]} onPress={()=>setselectrate('DRIVER')}>Rate Driver</Text>
           
-        </View> */}
-        {/* {orderview?.driver_id&&<View style={[styles.box, styles.shadowProp, {flexDirection: 'row'}]}>
-          <Image
-            source={require('../../Assets/Images/rider.png')}
-            style={{
-              height: 50,
-              width: 50,
-              marginHorizontal: 10,
-              alignSelf: 'center',
-            }}
-          />
-          <View style={{flex: 1, marginLeft: 10}}>
-            <Text style={styles.opttxt}>Rate delivery experience</Text>
-            <View style={{marginVertical: 10}}>
-              <StarRating
-                rating={orderview?.driver_rating || '0'}
-                enableHalfStar={false}
-                color={Constants.custom_green}
-                onChange={() => {}}
-                onRatingEnd={e => ratedriver(orderview.id,orderview?.driver_id, e)}
-              />
-            </View>
-          </View>
-        </View>} */}
-        {orderview?.productDetail && orderview?.productDetail.length > 0 ? (
-          orderview?.productDetail.map((item, i) => {
-            return (
-              <View style={[styles.box2]} key={i}>
-                <View style={{ flexDirection: 'row' }}>
-                  <Image
-                    // source={require('../../Assets/Images/meal.png')}
-                    source={
-                      item?.image
-                        ? {
-                          uri: `${item.image}`,
-                        }
-                        : require('../../Assets/Images/veg.png')
-                    }
-                    style={styles.cartimg}
-                  />
-                  <View style={{ flex: 1, marginLeft: 10, gap: 5 }}>
-                    <Text style={styles.boxtxt}>{i18n.language === 'vi' ? (item?.product?.vietnamiesName || item?.product?.name) : item?.product?.name}</Text>
-                    {/* <Text style={styles.qty}>
-                      {item?.price_slot?.value} {item?.price_slot?.unit}
-                    </Text> */}
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        // marginTop: 10,
-                      }}>
-                      <View
-                        style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Text style={styles.boxtxt2}>{t('Qty')}</Text>
-                        <Text style={styles.boxtxt2}>
-                          {''} :- {item?.qty}
-                        </Text>
-                      </View>
-                      <Text style={styles.boxtxt3}>
-                        {Currency} {(Number(item?.price) || 0).toFixed(2)}{' '}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-                <View style={{ alignSelf: 'flex-end', marginVertical: 10 }}>
-                  {/* <StarRating
-                    rating={item.rating}
-                    enableHalfStar={false}
-                    color={Constants.custom_green}
-                    onChange={() => {}}
-                    onRatingEnd={e => rating(item.id, e)}
-                  /> */}
-                  {!item?.returnDetails?.isRefunded &&
-                    !item?.returnDetails?.isReturned &&
-                    Date.now() - new Date(orderview?.deliveredAt).getTime() <=
-                    15 * 60 * 1000 && (
-                      <Text
-                        style={styles.rtnbtn}
-                        onPress={() => {
-                          setModalVisible(true),
-                            setproductid(item?.product?._id);
-                        }}>
-                        Return
-                      </Text>
-                    )}
-                </View>
-              </View>
-            );
-          })
-        ) : (
-          <View
-            style={{
-              justifyContent: 'center',
-              alignItems: 'center',
-              height: Dimensions.get('window').height - 200,
-            }}>
-            <Text style={styles.carttxt}>{t('Loading...')}</Text>
-          </View>
-        )}
-        {orderview?.productDetail && orderview?.productDetail.length > 0 && (
-          <View>
-            <View
-              style={{
-                marginHorizontal: 20,
-                justifyContent: 'space-between',
-                flexDirection: 'row',
-                marginTop: 30,
-              }}>
-              <Text style={styles.boxtxt}>{t('Total Amount')}</Text>
-              <Text style={styles.boxtxt}>
-                {Currency}{' '}
-                {(
-                  Number(orderview?.total || 0) -
-                  Number(orderview?.totalTax || 0) -
-                  Number(orderview?.deliveryfee || 0) -
-                  Number(orderview?.Deliverytip || 0) +
-                  Number(orderview?.discount || 0)
-                ).toFixed(2)}
-              </Text>
-            </View>
-
-            {orderview?.isLocalDelivery && (
-              <View
-                style={{
-                  marginHorizontal: 20,
-                  justifyContent: 'space-between',
-                  flexDirection: 'row',
-                  marginTop: 10,
-                }}>
-                <View style={{ flexDirection: 'row' }}>
-                  <Text style={styles.boxtxt}>{t('Delivery Tip')}</Text>
-                </View>
-                <Text style={styles.boxtxt}>
-                  {Currency} {(Number(orderview?.Deliverytip) || 0).toFixed(2)}
+          {/* Order Items */}
+          <View style={[styles.card, { marginTop: 12 }]}>
+            <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>{t('Order Items')}</Text>
+            <FlatList
+              data={orderview.orderItems}
+              renderItem={renderOrderItem}
+              keyExtractor={(item, index) => index.toString()}
+              scrollEnabled={false}
+              showsVerticalScrollIndicator={false}
+            />
+            
+            <View style={[styles.divider, { marginVertical: 12 }]} />
+            
+            {/* Order Total */}
+            <View style={styles.totalContainer}>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>{t('Subtotal')}:</Text>
+                <Text style={styles.totalValue}>
+                  {Currency} {Number(orderview.itemsPrice || 0).toFixed(2)}
                 </Text>
               </View>
-            )}
-
-            {(orderview?.isOrderPickup || orderview?.isDriveUp) ? null : (
-              <View
-                style={{
-                  marginHorizontal: 20,
-                  justifyContent: 'space-between',
-                  flexDirection: 'row',
-                  marginTop: 10,
-                }}>
-                <View style={{ flexDirection: 'row' }}>
-                  <Text style={styles.boxtxt}>{t('Delivery Fees')}</Text>
-                </View>
-                <Text style={styles.boxtxt}>
-                  {Currency} {(Number(orderview?.deliveryfee) || 0).toFixed(2)}
+              
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>{t('Shipping')}:</Text>
+                <Text style={styles.totalValue}>
+                  {Currency} {Number(orderview.shippingPrice || 0).toFixed(2)}
                 </Text>
               </View>
-            )}
-
-            <View
-              style={{
-                marginHorizontal: 20,
-                justifyContent: 'space-between',
-                flexDirection: 'row',
-                marginTop: 10,
-              }}>
-              <View style={{ flexDirection: 'row' }}>
-                <Text style={styles.boxtxt}>{t("Tax")}</Text>
+              
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>{t('Tax')}:</Text>
+                <Text style={styles.totalValue}>
+                  {Currency} {Number(orderview.taxPrice || 0).toFixed(2)}
+                </Text>
               </View>
-              <Text style={styles.boxtxt}>
-                {Currency} {(Number(orderview?.totalTax) || 0).toFixed(2)}
-              </Text>
-            </View>
-
-            <View
-              style={{
-                marginHorizontal: 20,
-                justifyContent: 'space-between',
-                flexDirection: 'row',
-                marginTop: 10,
-              }}>
-              <View style={{ flexDirection: 'row' }}>
-                <Text style={styles.boxtxt}>{t("Discount")}</Text>
-              </View>
-              <Text style={styles.boxtxt}>
-                -{Currency} {(Number(orderview?.discount) || 0).toFixed(2)}
-              </Text>
-            </View>
-
-            <View style={[styles.box, styles.shadowProp]}>
-              <View
-                style={{
-                  justifyContent: 'space-between',
-                  flexDirection: 'row',
-                  flex: 1,
-                }}>
-                <Text style={styles.boxtxt}>{t('Final Amount')}</Text>
-                <Text style={styles.boxtxt}>
-                  {Currency}
-                  {Number(orderview?.total)}
+              
+              {/* Delivery Tip */}
+              {orderview.Deliverytip > 0 && (
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>{t('Delivery Tip')}:</Text>
+                  <Text style={styles.totalValue}>
+                    {Currency} {Number(orderview.Deliverytip || 0).toFixed(2)}
+                  </Text>
+                </View>
+              )}
+              
+              {/* Delivery Fees (if applicable) */}
+              {!orderview.isOrderPickup && !orderview.isDriveUp && orderview.deliveryfee > 0 && (
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>{t('Delivery Fee')}:</Text>
+                  <Text style={styles.totalValue}>
+                    {Currency} {Number(orderview.deliveryfee || 0).toFixed(2)}
+                  </Text>
+                </View>
+              )}
+              
+              {/* Discount (if applicable) */}
+              {orderview.discount > 0 && (
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>{t('Discount')}:</Text>
+                  <Text style={[styles.totalValue, { color: '#10B981' }]}>
+                    -{Currency} {Number(orderview.discount || 0).toFixed(2)}
+                  </Text>
+                </View>
+              )}
+              
+              <View style={[styles.divider, { marginVertical: 8 }]} />
+              
+              <View style={[styles.totalRow, { marginTop: 4 }]}>
+                <Text style={styles.grandTotalLabel}>{t('Total')}:</Text>
+                <Text style={styles.grandTotalValue}>
+                  {Currency} {Number(orderview.totalPrice || 0).toFixed(2)}
                 </Text>
               </View>
             </View>
-            <View style={[styles.centeredView, { backgroundColor: Constants.white }]}>
-              <Barcode value={orderview?.orderId} />
-            </View>
-            {orderview?.onthewaytodelivery && (
+            
+            {/* Barcode Section Removed */}
+            
+            {/* Track Driver Button */}
+            {orderview.onthewaytodelivery && (
               <TouchableOpacity
-                style={styles.btn}
+                style={styles.trackButton}
                 onPress={() =>
                   navigate('TrackDriver', {
                     driverid: orderview?.driver_id?._id,
                     userlocation: orderview?.location,
                   })
                 }>
-                <Text style={styles.tracktxt}>Track Driver</Text>
+                <Text style={styles.trackButtonText}>{t('Track Driver')}</Text>
               </TouchableOpacity>
             )}
           </View>
-        )}
-      </ScrollView>
+          
+          {/* Return/Refund Section */}
+          {orderview.status === 'Delivered' && (
+            <View style={[styles.card, { marginTop: 12, marginBottom: 20 }]}>
+              <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>{t('Need Help?')}</Text>
+              <TouchableOpacity 
+                style={styles.helpButton}
+                onPress={() => {
+                  setModalVisible(true);
+                  setproductid(orderview.orderItems[0]?.product?._id);
+                }}
+              >
+                <Text style={styles.helpButtonText}>{t('Request Return/Refund')}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </ScrollView>
+      ) : (
+        <View style={styles.loadingContainer}>
+          <Text>{t('Loading order details...')}</Text>
+        </View>
+      )}
       <Modal
         animationType="none"
         transparent={true}
@@ -480,6 +413,171 @@ const Orderview = props => {
 export default Orderview;
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F8F9FA',
+  },
+  scrollView: {
+    flex: 1,
+    padding: 16,
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontFamily: FONTS.SemiBold,
+    color: '#111827',
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontFamily: FONTS.Medium,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  infoLabel: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontFamily: FONTS.Regular,
+  },
+  infoValue: {
+    fontSize: 14,
+    color: '#111827',
+    fontFamily: FONTS.Medium,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    width: '100%',
+  },
+  addressContainer: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+  },
+  addressName: {
+    fontSize: 15,
+    fontFamily: FONTS.SemiBold,
+    color: '#111827',
+    marginBottom: 4,
+  },
+  addressText: {
+    fontSize: 13,
+    color: '#4B5563',
+    fontFamily: FONTS.Regular,
+    marginBottom: 2,
+    lineHeight: 18,
+  },
+  productContainer: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  productImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  productDetails: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  productName: {
+    fontSize: 14,
+    fontFamily: FONTS.Medium,
+    color: '#111827',
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  productPrice: {
+    fontSize: 15,
+    fontFamily: FONTS.SemiBold,
+    color: '#111827',
+  },
+  quantityText: {
+    fontSize: 13,
+    color: '#6B7280',
+    fontFamily: FONTS.Regular,
+  },
+  totalContainer: {
+    marginTop: 8,
+  },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  totalLabel: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontFamily: FONTS.Regular,
+  },
+  totalValue: {
+    fontSize: 14,
+    color: '#111827',
+    fontFamily: FONTS.Medium,
+  },
+  grandTotalLabel: {
+    fontSize: 16,
+    color: '#111827',
+    fontFamily: FONTS.SemiBold,
+  },
+  grandTotalValue: {
+    fontSize: 16,
+    color: '#111827',
+    fontFamily: FONTS.Bold,
+  },
+  helpButton: {
+    backgroundColor: '#FF7000',
+    borderRadius: 8,
+    padding: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  helpButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontFamily: FONTS.SemiBold,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   container: {
     flex: 1,
     backgroundColor: Constants.white,

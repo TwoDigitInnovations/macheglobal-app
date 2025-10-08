@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { navigationRef } from '../../navigationRef';
 import { TabNav } from './TabScreen';
+import ReviewScreen from '../screen/app/ReviewScreen';
 import SignUp from '../screen/auth/SignUp';
 import ForgotPassword from '../screen/auth/ForgotPassword';
 import Preview from '../screen/app/Preview';
@@ -40,6 +41,14 @@ import { ProductForm } from '../screen/Employee/ProductForm';
 import TestMap from '../screen/driver/TestMap';
 import CategoryFilter from '../screen/app/CategoryFilter';
 import SellerStore from '../screen/seller/SellerStore';
+import CategorySubCat from '../screen/app/CategorySubCat';
+import HelpCenter from '../screen/app/HelpCenter';
+import CheckoutOrder from '../screen/app/CheckoutOrder';
+import OrderSuccessScreen from '../screen/app/OrderSuccessScreen';
+import AddAddressScreen from '../screen/app/AddAddressScreen';
+import SearchAddressScreen from '../screen/app/SearchAddressScreen';
+import AddressListScreen from '../screen/app/AddressListScreen';
+import SubcategoryProducts from '../screen/app/SubcategoryProducts';
 
 const Stack = createNativeStackNavigator();
 const AuthStack = createNativeStackNavigator();
@@ -69,7 +78,6 @@ export default function Navigation(props) {
         <Stack.Screen name="Drivertab" component={Drivertab} />
         <Stack.Screen name="Employeetab" component={Employeetab} />
         <Stack.Screen name="Auth" component={AuthNavigate} />
-        <Stack.Screen name="Preview" component={Preview} />
         <Stack.Screen name="Products" component={Products} />
         <Stack.Screen name="CategoryFilter" component={CategoryFilter} />
         <Stack.Screen name="Account" component={Account} />
@@ -91,16 +99,59 @@ export default function Navigation(props) {
         <Stack.Screen name="MapAddress" component={MapAddress} />
         {/* <Stack.Screen name="Checkout" component={Checkout} /> */}
         <Stack.Screen name="Notification" component={Notification} />
+        <Stack.Screen name="SubcategoryProducts" component={SubcategoryProducts} />
         <Stack.Screen name="TrackDriver" component={TrackDriver} />
         <Stack.Screen name="EmployeeOrderStatus" component={EmployeeOrderStatus} />
         <Stack.Screen name="Cart" component={Cart} />
         <Stack.Screen name="InvoiceGenerator" component={InvoiceGenerator} />
         <Stack.Screen name="Language" component={Language} />
+        <Stack.Screen 
+          name="AddAddressScreen" 
+          component={AddAddressScreen} 
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen 
+          name="SearchAddressScreen" 
+          component={SearchAddressScreen} 
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen 
+          name="AddressListScreen" 
+          component={AddressListScreen} 
+          options={{ headerShown: false }}
+        />
         <Stack.Screen name="posterDetail" component={posterDetail} />
         <Stack.Screen name="AddProduct" component={ProductForm} />
         <Stack.Screen name="TestMap" component={TestMap} />
         <Stack.Screen name="SellerStore" component={SellerStore} />
-
+        <Stack.Screen name="CategorySubCat" component={CategorySubCat} />
+        <Stack.Screen 
+          name="CheckoutOrder" 
+          component={CheckoutOrder} 
+          options={{ headerShown: false }} 
+        />
+        <Stack.Screen name="OrderSuccess" 
+          component={OrderSuccessScreen} 
+          options={{ 
+            headerShown: false,
+            gestureEnabled: false // Prevent swipe back
+          }} 
+        />
+        <Stack.Screen 
+          name="ReviewScreen" 
+          component={ReviewScreen} 
+          options={{
+            headerShown: true,
+            title: 'Write a Review',
+            headerStyle: {
+              backgroundColor: '#FF7000',
+            },
+            headerTintColor: '#fff',
+            headerTitleStyle: {
+              fontWeight: '600',
+            },
+          }}
+        />
       </Stack.Navigator>
 
     </NavigationContainer>

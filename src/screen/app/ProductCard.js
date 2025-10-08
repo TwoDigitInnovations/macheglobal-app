@@ -40,7 +40,7 @@ const ProductCard = ({
   return (
     <Pressable
       disabled={item.Quantity <= 0}
-      onPress={() => navigate('Preview', item.slug)}
+      onPress={() => navigate('Preview', { slug: item.slug })}
       style={[styles.card]}>
       <Image
         source={{

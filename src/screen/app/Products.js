@@ -1,29 +1,25 @@
-/* eslint-disable react/no-unstable-nested-components */
-/* eslint-disable react-native/no-inline-styles */
+import React, { useContext, useEffect, useState } from 'react';
 import {
   Dimensions,
   FlatList,
   Image,
-  ImageBackground,
   SafeAreaView,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  ScrollView,
 } from 'react-native';
-import React, { useContext, useEffect, useState } from 'react';
-import Constants, { Currency, FONTS } from '../../Assets/Helpers/constant';
 import { MinusIcon, Plus2Icon, PlusIcon } from '../../../Theme';
+import Constants, { Currency, FONTS } from '../../Assets/Helpers/constant';
 import { CartContext, LoadContext, ToastContext } from '../../../App';
-import { GetApi, Post } from '../../Assets/Helpers/Service';
+import { GetApi } from '../../Assets/Helpers/Service';
 import { navigate } from '../../../navigationRef';
 import { useIsFocused } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Header from '../../Assets/Component/Header';
 import DriverHeader from '../../Assets/Component/DriverHeader';
 import { useTranslation } from 'react-i18next';
-import ProductCard from './ProductCard';
+import i18n from 'i18next';
 
 const Products = props => {
   const { t } = useTranslation();
@@ -32,20 +28,25 @@ const Products = props => {
   const [loading, setLoading] = useContext(LoadContext);
   const [productlist, setproductlist] = useState([]);
   const [page, setPage] = useState(1);
-  const [curentData, setCurrentData] = useState([]);
-  const [user, setuser] = useState();
+  const [pagination, setPagination] = useState({
+    totalPages: 1,
+    currentPage: 1,
+    itemsPerPage: 10
+  });
   const IsFocused = useIsFocused();
-  const data = props?.route?.params.item;
-  const catname = props?.route?.params.name;
-  const topsell = props?.route?.params.type;
+  const data = props?.route?.params?.item;
+  const catname = props?.route?.params?.name;
+  const topsell = props?.route?.params?.type;
+  const isSubcategory = props?.route?.params?.isSubcategory; // New parameter
+
   useEffect(() => {
-    {
-      data && getproduct(1);
+    if (data) {
+      getproduct(1);
+    } else if (topsell === 'topselling') {
+      getTopSoldProduct(1);
+    } else {
+      getproduct(1);
     }
-    {
-      topsell === 'topselling' && getTopSoldProduct(1);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -56,62 +57,69 @@ const Products = props => {
 
   const setInitialRoute = async () => {
     const user = await AsyncStorage.getItem('userDetail');
-    setuser(JSON.parse(user));
   };
 
-  const getproduct = p => {
-    setPage(p);
-    setLoading(true);
-    GetApi(`getProductbycategory/${data}?page=${p}`, {}).then(
-      async res => {
-        setLoading(false);
-        console.log(res);
-        if (res.status) {
-          setCurrentData(res.data);
-          if (p === 1) {
-            setproductlist(res.data);
-          } else {
-            setproductlist([...productlist, ...res.data]);
-          }
+  const getproduct = async (p = 1, limit = 10) => {
+    try {
+      setPage(p);
+      setLoading(true);
+      
+      let url = `product/getProduct?page=${p}&limit=${limit}`;
+      
+      if (data) {
+        // Check if it's a subcategory or category
+        if (isSubcategory) {
+          url += `&subcategoryId=${data}`;
+        } else {
+          url += `&categoryId=${data}`;
         }
-      },
-      err => {
-        setLoading(false);
-        console.log(err);
-      },
-    );
+      }
+      
+      const res = await GetApi(url, {});
+      
+      setLoading(false);
+      
+      if (res && res.status) {
+        if (p === 1) {
+          setproductlist(res.data);
+        } else {
+          setproductlist(prevProducts => [...prevProducts, ...res.data]);
+        }
+        
+        if (res.pagination) {
+          setPagination(res.pagination);
+        }
+      }
+    } catch (err) {
+      setLoading(false);
+      console.error('Error fetching products:', err);
+    }
   };
 
-  const getTopSoldProduct = p => {
+  const getTopSoldProduct = async (p = 1) => {
     setPage(p);
     setLoading(true);
-    GetApi(`getTopSoldProduct?page=${p}`).then(
-      async res => {
-        setLoading(false);
-        console.log(res);
-        if (res.status) {
-          setCurrentData(res.data);
-          if (p === 1) {
-            setproductlist(res.data);
-          } else {
-            setproductlist([...productlist, ...res.data]);
-          }
+    try {
+      const res = await GetApi(`getTopSoldProduct?page=${p}`);
+      setLoading(false);
+      if (res.status) {
+        if (p === 1) {
+          setproductlist(res.data);
+        } else {
+          setproductlist([...productlist, ...res.data]);
         }
-      },
-      err => {
-        setLoading(false);
-        console.log(err);
-      },
-    );
+      }
+    } catch (err) {
+      setLoading(false);
+      console.log(err);
+    }
   };
 
   const cartdata = async productdata => {
     const existingCart = Array.isArray(cartdetail) ? cartdetail : [];
 
     const existingProduct = existingCart.find(
-      f =>
-        f.productid === productdata._id &&
-        f.price_slot?.value === productdata?.price_slot[0]?.value,
+      f => f.productid === productdata._id
     );
 
     if (!existingProduct) {
@@ -119,29 +127,21 @@ const Products = props => {
         productid: productdata._id,
         productname: productdata.name,
         vietnamiesName: productdata?.vietnamiesName,
-        price: productdata?.price_slot[0]?.other_price,
-        offer: productdata?.price_slot[0]?.our_price,
-        image: productdata.varients[0].image[0],
-        price_slot: productdata?.price_slot[0],
+        price: productdata?.price_slot?.[0]?.other_price || 0,
+        offer: productdata?.price_slot?.[0]?.our_price || 0,
+        image: productdata.varients?.[0]?.image?.[0] || '',
+        price_slot: productdata?.price_slot?.[0] || {},
         qty: 1,
-        seller_id: productdata.userid,
-        isShipmentAvailable: productdata.isShipmentAvailable,
-        isInStoreAvailable: productdata.isInStoreAvailable,
-        isCurbSidePickupAvailable: productdata.isCurbSidePickupAvailable,
-        isNextDayDeliveryAvailable: productdata.isNextDayDeliveryAvailable,
+        seller_id: productdata.SellerId,
         slug: productdata.slug,
-        tax_code: productdata.tax_code,
-        tax: productdata.tax,
       };
 
       const updatedCart = [...existingCart, newProduct];
       setcartdetail(updatedCart);
       await AsyncStorage.setItem('cartdata', JSON.stringify(updatedCart));
-      console.log('Product added to cart:', newProduct);
     } else {
       let stringdata = cartdetail.map(_i => {
-        if (_i?.productid == productdata._id) {
-          console.log('enter');
+        if (_i?.productid === productdata._id) {
           return { ..._i, qty: _i?.qty + 1 };
         } else {
           return _i;
@@ -150,64 +150,115 @@ const Products = props => {
       setcartdetail(stringdata);
       await AsyncStorage.setItem('cartdata', JSON.stringify(stringdata));
     }
-    // navigate('Cart');
     setToast(t('Successfully added to cart.'));
   };
-  const fetchNextPage = () => {
-    console.log('enter', curentData.length);
-    if (curentData.length === 20) {
-      console.log('enter1', topsell);
-      if (topsell === 'topselling') {
-        console.log('enter2');
-        getTopSoldProduct(page + 1);
-      } else {
-        getproduct(page + 1);
-      }
-    }
+
+  const renderProductCard = ({ item, index }) => {
+    const cartItem = Array.isArray(cartdetail)
+      ? cartdetail.find(it => it?.productid === item?._id)
+      : undefined;
+
+    const displayName = i18n.language === 'vi' 
+      ? (item?.vietnamiesName || item?.name) 
+      : item?.name;
+
+    const moq = item?.pieces || 0;
+    const price = item?.price_slot?.[0]?.our_price || item?.price_slot?.[0]?.other_price || 0;
+    const imageUrl = item?.varients?.[0]?.image?.[0] || '';
+
+    return (
+      <TouchableOpacity
+        key={item._id || index.toString()}
+        style={styles.productCard}
+        onPress={() => navigate('Preview', item.slug)}
+        activeOpacity={0.8}>
+        {/* Product Image */}
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: imageUrl }}
+            style={styles.productImage}
+            resizeMode="contain"
+          />
+        </View>
+
+        {/* Product Info */}
+        <View style={styles.productInfo}>
+          {/* Product Name */}
+          <Text style={styles.productName} numberOfLines={2}>
+            {displayName}
+          </Text>
+
+          {/* Category/Subcategory */}
+          {item?.categoryName && (
+            <Text style={styles.categoryText} numberOfLines={1}>
+              {item.categoryName}
+            </Text>
+          )}
+
+          {/* MOQ */}
+          <Text style={styles.moqText}>
+            MOQ: {moq}
+          </Text>
+
+          {/* Price & Add to Cart */}
+          <View style={styles.bottomRow}>
+            <View style={styles.priceContainer}>
+              {price > 0 && (
+                <Text style={styles.priceText}>
+                  {price} HTG
+                </Text>
+              )}
+            </View>
+
+           
+          </View>
+
+          {/* Fast Delivery Badge */}
+          <View style={styles.deliveryBadge}>
+            <Text style={styles.deliveryText}>Fast Delivery</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
   };
+
+  const numColumns = Dimensions.get('window').width >= 600 ? 3 : 2;
+
   return (
     <SafeAreaView style={styles.container}>
       <DriverHeader item={t('Products')} showback={true} />
-      <Text style={styles.headtxt}>{catname}</Text>
-      <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 10 }}
+      
+      {catname && (
+        <Text style={styles.headtxt}>{catname}</Text>
+      )}
+
+      <FlatList
+        data={productlist}
+        renderItem={renderProductCard}
+        keyExtractor={(item, index) => item._id || index.toString()}
+        numColumns={numColumns}
+        key={numColumns}
+        contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
-        style={{ flex: 1, width: '100%' }}>
-        {productlist && productlist.length > 0 ? (
-          productlist.map((item, i) => {
-            const cartItem = Array.isArray(cartdetail)
-              ? cartdetail.find(it => it?.productid === item?._id)
-              : undefined;
-            return (
-              <View key={item._id || i.toString()} style={[styles.box, { marginBottom: productlist.length === i + 1 ? 100 : 10 }]}>
-                <ProductCard
-                  item={item}
-                  cartItem={cartItem}
-                  cartdata={cartdata}
-                  setcartdetail={setcartdetail}
-                  cartdetail={cartdetail}
-                />
-              </View>
-            );
-          })
-        ) : (
-          <View
-            style={{
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: Dimensions.get('window').height - 200,
-            }}>
-            <Text
-              style={{
-                color: Constants.black,
-                fontSize: 20,
-                fontFamily: FONTS.Medium,
-              }}>
-              {t('No Products')}
-            </Text>
-          </View>
-        )}
-      </ScrollView>
+        columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : null}
+        ListEmptyComponent={
+          !loading && (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>{t('No Products')}</Text>
+            </View>
+          )
+        }
+        onEndReached={() => {
+          if (page < pagination.totalPages) {
+            if (topsell === 'topselling') {
+              getTopSoldProduct(page + 1);
+            } else {
+              getproduct(page + 1);
+            }
+          }
+        }}
+        onEndReachedThreshold={0.5}
+      />
     </SafeAreaView>
   );
 };
@@ -217,127 +268,143 @@ export default Products;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Constants.white,
-    paddingBottom: 70,
+    backgroundColor: 'white',
   },
-
   headtxt: {
     color: Constants.black,
     fontSize: 18,
     textAlign: 'center',
-    marginVertical: 10,
-    fontFamily: FONTS.Bold,
-    // marginVertical:10
-  },
-  box: {
-    // width:
-    //   Dimensions.get('window').width < 600
-    //     ? Dimensions.get('window').width / 2 - 20
-    //     : Dimensions.get('window').width / 3 - 20,
-    // width: Dimensions.get('window').width < 600 ? '48%' : '31%',
-    // marginVertical: 10,
-  },
-  cardimg: {
-    height: 95,
-    width: '90%',
-    resizeMode: 'contain',
-    alignSelf: 'center',
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
-    // backgroundColor:'red'
-  },
-  cardimg2: {
-    height: 50,
-    width: 50,
-    position: 'absolute',
-    right: -14,
-    top: -17,
-    justifyContent: 'center',
-    alignItems: 'center',
-    // backgroundColor:Constants.red,
-  },
-  disctxt: {
-    fontSize: 18,
-    color: Constants.black,
+    marginVertical: 12,
     fontFamily: FONTS.Bold,
   },
-  maintxt: {
-    fontSize: 16,
-    color: Constants.customgrey,
-    fontFamily: FONTS.Medium,
-    textDecorationLine: 'line-through',
+  listContainer: {
+    padding: 12,
+    paddingBottom: 100,
   },
-  proname: {
-    fontSize: 16,
-    color: Constants.black,
-    fontFamily: FONTS.Bold,
-    marginTop: 10,
-    marginHorizontal: 10,
+  columnWrapper: {
+    justifyContent: 'space-between',
+    marginBottom: 12,
   },
-  weight: {
-    fontSize: 16,
-    color: Constants.customgrey,
-    fontFamily: FONTS.Regular,
-    marginLeft: 10,
-    marginTop: 5,
-  },
-  offtxt: {
-    fontSize: 12,
-    color: Constants.white,
-    fontFamily: FONTS.Black,
-    marginLeft: 7,
-  },
-  pluscov: {
-    // backgroundColor:Constants.blue,
-    height: 40,
-    alignSelf: 'flex-end',
-    width: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    boxShadow: '0 0 6 0 grey',
-    borderRadius: 10,
-    // marginRight:20
-  },
-  addcov: {
-    flexDirection: 'row',
-    height: 40,
-    width: 105,
-    borderRadius: 10,
-    overflow: 'hidden',
-    alignSelf: 'flex-end',
-  },
-
-  minus: {
-    backgroundColor: Constants.pink,
-    width: 35,
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderTopLeftRadius: 10,
-    borderBottomLeftRadius: 10,
-  },
-
-  qtyText: {
+  productCard: {
+    flex: 1,
     backgroundColor: '#F3F3F3',
-    width: 35,
-    height: '100%',
-    textAlign: 'center',
-    textAlignVertical: 'center', // Android vertical alignment
-    fontSize: 18,
-    color: Constants.black,
-    fontFamily: FONTS.Black,
-    justifyContent: 'center',
-    alignItems: 'center',
-    lineHeight: 40, // iOS vertical centering (if Text only)
+    borderRadius: 12,
+    marginHorizontal: 6,
+    marginBottom: 12,
+    maxWidth: Dimensions.get('window').width / 2 - 24,
   },
-
-  plus3: {
+  imageContainer: {
+    width: '100%',
+    height: 180,
+    backgroundColor: '#F3F3F3',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    overflow: 'hidden',
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  productImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+  },
+  productInfo: {
+    padding: 8,
+    paddingTop: 6,
+  },
+  productName: {
+    fontSize: 16,
+    fontFamily: FONTS.Black,
+    fontWeight: '700',
+    color: Constants.black,
+    marginBottom: -2, 
+    minHeight: 32,    
+    lineHeight: 20,
+   
+  },
+  categoryText: {
+    fontSize: 13,
+    fontFamily: FONTS.Medium,
+    color: '#666',
+    marginTop: -2,   
+    marginBottom: 0,
+    lineHeight: 16,
+  },
+  moqText: {
+    fontSize: 13,
+    fontFamily: FONTS.SemiBold,
+    color: Constants.black,
+    marginTop: 0,    
+    marginBottom: 2,  
+    lineHeight: 16,
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  priceContainer: {
+    flex: 1,
+  },
+  priceText: {
+    fontSize: 16,
+    fontFamily: FONTS.Bold,
+    color: Constants.black,
+  },
+  addButton: {
     backgroundColor: Constants.pink,
-    width: 35,
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  quantityContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F3F3F3',
+    borderRadius: 8,
+    overflow: 'hidden',
+    height: 36,
+  },
+  quantityButton: {
+    backgroundColor: Constants.pink,
+    width: 32,
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    borderTopRightRadius: 10,
-    borderBottomRightRadius: 10,
+  },
+  quantityText: {
+    backgroundColor: '#F3F3F3',
+    paddingHorizontal: 12,
+    fontSize: 15,
+    fontFamily: FONTS.Bold,
+    color: Constants.black,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    lineHeight: 36,
+  },
+  deliveryBadge: {
+   
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+    marginTop: 2,
+  },
+  deliveryText: {
+    fontSize: 13,
+    fontFamily: FONTS.Medium,
+  color:'#374151'
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: Dimensions.get('window').height - 200,
+  },
+  emptyText: {
+    color: Constants.black,
+    fontSize: 18,
+    fontFamily: FONTS.Medium,
   },
 });

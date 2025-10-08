@@ -464,9 +464,14 @@ const ApiFormData = async (img) => {
 //           });
 //       } else {
 //         reject('No internet connection');
-//       }
-//     });
-//   });
-// };
 
-export { Post, Put, Patch, GetApi, Delete, ApiFormData };
+// Order related API functions
+export const createOrder = (orderData) => Post('orders', orderData);
+
+export const getOrderDetails = (orderId) => GetApi(`orders/${orderId}`);
+
+export const getMyOrders = () => GetApi('orders/myorders');
+
+export const updateOrderToPaid = (orderId, paymentResult) => Put(`orders/${orderId}/pay`, paymentResult);
+
+export { GetApi, GetApi2, Post, Put, Patch, Delete, ApiFormData };

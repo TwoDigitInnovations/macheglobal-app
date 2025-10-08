@@ -127,8 +127,9 @@ const Home = () => {
     const limit = Dimensions.get('window').width < 500 ? 8 : 12;
     GetApi(`category/getCategories`, {}).then(
       async res => {
+        console.log('categorylist', res);
         setLoading(false);
-        console.log('Category API Response:', JSON.stringify(res, null, 2)); // Log the full response
+      
         if (res.status) {
           // Log the first category to see its structure
           if (res.data && res.data.length > 0) {
@@ -238,7 +239,10 @@ const Home = () => {
       <View style={{ backgroundColor: Constants.saffron, paddingHorizontal: 20, paddingTop: 10, paddingBottom: 15 }}>
         <View style={{ flexDirection: 'row', gap: 15 }}>
           <TouchableOpacity
-            onPress={() => setActiveTab('Products')}>
+            onPress={() => {
+              setActiveTab('Products');
+              navigate('Products', { name: 'All Products' });
+            }}>
             <Text
               style={{
                 fontSize: 18,
@@ -402,16 +406,18 @@ const Home = () => {
             {/* Categories Section */}
             <View style={styles.sectionContainer}>
               <View style={styles.sectionHeader}>
-                <Text style={[styles.sectionTitle, {marginLeft: 4, marginTop: -20}]}>Categories</Text>
+                <Text style={[styles.sectionTitle, {marginLeft: 4, marginTop: -15}]}>Categories</Text>
                 <TouchableOpacity
                   style={styles.seeAllButton}
-                  onPress={() => navigate('CategoryFilter', { item: 'All', name: 'All Categories' })}>
+                  onPress={() => navigate('CategorySubCat')}>
                   <Text style={styles.seeAllText}>See all</Text>
-                  <RightarrowIcon
-                    height={14}
-                    width={14}
-                    color="#1F2937"
-                  />
+                  <View style={{marginTop: -10}}>
+                    <RightarrowIcon
+                      height={14}
+                      width={14}
+                      color="#1F2937"
+                    />
+                  </View>
                 </TouchableOpacity>
               </View>
 
@@ -445,14 +451,17 @@ const Home = () => {
     <Text style={styles.sectionTitle}>Local Industries</Text>
     
   </View>
-  <View style={styles.discoverHeading}>
+  <TouchableOpacity 
+    style={styles.discoverHeading}
+    
+  >
     <Text style={styles.discoverHeadingText}>Discover the products and craftsmanship of our regions</Text>
-  </View>
+  </TouchableOpacity>
 
   {/* Local Industries Card */}
   <TouchableOpacity 
-  style={styles.localIndustryCard}
-  onPress={() => navigate('LocalIndustryDetail', { type: 'haiti-crafts' })}>
+    style={styles.localIndustryCard}
+    onPress={() => navigate('LocalIndustryDetail', { type: 'haiti-crafts' })}>
   <ImageBackground
     source={require('../../Assets/Images/box.png')} 
     style={styles.localIndustryBg}
@@ -627,14 +636,14 @@ const styles = StyleSheet.create({
   },
   // Categories Section Styles
   sectionContainer: {
-    marginTop: -2,
+    marginTop: -20,  // Reduced from -2 to -20 to move content up
     paddingHorizontal: 10,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    
+    marginTop: 10,  // Added margin to compensate for the upward movement
   },
   sectionTitle: {
     fontSize: 18,
@@ -645,13 +654,16 @@ const styles = StyleSheet.create({
   seeAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
-   
+    paddingVertical: 5,  // Keep padding for touch area
+    marginTop: -5,  // Slight adjustment for vertical alignment
   },
   seeAllText: {
     color: 'black', // gray-800
     marginRight: 5,
     fontSize: 14,
     fontFamily: FONTS.bold,
+    marginTop: -10,  // Move only the text up
+    lineHeight: 20,  // Ensure consistent line height
   },
   // Categories Grid
   categoriesGrid: {

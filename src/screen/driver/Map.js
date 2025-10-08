@@ -162,44 +162,50 @@ const Map = props => {
   console.log(destination);
   const MyOrders = () => {
     setLoading(true);
-    GetApi(`getProductRequest/${data}`, {}).then(
+    GetApi(`orders/details/${data}`, {}).then(
       async res => {
         setLoading(false);
-        console.log('locations[[[[[[[[[=====>', res.data.Local_address.location);
-        setorderdetail(res.data);
+        if (res.success && res.data) {
+          console.log('Order details:', res.data);
+          setorderdetail(res.data);
 
-        // Add safety checks for coordinates
-        const lat = Number(res?.data?.Local_address?.location?.coordinates[1].toFixed(6));
-        const lng = Number(res?.data?.Local_address?.location?.coordinates[0].toFixed(6));
-
-        if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
-          setdestination({
-            latitude: lat,
-            longitude: lng,
-            latitudeDelta: 0.015,
-            longitudeDelta: 0.0121,
-          });
+          // Add safety checks for coordinates
+          const lat = res?.data?.shippingAddress?.location?.coordinates?.[1];
+          const lng = res?.data?.shippingAddress?.location?.coordinates?.[0];
+          
+          if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+            setdestination({
+              latitude: lat,
+              longitude: lng,
+              latitudeDelta: 0.015,
+              longitudeDelta: 0.0121,
+            });
+          }
+          
+          // Uncomment and update this section if you need to handle shop locations differently
+          /*
+          if (locationType === 'shop') {
+            setdestination({
+              latitude: Number(res?.data?.seller_id?.location?.coordinates[1]),
+              longitude: Number(res?.data?.seller_id?.location?.coordinates[0]),
+              latitudeDelta: 0.015,
+              longitudeDelta: 0.0121,
+            });
+          } else {
+            setdestination({
+              latitude: Number(res?.data?.shippingAddress?.location?.coordinates[1]),
+              longitude: Number(res?.data?.shippingAddress?.location?.coordinates[0]),
+              latitudeDelta: 0.015,
+              longitudeDelta: 0.0121,
+            });
+          }
+          */
         }
-        // if (locationtpye === 'shop') {
-        //   setdestination({
-        //     latitude: Number(res?.data?.seller_id?.location?.coordinates[1]),
-        //     longitude: Number(res?.data?.seller_id?.location?.coordinates[0]),
-        //     latitudeDelta: 0.015,
-        //     longitudeDelta: 0.0121,
-        //   });
-        // } else {
-        //   setdestination({
-        //     latitude: Number(res?.data?.Local_address?.location?.coordinates[1]),
-        //     longitude: Number(res?.data?.Local_address?.location?.coordinates[0]),
-        //     latitudeDelta: 0.015,
-        //     longitudeDelta: 0.0121,
-        //   });
-        // }
       },
       err => {
         setLoading(false);
-        console.log(err);
-      },
+        console.log('Error fetching order details:', err);
+      }
     );
   };
   useEffect(() => {

@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import React, { useContext, useEffect, useState } from 'react';
 import Constants, { FONTS } from '../../Assets/Helpers/constant';
-import { navigate, reset } from '../../../navigationRef';
+import { reset, navigate } from '../../../navigationRef';
 import { LoadContext, ToastContext, UserContext } from '../../../App';
 import { GetApi } from '../../Assets/Helpers/Service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -32,7 +32,7 @@ import InAppBrowser from 'react-native-inappbrowser-reborn';
 import Language from './Language';
 import { ScrollView } from 'react-native';
 
-const Account = props => {
+const Account = () => {
   const { t } = useTranslation();
   const [toast, setToast] = useContext(ToastContext);
   const [loading, setLoading] = useContext(LoadContext);
@@ -147,28 +147,8 @@ const Account = props => {
       console.error(error);
     }
   };
-  const inappbrawser2 = async () => {
-    try {
-      if (await InAppBrowser.isAvailable()) {
-        await InAppBrowser.open('https://www.macheGlobal.com/ContactUs', {
-          // Customization options
-          dismissButtonStyle: 'cancel',
-          preferredBarTintColor: Constants.saffron,
-          preferredControlTintColor: 'white',
-          readerMode: false,
-          animated: true,
-          modalPresentationStyle: 'fullScreen',
-          modalTransitionStyle: 'coverVertical',
-          enableBarCollapsing: false,
-        });
-      } else {
-        // Fallback to a regular browser if InAppBrowser is not available
-        Linking.openURL('https://www.macheGlobal.com/ContactUs');
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
+  // Removed inappbrawser2 function as we're using direct navigation now
+  
   return (
     <SafeAreaView style={styles.container}>
       {/* <Text style={styles.headtxt}>My Account</Text> */}
@@ -285,7 +265,10 @@ const Account = props => {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.box, styles.shadowProp]}
-            onPress={() => inappbrawser2()}>
+            onPress={() => {
+              console.log('Navigating to HelpCenter');
+              navigate('HelpCenter'); // Using navigate from navigationRef
+            }}>
             <View style={styles.btmboxfirpart}>
               <View style={styles.iconcov}>
                 <InfoIcon height={20} width={20} color={Constants.white} />

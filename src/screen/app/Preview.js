@@ -1,1107 +1,1153 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable react-native/no-inline-styles */
+import React, { useState, useEffect, useContext } from 'react';
 import {
   Dimensions,
-  FlatList,
   Image,
-  ImageBackground,
-  Pressable,
+  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  ActivityIndicator
 } from 'react-native';
-import React, { useContext, useEffect, useRef, useState } from 'react';
-import { SwiperFlatList } from 'react-native-swiper-flatlist';
-import Constants, { Currency, FONTS } from '../../Assets/Helpers/constant';
+import Constants, { FONTS, Currency } from '../../Assets/Helpers/constant';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CartContext, LoadContext } from '../../../App';
-import { CartFilledIcon, MinusIcon, Plus2Icon } from '../../../Theme';
 import DriverHeader from '../../Assets/Component/DriverHeader';
 import { useTranslation } from 'react-i18next';
-import { navigate } from '../../../navigationRef';
 import { GetApi } from '../../Assets/Helpers/Service';
-import RenderHTML from 'react-native-render-html';
-import ProductCard from './ProductCard';
-import Toast from 'react-native-toast-message';
-import moment from 'moment';
-// import { SafeAreaView } from 'react-native-safe-area-context';
-import ImageView from "react-native-image-viewing";
-import i18n from 'i18next';
+import { useIsFocused } from '@react-navigation/native';
+import { CartContext, ToastContext } from '../../../App';
 
-const Preview = props => {
-  const productid = props?.route?.params;
-  console.log('productid', productid);
+const ProductDetail = ({ route, navigation }) => {
   const { t } = useTranslation();
-  console.log(productid);
-  const [currentproduct, setcurrentproduct] = useState({});
+  const [selectedVariant, setSelectedVariant] = useState(0);
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [notFound, setNotFound] = useState(false);
+  const [mainImage, setMainImage] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [showQuantityControls, setShowQuantityControls] = useState(false);
   const [cartdetail, setcartdetail] = useContext(CartContext);
-  const [loading, setLoading] = useContext(LoadContext);
-  const [selectedslot, setsselectedslot] = useState();
-  const [productdata, setproductdata] = useState();
-  const [isInCart, setIsInCart] = useState(false);
-  const [availableQty, setAvailableQty] = useState(0);
-  const [productList, SetProductList] = useState([]);
-  const [productReviews, setProductReviews] = useState([]);
-  const scrollRef = useRef(null);
-  const [images, setImages] = useState([])
-  const [imageIndex, setImageIndex] = useState(0)
-  const [visibleImg, setVisibleImg] = useState(false)
-
-
-  const sumdata =
-    cartdetail && cartdetail.length > 0
-      ? cartdetail.reduce((a, item) => {
-        return Number(a) + Number(item?.offer) * Number(item?.qty);
-      }, 0)
-      : null;
-  console.log(sumdata);
-
+  const [toast, setToast] = useContext(ToastContext);
+  const isFocused = useIsFocused();
+  // If route.params is a string, use it as the slug, otherwise try to get slug from params object
+  const slug = typeof route.params === 'string' ? route.params : (route.params?.slug || '');
   useEffect(() => {
-    if (productid) {
-      getProductById();
-      scrollRef.current?.scrollTo({ y: 0, animated: true });
-    }
-  }, [productid]);
-  useEffect(() => {
-    if (cartdetail.length > 0) {
-      const cartItem = cartdetail.find(
-        f =>
-          f.productid === productdata?._id &&
-          f.price_slot?.value === selectedslot?.value,
+    if (product && cartdetail) {
+      const existingCart = Array.isArray(cartdetail) ? cartdetail : [];
+      const existingProduct = existingCart.find(
+        f => f.productid === product._id
       );
-
-      if (cartItem) {
-        console.log('enter');
-        setIsInCart(true);
-        setAvailableQty(cartItem.qty);
-        setcurrentproduct(cartItem);
+      
+      if (existingProduct && existingProduct.qty > 0) {
+        setShowQuantityControls(true);
       } else {
-        setIsInCart(false);
-        setAvailableQty(0);
-        setcurrentproduct({});
+        setShowQuantityControls(false);
       }
-    } else {
-      setIsInCart(false);
-      setAvailableQty(0);
-      setcurrentproduct({});
     }
-  }, [cartdetail, productdata, selectedslot]);
+  }, [product, cartdetail]);
+  // Fetch product details when component mounts or slug changes
+  useEffect(() => {
+    console.log('useEffect triggered with slug:', slug);
+    console.log('Route params:', route.params); // Log all route params
+    
+    if (slug) {
+      console.log('Fetching product details...');
+      fetchProductDetails();
+    } else {
+      console.log('No slug provided, not fetching');
+      // Set loading to false since we're not fetching anything
+      setLoading(false);
+    }
+  }, [slug, isFocused]);
 
-  const getProductById = () => {
-    setLoading(true);
-    // GetApi(`getProductById/${productid}`).then(
-    GetApi(`getProductByslug/${productid}`).then(
-      async res => {
-        setLoading(false);
-        console.log('product data', res);
-        if (res.status) {
-          setproductdata(res.data);
-          setProductReviews(res.data?.reviews);
-          if (res?.data?.price_slot && res?.data?.price_slot?.length > 0) {
-            setsselectedslot(res?.data?.price_slot[0]);
-          }
+  const fetchProductDetails = async () => {
+    try {
+
+      console.log('Full API URL:', `${Constants.baseUrl}product/getProductByslug?slug=${slug}`);
+    
+      setLoading(true);
+      setNotFound(false);
+      setError(null);
+      
+     
+      const res = await GetApi(`product/getProductByslug?slug=${slug}`);
+      
+      console.log('API response:', res);
+      if (res && res.status) {
+        console.log('Product data received:', res.data);
+        setProduct(res.data);
+        setError(null);
+      } else {
+        console.log('API returned false status');
+        if (res?.message?.includes('Cannot read properties of null')) {
+          setNotFound(true);
+          setError('Product not found');
+        } else {
+          setError(res?.message || 'Failed to load product details');
         }
-      },
-      err => {
-        setLoading(false);
-        console.log(err);
-      },
-    );
-  };
-
-  useEffect(() => {
-    console.log('productReviews', productReviews);
-  }, [productReviews]);
-
-  const getproductByCategory = async (category_id, product_id) => {
-    console.log('category_id', category_id);
-    console.log('product_id', product_id);
-
-    setLoading(true);
-    GetApi(
-      `getProductBycategoryId?category=${category_id}&product_id=${product_id}`,
-    ).then(
-      async res => {
-        setLoading(false);
-        console.log(res);
-        const sameItem = res?.data?.filter(f => f._id !== productid);
-        SetProductList(sameItem);
-      },
-      err => {
-        setLoading(false);
-        console.log(err);
-      },
-    );
-  };
-
-  useEffect(() => {
-    if (productdata) {
-      getproductByCategory(productdata?.category?.slug, productdata?._id);
+      }
+    } catch (err) {
+      console.error('Error fetching product:', err);
+      setError('Error loading product. Please try again.');
+    } finally {
+      console.log('Setting loading to false');
+      setLoading(false);
     }
-  }, [productdata]);
+  };
 
-  console.log('cartdetail', cartdetail);
-  console.log('currentproduct', currentproduct);
+  // Render loading state
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color={Constants.pink} />
+      </SafeAreaView>
+    );
+  }
 
+  // Render not found state
+  if (notFound) {
+    return (
+      <SafeAreaView style={[styles.container, styles.centerContent]}>
+        <Text style={styles.errorText}>Product not found</Text>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backButtonText}>Go Back</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
+  // Render error state
+  if (error || !product) {
+    return (
+      <SafeAreaView style={[styles.container, styles.centerContent]}>
+        <Text style={styles.errorText}>{error || 'Product not found'}</Text>
+      </SafeAreaView>
+    );
+  }
+
+  
+  if (product && !mainImage && product.varients?.[0]?.image?.[0]) {
+    setMainImage(product.varients[0].image[0]);
+  }
+  const originalPrice = parseFloat(product.varients?.[0]?.selected?.[0]?.price) || 0;
+  const discountedPrice = parseFloat(product.varients?.[0]?.selected?.[0]?.offerprice) || originalPrice;
+  
   const cartdata = async () => {
-    // const predata = await AsyncStorage.getItem('cartdata');
-    // const predata2 = JSON.parse(predata);
-
-    // console.log('predata2', predata2);
-    // let data = {
-    //   productid: productdata._id,
-    //   productname: productdata.name,
-    //   price: productdata.price,
-    //   offer: productdata.offer,
-    //   price_slot:selectedslot,
-    //   image: productdata.varients[0].image[0],
-    //   qty: 1,
-    //   seller_id: productdata.userid,
-    // };
-    // console.log('data', data);
-    // if (predata2) {
-    //   let alreadyexsit =
-    //     predata2 &&
-    //     predata2.length > 0 &&
-    //     predata2.filter(it => it.productid === data.productid).length > 0;
-    //   setisalreadyadd(alreadyexsit);
-    //   let stringdata;
-    //   if (alreadyexsit) {
-    //     stringdata = predata2.map(_i => {
-    //       if (_i?.productid == data.productid) {
-    //         return {..._i, qty: _i?.qty + 1};
-    //       } else {
-    //         return _i;
-    //       }
-    //     });
-    //   } else {
-    //     stringdata = [...predata2, data];
-    //   }
-    //   console.log('stringdata', stringdata);
-    //   setcartdetail(stringdata);
-    //   await AsyncStorage.setItem('cartdata', JSON.stringify(stringdata));
-    // } else {
-    //   let stringdata = [data];
-
-    //   console.log('stringdata', stringdata);
-    //   setcartdetail(stringdata);
-    //   await AsyncStorage.setItem('cartdata', JSON.stringify(stringdata));
-    // }
-    // setisalreadyadd(true);
-
     const existingCart = Array.isArray(cartdetail) ? cartdetail : [];
+    
+    // Get the selected variant or first variant
+    const selectedVariant = product.varients?.[selectedVariant] || product.varients?.[0];
+    const variantPrice = parseFloat(selectedVariant?.selected?.[0]?.price) || 0;
+    const variantOfferPrice = parseFloat(selectedVariant?.selected?.[0]?.offerprice) || variantPrice;
+    
+    console.log('Adding to cart - Price:', variantPrice, 'Offer Price:', variantOfferPrice);
 
-    // Check if the exact product with selected price_slot exists
+    // Find existing product in cart
     const existingProduct = existingCart.find(
-      f =>
-        f.productid === productdata._id &&
-        f.price_slot?.value === selectedslot?.value,
+      f => f.productid === product._id
     );
 
     if (!existingProduct) {
+      // Add new product to cart
       const newProduct = {
-        // ...productdata,
-        // qty: availableQty || 1,
-        // price: selectedslot.our_price,
-        // price_slot: selectedslot,
-        productid: productdata._id,
-        productname: productdata.name,
-        vietnamiesName: productdata?.vietnamiesName,
-        price: selectedslot.other_price,
-        offer: selectedslot.our_price,
-        price_slot: selectedslot,
-        image: productdata.varients[0].image[0],
+        productid: product._id,
+        productname: product.name,
+        vietnamiesName: product?.vietnamiesName,
+        price: variantPrice,
+        offer: variantOfferPrice,
+        image: selectedVariant?.image?.[0] || '',
+        price_slot: product?.price_slot?.[0] || {},
         qty: 1,
-        seller_id: productdata.userid,
-        isShipmentAvailable: productdata.isShipmentAvailable,
-        isInStoreAvailable: productdata.isInStoreAvailable,
-        isCurbSidePickupAvailable: productdata.isCurbSidePickupAvailable,
-        isNextDayDeliveryAvailable: productdata.isNextDayDeliveryAvailable,
-        slug: productdata.slug,
+        seller_id: product.SellerId,
+        slug: product.slug,
+        total: variantOfferPrice,
+        BarCode: product.BarCode || '',
+        isShipmentAvailable: product.isShipmentAvailable !== false,
+        isInStoreAvailable: product.isInStoreAvailable !== false,
+        isCurbSidePickupAvailable: product.isCurbSidePickupAvailable !== false,
+        isNextDayDeliveryAvailable: product.isNextDayDeliveryAvailable !== false,
       };
 
       const updatedCart = [...existingCart, newProduct];
       setcartdetail(updatedCart);
       await AsyncStorage.setItem('cartdata', JSON.stringify(updatedCart));
-      console.log('Product added to cart:', newProduct);
+      setToast(t('Successfully added to cart.'));
     } else {
-      console.log(
-        'Product already in cart with this price slot:',
-        existingProduct,
-      );
-    }
-  };
-
-  const cartdata2 = async productdata => {
-    const existingCart = Array.isArray(cartdetail) ? cartdetail : [];
-
-    const existingProduct = existingCart.find(
-      f =>
-        f.productid === productdata._id &&
-        f.price_slot?.value === productdata?.price_slot[0]?.value,
-    );
-
-    if (!existingProduct) {
-      const newProduct = {
-        productid: productdata._id,
-        productname: productdata.name,
-        vietnamiesName: productdata?.vietnamiesName,
-        price: productdata?.price_slot[0]?.other_price,
-        offer: productdata?.price_slot[0]?.our_price,
-        image: productdata.varients[0].image[0],
-        price_slot: productdata?.price_slot[0],
-        qty: 1,
-        seller_id: productdata.userid,
-        isShipmentAvailable: productdata.isShipmentAvailable,
-        isInStoreAvailable: productdata.isInStoreAvailable,
-        isCurbSidePickupAvailable: productdata.isCurbSidePickupAvailable,
-        isNextDayDeliveryAvailable: productdata.isNextDayDeliveryAvailable,
-        slug: productdata.slug,
-        tax_code: productdata.tax_code,
-        tax: productdata.tax,
-      };
-
-      const updatedCart = [...existingCart, newProduct];
-      setcartdetail(updatedCart);
-      await AsyncStorage.setItem('cartdata', JSON.stringify(updatedCart));
-      console.log('Product added to cart:', newProduct);
-    } else {
-      console.log(
-        'Product already in cart with this price slot:',
-        existingProduct,
-      );
-      let stringdata = cartdetail.map(_i => {
-        if (_i?.productid == productdata._id) {
-          console.log('enter');
-          return { ..._i, qty: _i?.qty + 1 };
+      // Update quantity of existing product
+      const updatedCart = existingCart.map(_i => {
+        if (_i?.productid === product._id) {
+          const newQty = _i.qty + 1;
+          return { 
+            ..._i, 
+            qty: newQty,
+            total: _i.offer * newQty 
+          };
         } else {
           return _i;
         }
       });
-      console.log(stringdata);
-      setcartdetail(stringdata);
-      await AsyncStorage.setItem('cartdata', JSON.stringify(stringdata));
+      setcartdetail(updatedCart);
+      await AsyncStorage.setItem('cartdata', JSON.stringify(updatedCart));
+      setToast(t('Successfully added to cart.'));
     }
-    // navigate('Cart');
-    Toast.show({
-      type: 'Success',
-      text1: t('Product added to cart successfully!'),
-    })
   };
+  
+  // Process variants if available
+  const variants = product.varients?.map((variant, index) => ({
+    id: variant._id || index,
+    name: variant.selected?.[0]?.attributes?.[0]?.value || `Variant ${index + 1}`,
+    price: variant.selected?.[0]?.price,
+    offerPrice: variant.selected?.[0]?.offerprice,
+    inStock: parseInt(variant.selected?.[0]?.qty) > 0,
+    stock: variant.selected?.[0]?.qty,
+    image: variant.image?.[0] || '',
+    colorCode: variant.color_code || '#000000'
+  })) || [];
+  
+  
+  const bulkOrders = product?.price_slot?.map(slot => ({
+    quantity: `${Currency} ${slot.our_price}`,
+    range: `${slot.value} ${slot.unit}`
+  })) || [];
 
-  const formatPricePerUnit = (price, quantity, unit) => {
-    let unitText = '';
-    let factor = 1;
-
-    switch (unit?.toLowerCase()) {
-      case 'kg':
-        unitText = '1 kg';
-        factor = 1; // 1 kg = 1000 g → 100 g = 1/10 of the price
-        break;
-      case 'gm':
-        unitText = '100 gms';
-        factor = 100; // Convert the given grams into 100 gms equivalent
-        break;
-      case 'litre':
-        unitText = '1 liter';
-        factor = 1; // 1 litre = 1000 ml → 100 ml = 1/10 of the price
-        break;
-      case 'ml':
-        unitText = '100 ml';
-        factor = 100; // Convert the given ml into 100 ml equivalent
-        break;
-      case 'piece':
-        unitText = 'per piece';
-        factor = 1; // Price remains the same
-        break;
-      case 'pack':
-        unitText = 'per pack';
-        factor = 1; // Price remains the same
-        break;
-      case 'lb':
-        unitText = '1 lb';
-        factor = 1; // Assuming you want price per 1 lb
-        break;
-      case 'each':
-        unitText = 'each';
-        factor = 1; // Price per item
-        break;
-      case 'case':
-        unitText = 'case';
-        factor = 1; // Price per item
-        break;
-      default:
-        return 'Invalid unit';
-    }
-
-    const calculatedPrice = (price / quantity) * factor;
-    return `${Currency} ${calculatedPrice.toFixed(2)} / ${unitText}`;
-  };
-
-  const width = Dimensions.get('window').width - 40;
-  const mixedStyle = {
-    body: {
-      whiteSpace: 'normal',
-      color: '#858080',
-      fontSize: '14px',
-      fontWeight: '400',
-    },
-    p: {
-      color: '#858080',
-      fontSize: '14px',
-      fontWeight: '400',
-      whiteSpace: 'normal',
-    },
-  };
   return (
-    <View style={styles.container} >
-      <ImageView
-        images={images}
-        imageIndex={imageIndex}
-        visible={visibleImg}
-        onRequestClose={() => setVisibleImg(false)}
-      />
-      <DriverHeader item={t('Product Detail')} showback={true} showCart={true} />
-      <ScrollView
+    <SafeAreaView style={styles.container}>
+      <DriverHeader item={product.name || t('Product Details')} showback={true} />
+      
+      <ScrollView 
         showsVerticalScrollIndicator={false}
-        style={{ padding: 20 }}
-        contentContainerStyle={{ paddingBottom: 50, backgroundColor: Constants.white }}
-        ref={scrollRef}>
-        <View style={{ marginTop: 0 }}>
-          <SwiperFlatList
-            // autoplay
-            // autoplayDelay={2}
-            // autoplayLoop
-            // index={2}
-            showPagination
-            paginationActiveColor="red"
-            data={productdata?.varients[0].image || []}
-            // renderItem={({item}) => (
-            //   <View style={[styles.child, {backgroundColor: item}]}>
-            //     <Text style={styles.text}>{item}</Text>
-            //   </View>
-            // )}
-            renderItem={({ item, index }) => (
-              <Pressable onPress={() => {
-                const newImageArray = productdata?.varients[0].image.map(f => { return { uri: f } })
-                setImages(newImageArray);
-                setImageIndex(index);
-                setVisibleImg(true)
-              }}
-                style={{ paddingBottom: 35, width: width, alignItems: 'center' }}>
-                {/* <ImageZoom uri={item} style={{
-                  height: 200,
-                  width: '93%',
-                  borderRadius: 15,
-                  // marginLeft:-40,
-                  // backgroundColor: 'red',
-                }}
-                  resizeMode="contain"
-                  minScale={1}
-                  maxScale={5}
-                  doubleTapScale={3}
-                  isDoubleTapEnabled
-                /> */}
-                <Image
-                  source={{ uri: `${item}` }}
-                  // source={item.images}
-                  style={{
-                    height: 200,
-                    width: '93%',
-                    borderRadius: 15,
-                    // marginLeft:-40,
-                    // backgroundColor: 'red',
-                  }}
-                  resizeMode="contain"
-                  key={index}
-                />
-              </Pressable>
-            )}
+        contentContainerStyle={styles.scrollContent}>
+        
+        {/* Main Product Image */}
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: mainImage }}
+            style={styles.mainImage}
+            resizeMode="contain"
           />
         </View>
-        <Text style={styles.proname}>{i18n.language === 'vi' ? (productdata?.vietnamiesName || productdata?.name) : productdata?.name}</Text>
-        <Text style={[styles.dectitle, { marginLeft: 10 }]}>
-          {productdata?.short_description}
-        </Text>
-        <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
-          {productdata?.price_slot &&
-            productdata?.price_slot.length > 0 &&
-            productdata?.price_slot[0].unit &&
-            productdata.price_slot
-              .sort((a, b) => {
-                // Sort by our_price, then by value if prices are equal
-                if (a.our_price === b.our_price) {
-                  return a.value - b.value;
-                }
-                return a.our_price - b.our_price;
-              })
-              .map((item, i) => (
-                <TouchableOpacity
-                  style={[
-                    styles.box,
-                    {
-                      marginRight:
-                        productdata?.price_slot.length === i + 1 ? 20 : 10,
-                      backgroundColor:
-                        selectedslot?.our_price === item.our_price
-                          ? Constants.lightpink
-                          : Constants.lightgrey,
-                      borderColor:
-                        selectedslot?.our_price === item.our_price
-                          ? Constants.linearcolor
-                          : Constants.lightgrey,
-                    },
-                  ]}
-                  key={i}
-                  onPress={() => setsselectedslot(item)}>
-                  {item?.other_price && (
-                    <ImageBackground
-                      source={require('../../Assets/Images/star1.png')}
-                      style={styles.cardimg2}>
-                      <Text style={styles.offtxt}>
-                        {(
-                          ((item?.other_price - item?.our_price) /
-                            item?.other_price) *
-                          100
-                        ).toFixed(0)}
-                        %
-                      </Text>
-                      <Text style={styles.offtxt}>{t('off')}</Text>
-                    </ImageBackground>
-                  )}
-                  <Text style={styles.weight}>
-                    {item?.value}
-                    {item.unit}
-                  </Text>
-                  <View style={{}}>
-                    <Text style={styles.maintxt}>
-                      {Currency}
-                      {item.our_price}
-                    </Text>
-                    <Text style={styles.disctxt}>
-                      {formatPricePerUnit(
-                        item.our_price,
-                        item?.value,
-                        item.unit,
-                      )}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-        </ScrollView>
-        <View style={styles.pricecov}>
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            <Text style={styles.maintxt2}>
-              {Currency} {selectedslot?.our_price}
-            </Text>
-            {selectedslot?.other_price && (
-              <Text
-                style={[styles.weight, { textDecorationLine: 'line-through' }]}>
-                {Currency} {selectedslot?.other_price}
-              </Text>
+
+       
+        <View style={styles.detailsContainer}>
+          <View style={styles.productHeader}>
+            <Text style={styles.productName}>{product.name}</Text>
+            <View style={styles.quantityContainer}>
+  {!showQuantityControls ? (
+    <TouchableOpacity 
+      style={styles.addToCartIcon}
+      onPress={async () => {
+        await cartdata(); 
+        setShowQuantityControls(true);
+      }}
+    >
+      <Text style={styles.plusIcon}>+</Text>
+    </TouchableOpacity>
+  ) : (
+    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F5F5', borderRadius: 20 }}>
+<TouchableOpacity
+  style={styles.quantityButton}
+  onPress={async () => {
+    const existingCart = Array.isArray(cartdetail) ? [...cartdetail] : [];
+    const existingProductIndex = existingCart.findIndex(
+      f => f.productid === product._id
+    );
+
+    if (existingProductIndex !== -1) {
+     
+      if (existingCart[existingProductIndex].qty > 1) {
+        existingCart[existingProductIndex] = {
+          ...existingCart[existingProductIndex],
+          qty: existingCart[existingProductIndex].qty - 1
+        };
+      } else {
+       
+        existingCart.splice(existingProductIndex, 1);
+        setShowQuantityControls(false); 
+      }
+     
+      setcartdetail(existingCart);
+      await AsyncStorage.setItem('cartdata', JSON.stringify(existingCart));
+    }
+  }}
+>
+  <Text style={styles.quantityText}>-</Text>
+</TouchableOpacity>
+<Text style={styles.quantityText}>
+  {(() => {
+    const existingCart = Array.isArray(cartdetail) ? cartdetail : [];
+    const existingProduct = existingCart.find(
+      (f) => f.productid === product._id
+    );
+    return existingProduct ? existingProduct.qty : 0;
+  })()}
+</Text>
+      <TouchableOpacity
+        style={styles.quantityButton}
+        onPress={async () => {
+          const existingCart = Array.isArray(cartdetail) ? cartdetail : [];
+          const existingProduct = existingCart.find(
+            f => f.productid === product._id
+          );
+
+          if (existingProduct) {
+            
+            const updatedCart = existingCart.map(_i =>
+              _i.productid === product._id ? { ..._i, qty: _i.qty + 1 } : _i
+            );
+            setcartdetail(updatedCart);
+            await AsyncStorage.setItem('cartdata', JSON.stringify(updatedCart));
+          } else {
+            
+            await cartdata();
+          }
+        }}
+      >
+        <Text style={styles.quantityText}>+</Text>
+      </TouchableOpacity>
+    </View>
+  )}
+</View>
+          </View>
+          <Text style={styles.category}>{product.categoryName} • {product.subCategoryName}</Text>
+                    {/* Variants */}
+                    {product.varients?.length > 0 && (
+  <>
+    <Text style={styles.sectionTitle}>Available Variants</Text>
+    <View style={styles.variantsContainer}>
+      {product.varients.map((variant, index) => {
+        const variantName = variant.selected?.[0]?.attributes?.[0]?.value;
+        
+        return (
+          <TouchableOpacity 
+            key={index}
+            style={[
+              styles.variantItem,
+              selectedVariant === index && styles.selectedVariant
+            ]}
+            onPress={() => {
+              setSelectedVariant(index);
+              if (variant.image?.[0]) {
+                setMainImage(variant.image[0]);
+              }
+            }}
+          >
+            {variant.image?.[0] && (
+              <Image 
+                source={{ uri: variant.image[0] }}
+                style={styles.variantItemImage}
+                resizeMode="cover"
+              />
             )}
-            {selectedslot?.other_price && (
-              <Text style={styles.disctxt2}>
-                {(
-                  ((selectedslot?.other_price - selectedslot?.our_price) /
-                    selectedslot?.other_price) *
-                  100
-                ).toFixed(0)}
-                % {t('off')}
+            
+            <Text style={styles.variantText}>
+              {variantName && variantName.trim() !== '' ? variantName : `Variant ${index + 1}`}
+            </Text>
+            <Text style={styles.variantPrice}>
+              {Currency} {variant.selected?.[0]?.offerprice || variant.selected?.[0]?.price}
+            </Text>
+            <Text style={styles.variantStock}>
+              {variant.selected?.[0]?.qty} in stock
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  </>
+)}
+          <View style={styles.priceContainer}>
+            <Text style={styles.price}>{Currency} {discountedPrice.toFixed(2)}</Text>
+            {originalPrice > discountedPrice && (
+              <Text style={styles.originalPrice}>{Currency} {originalPrice.toFixed(2)}</Text>
+            )}
+            {originalPrice > discountedPrice && (
+              <Text style={styles.discount}>
+                {Math.round(((originalPrice - discountedPrice) / originalPrice) * 100)}% OFF
               </Text>
             )}
           </View>
-          {isInCart ? (
-            <View style={styles.addcov}>
-              <TouchableOpacity
-                style={styles.plus}
-                onPress={async () => {
-                  if (availableQty > 1) {
-                    // Decrease quantity
-                    const updatedCart = cartdetail.map(item => {
-                      if (
-                        item.productid === currentproduct?.productid &&
-                        item.price_slot?.value === selectedslot?.value
-                      ) {
-                        return {
-                          ...item,
-                          qty: item.qty - 1,
-                          price: selectedslot.other_price,
-                          offer: selectedslot.our_price,
-                          price_slot: selectedslot,
-                        };
-                      }
-                      return item;
-                    });
 
-                    setcartdetail(updatedCart);
-                    await AsyncStorage.setItem(
-                      'cartdata',
-                      JSON.stringify(updatedCart),
-                    );
-                    console.log(
-                      'Product quantity decreased:',
-                      currentproduct?.productname,
-                    );
+          <Text style={styles.sectionTitle}>Description</Text>
+<Text style={styles.description}>
+  {(product.long_description || product.short_description || 'No description available')
+    .replace(/<[^>]*>/g, '')  
+    .replace(/&nbsp;/g, ' ')  
+  }
+</Text>
 
-                    setAvailableQty(availableQty - 1);
-                  } else {
-                    // Remove product from cart if qty is 1
-                    const updatedCart = cartdetail.filter(item => {
-                      return !(
-                        item.productid === currentproduct?.productid &&
-                        item.price_slot?.value === selectedslot?.value
-                      );
-                    });
 
-                    setcartdetail(updatedCart);
-                    await AsyncStorage.setItem(
-                      'cartdata',
-                      JSON.stringify(updatedCart),
-                    );
-                    console.log(
-                      'Product removed from cart:',
-                      currentproduct?.productname,
-                    );
 
-                    setIsInCart(false);
-                    setAvailableQty(0);
-                  }
-                }}>
-                <MinusIcon color={Constants.white} height={20} width={20} />
-              </TouchableOpacity>
-              <Text style={styles.plus2}>{availableQty}</Text>
-              <TouchableOpacity
-                style={styles.plus3}
-                onPress={async () => {
-                  const updatedCart = cartdetail.map(item => {
-                    if (
-                      item.productid === currentproduct?.productid &&
-                      item.price_slot?.value === selectedslot?.value
-                    ) {
-                      return {
-                        ...item,
-                        qty: item.qty + 1,
-                        price: selectedslot.other_price,
-                        offer: selectedslot.our_price,
-                        price_slot: selectedslot,
-                      };
-                    }
-                    return item;
-                  });
-
-                  setcartdetail(updatedCart);
-                  await AsyncStorage.setItem(
-                    'cartdata',
-                    JSON.stringify(updatedCart),
-                  );
-                  console.log(
-                    'Product quantity increased:',
-                    currentproduct?.productname,
-                  );
-                }}>
-                <Plus2Icon color={Constants.white} height={20} width={20} />
-              </TouchableOpacity>
+          {/* Bulk Order Quotes */}
+          {bulkOrders.length > 0 && (
+            <View style={styles.bulkOrderContainer}>
+              <Text style={styles.bulkOrderTitle}>Bulk Order Pricing</Text>
+              <View style={styles.bulkOrderRow}>
+                {bulkOrders.map((order, index) => (
+                  <View key={index} style={styles.bulkOrderItem}>
+                    <Text style={styles.bulkQuantity}>{order.quantity}</Text>
+                    <Text style={styles.bulkRange}>{order.range}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
-          ) : (
-            <TouchableOpacity
+          )}
+
+          {/* Delivery Information */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Delivery Information</Text>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Delivery:</Text>
+              <Text style={styles.infoValue}>Standard delivery in 3-5 business days</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Return Policy:</Text>
+              <Text style={styles.infoValue}>30 days return policy</Text>
+            </View>
+          </View>
+
+          {/* Reviews Section */}
+          <View style={styles.reviewSection}>
+            <View style={styles.reviewHeader}>
+              <Text style={styles.reviewSectionTitle}>Customer Reviews</Text>
+              {product.reviews?.length > 0 && (
+                <View style={styles.ratingSummary}>
+                  <Text style={styles.averageRating}>{product.rating?.toFixed(1)}</Text>
+                  <View style={styles.ratingBreakdown}>
+                    <View style={styles.ratingStars}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Text 
+                          key={star} 
+                          style={[
+                            styles.ratingStar,
+                            star <= Math.round(product.rating) ? styles.filledStar : styles.emptyStar
+                          ]}
+                        >
+                          ★
+                        </Text>
+                      ))}
+                    </View>
+                    <Text style={styles.reviewCount}>
+                      ({product.reviews?.length} {product.reviews?.length === 1 ? 'Review' : 'Reviews'})
+                    </Text>
+                  </View>
+                </View>
+              )}
+            </View>
+
+            {product.reviews?.length > 0 ? (
+              <View style={styles.reviewsList}>
+                {product.reviews.slice(0, 2).map((review, index, arr) => {
+                  const isLastItem = index === arr.length - 1;
+                  return (
+                    <View 
+                      key={review._id || index} 
+                      style={[
+                        styles.reviewItem,
+                        isLastItem && styles.lastReviewItem
+                      ]}
+                    >
+                      <View style={styles.reviewerContainer}>
+                        <View style={styles.reviewerAvatar}>
+                          <Text style={styles.avatarText}>
+                            {review.posted_by?.name?.charAt(0).toUpperCase() || 'U'}
+                          </Text>
+                        </View>
+                        <View style={styles.reviewerInfo}>
+                          <Text style={styles.reviewerName}>
+                            {review.posted_by?.name || 'Anonymous User'}
+                          </Text>
+                          <View style={styles.reviewMeta}>
+                            <View style={styles.reviewStars}>
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Text 
+                                  key={star} 
+                                  style={[
+                                    styles.star,
+                                    star <= (review.rating || 0) ? styles.filledStar : styles.emptyStar
+                                  ]}
+                                >
+                                  ★
+                                </Text>
+                              ))}
+                            </View>
+                            <Text style={styles.reviewDate}>
+                              {review.createdAt ? new Date(review.createdAt).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                              }) : ''}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                      
+                      {review.description && (
+                        <Text style={styles.reviewContent} numberOfLines={3}>
+                          {review.description}
+                        </Text>
+                      )}
+                      
+                      {review.images?.length > 0 && (
+                        <ScrollView 
+                          horizontal 
+                          showsHorizontalScrollIndicator={false}
+                          style={styles.reviewGallery}
+                          contentContainerStyle={styles.galleryContent}
+                        >
+                          {review.images.map((img, imgIndex) => (
+                            <View key={imgIndex} style={styles.imageWrapper}>
+                              <Image 
+                                source={{ uri: img.url }}
+                                style={styles.reviewImage}
+                                resizeMode="cover"
+                              />
+                            </View>
+                          ))}
+                        </ScrollView>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+            ) : (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateTitle}>No Reviews Yet</Text>
+                <Text style={styles.emptyStateText}>
+                  Be the first to share your thoughts about this product!
+                </Text>
+                <TouchableOpacity 
+                  style={styles.primaryButton}
+                  onPress={() => {
+                    // navigation.navigate('WriteReview', { productId: product._id });
+                  }}
+                >
+                  <Text style={styles.primaryButtonText}>Write a Review</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+          
+          {product.reviews?.length > 0 && (
+            <TouchableOpacity 
+              style={styles.viewAllButton}
               onPress={() => {
-                const itemQuantity = Number(productdata?.Quantity ?? 0);
-                if (itemQuantity <= 0) {
-                  Toast.show({
-                    type: 'error',
-                    text1: t('This item is currently out of stock.'),
-                  })
-                  return;
-                }
-                cartdata();
+                // Navigate to all reviews screen
+                // navigation.navigate('AllReviews', { productId: product._id });
               }}
             >
-              <Text
-                style={styles.addbtn}
-
-              >
-                {t('ADD')}
-              </Text>
+              <Text style={styles.viewAllText}>View All {product.reviews.length} Reviews</Text>
+              <Text style={styles.viewAllIcon}>›</Text>
             </TouchableOpacity>
           )}
         </View>
-        <View style={styles.line} />
-        <View style={styles.productinfocov}>
-          <Text style={styles.proddec}>{t('Product Information')}</Text>
-          {/* <View style={styles.expirycard}>
-            <Text style={styles.exptxt}>{t('EXPIRY DATE')}</Text>
-            <Text style={styles.exptxt2}>
-              {moment(productdata?.expirydate).format('DD MMM yyyy')}
-            </Text>
-          </View> */}
-        </View>
-        {productdata?.long_description && (
-          <View style={{ marginTop: 10 }}>
-            <RenderHTML
-              contentWidth={width}
-              tagsStyles={mixedStyle}
-              source={{ html: productdata?.long_description }}
-            />
-          </View>
-        )}
-        {productdata?.disclaimer && (
-          <View style={{ marginTop: 10 }}>
-            <Text style={styles.dechead}>{t('Disclaimer')}</Text>
-            <RenderHTML
-              contentWidth={width}
-              tagsStyles={mixedStyle}
-              source={{ html: productdata?.disclaimer }}
-            />
-          </View>
-        )}
-        {productdata?.Warning && (
-          <View style={{ marginTop: 10 }}>
-            <Text style={styles.dechead}>{t('Warning')}</Text>
-            <RenderHTML
-              contentWidth={width}
-              tagsStyles={mixedStyle}
-              source={{ html: productdata?.Warning }}
-            />
-          </View>
-        )}
-        {productdata?.ingredients && (
-          <View style={{ marginVertical: 10 }}>
-            <Text style={styles.dechead}>{t('Country of Origin')}</Text>
-            <Text style={styles.dectitle}>{productdata?.origin}</Text>
-          </View>
-        )}
-
-        {productReviews && productReviews.length > 0 && (
-          <View>
-            <Text style={styles.title}>Reviews</Text>
-            <FlatList
-              data={productReviews}
-              keyExtractor={(_, i) => i.toString()}
-              renderItem={renderReview}
-              horizontal={true}
-              showsHorizontalScrollIndicator={false}
-            />
-          </View>
-        )}
-        {/* <View style={{marginVertical: 10}}>
-          <Text style={styles.dechead}>{t('MANUFACTURER NAME')}</Text>
-          <Text style={styles.dectitle}>{productdata?.manufacturername}</Text>
-        </View>
-        <View style={{marginVertical: 10, marginBottom: 120}}>
-          <Text style={styles.dechead}>{t('MANUFACTURER ADDRESS')}</Text>
-          <Text style={styles.dectitle}>{productdata?.manufactureradd}</Text>
-        </View> */}
-        {/* Frequently bought product */}
-        <Text style={[styles.proddec, { marginTop: 10 }]}>
-          {t('Frequently Bought Products')}
-        </Text>
-        <View style={{ marginTop: 5 }}>
-          {productList.map((item, index) => {
-            const cartItem = Array.isArray(cartdetail)
-              ? cartdetail.find(it => it?.productid === item?._id)
-              : undefined;
-
-            return (
-              <View
-                key={item._id || index.toString()}
-                style={[
-                  styles.box2,
-                  // { marginRight: productList.length === index + 1 ? 20 : 10 },
-                ]}>
-                <ProductCard
-                  item={item}
-                  cartItem={cartItem}
-                  cartdata={cartdata2}
-                  setcartdetail={setcartdetail}
-                  cartdetail={cartdetail}
-                />
-              </View>
-            );
-          })}
-        </View>
       </ScrollView>
-      <View style={styles.line} />
-
-      <View style={styles.line} />
-      {/* {currentproduct && (
-        <TouchableOpacity
-          style={styles.cartbtn}
-          onPress={() => navigate('Cart')}>
-          <Text style={styles.buttontxt}>
-            {' '}
-            {cartdetail.length} {t('items')} | {Currency}
-            {sumdata}
-          </Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <CartFilledIcon
-              color={Constants.white}
-              style={{ marginRight: -10, marginTop: -2 }}
-              height={26}
-            />
-            <Text style={styles.buttontxt}>{t('View Cart')}</Text>
-          </View>
-        </TouchableOpacity>
-      )} */}
-    </View>
+    </SafeAreaView>
   );
 };
 
-export default Preview;
+export default ProductDetail;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Constants.white,
-    // padding: 20,
-  },
-  proname: {
-    fontSize: 20,
-    color: Constants.black,
-    fontFamily: FONTS.Bold,
-    marginVertical: 10,
-    marginLeft: 10,
-  },
-  weight: {
-    fontSize: 14,
-    color: Constants.black,
-    fontFamily: FONTS.Regular,
-    marginVertical: 5,
-  },
-  disctxt: {
-    fontSize: 14,
-    color: Constants.linearcolor,
-    fontFamily: FONTS.Regular,
-  },
-  disctxt2: {
-    fontSize: 16,
-    color: Constants.pink,
-    fontFamily: FONTS.Medium,
-    alignSelf: 'center',
-  },
-  maintxt: {
-    fontSize: 16,
-    color: Constants.black,
-    fontFamily: FONTS.Bold,
-    // textDecorationLine: 'line-through',
-  },
-  maintxt2: {
-    fontSize: 20,
-    color: Constants.linearcolor,
-    fontFamily: FONTS.Bold,
-    // textDecorationLine: 'line-through',
-  },
-  box: {
-    backgroundColor: Constants.lightpink,
-    width: 150,
-    padding: 10,
-    borderRadius: 7,
-    borderWidth: 1,
-    borderColor: Constants.linearcolor,
-    marginLeft: 10,
-    marginTop: 10,
-  },
-  box2: {
-    // width: 180,
-    marginVertical: 5,
-    // boxShadow: '0 0 6 0.5 grey',
-  },
-  cardimg2: {
-    height: 45,
-    width: 45,
-    position: 'absolute',
-    right: -7,
-    top: -10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    // zIndex:99
-    // backgroundColor:Constants.red
-  },
-  offtxt: {
-    fontSize: 12,
-    color: Constants.white,
-    fontFamily: FONTS.Black,
-    marginLeft: 2,
-  },
-  addbtn: {
-    backgroundColor: Constants.pink,
-    color: Constants.white,
-    paddingHorizontal: 25,
-    paddingVertical: 7,
-    borderRadius: 5,
-    fontSize: 18,
-    fontFamily: FONTS.Bold,
-    // position: 'absolute',
-    // right: 0,
-  },
-  line: {
-    height: 4,
-    backgroundColor: Constants.customgrey3,
-    width: '120%',
-    marginLeft: -20,
-  },
-  pricecov: {
-    flexDirection: 'row',
-    marginVertical: 10,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  proddec: {
-    fontSize: 18,
-    color: Constants.black,
-    fontFamily: FONTS.Bold,
-    // marginTop:20
-  },
-  dechead: {
-    fontSize: 14,
-    color: Constants.black,
-    fontFamily: FONTS.Medium,
-    // marginTop:20
-  },
-  dectitle: {
-    fontSize: 14,
-    color: Constants.customgrey,
-    fontFamily: FONTS.Regular,
-    // marginTop:20
-  },
-  productinfocov: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
-  },
-  expirycard: {
-    backgroundColor: '#EDEDED',
-    paddingHorizontal: 15,
-    paddingVertical: 5,
-    borderRadius: 10,
-  },
-  exptxt: {
-    fontSize: 12,
-    color: Constants.black,
-    fontFamily: FONTS.Bold,
-  },
-  exptxt2: {
-    fontSize: 14,
-    color: Constants.linearcolor,
-    fontFamily: FONTS.Medium,
-  },
-  addcov: {
-    flexDirection: 'row',
-    width: 120,
-    height: 40,
-    // borderRadius:10
-  },
-  plus: {
-    backgroundColor: Constants.pink,
-    flex: 1,
-    textAlign: 'center',
-    height: '100%',
-    alignSelf: 'center',
-    borderTopLeftRadius: 10,
-    borderBottomLeftRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  plus2: {
-    backgroundColor: '#F3F3F3',
-    color: Constants.black,
-    flex: 1,
-    textAlign: 'center',
-    height: '100%',
-    paddingVertical: '5%',
-    fontSize: 20,
-    alignSelf: 'center',
-    fontFamily: FONTS.Black,
-  },
-  plus3: {
-    backgroundColor: Constants.pink,
-    flex: 1,
-    textAlign: 'center',
-    alignSelf: 'center',
-    height: '100%',
-    borderTopRightRadius: 10,
-    borderBottomRightRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  buttontxt: {
-    color: Constants.white,
-    fontSize: 18,
-    fontFamily: FONTS.Bold,
-  },
-  cartbtn: {
-    height: 60,
-    // width: 370,
-    borderRadius: 10,
-    backgroundColor: Constants.pink,
-    // marginTop: 40,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    position: 'absolute',
-    bottom: 20,
-    width: '90%',
-    alignSelf: 'center',
-    paddingHorizontal: 20,
-  },
-  title: {
-    color: 'black',
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  columnWrapper: {
-    justifyContent: 'space-between',
-  },
-  reviewCard: {
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: '#f9f9f9',
-    borderWidth: 1,
-    borderColor: '#f9f9f9',
-    flex: 1,
-    margin: 4,
-    width: '20rem',
-  },
-  userRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 8,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    backgroundColor: '#d4af37',
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  userInfo: {
-    marginLeft: 12,
-  },
-  usernameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  username: {
-    color: 'black',
-    fontSize: 16,
-  },
-  verified: {
-    marginLeft: 6,
-    color: 'green',
-    fontSize: 12,
-  },
-  date: {
-    color: 'black',
-    fontSize: 12,
-  },
-  description: {
-    color: 'black',
-    fontSize: 14,
-    paddingTop: 12,
   },
   imageContainer: {
-    paddingTop: 8,
-  },
-  singleImage: {
     width: '100%',
-    height: 120,
-    borderRadius: 8,
-  },
-  multiImageGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
-  },
-  multiImageWrapper: {
-    width: '48%',
-    height: 80,
-    marginBottom: 4,
-    position: 'relative',
-  },
-  multiImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 8,
-  },
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    height: 390, 
+    backgroundColor: 'white',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingTop: 20,
   },
-  overlayText: {
+  variantItemImage: {
+    width: '100%',
+    height: 80,
+    borderRadius: 8,
+    marginBottom: 10,
+    backgroundColor: '#f0f0f0',
+  },
+  noImage: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'white',
+  },
+  detailsContainer: {
+    padding: 20,
+  },
+  productName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  category: {
+    color: '#666',
+    marginBottom: 15,
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  price: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginRight: 10,
+  },
+  originalPrice: {
+    fontSize: 16,
+    color: '#999',
+    textDecorationLine: 'line-through',
+    marginRight: 10,
+  },
+  discount: {
+    color: '#4CAF50',
+    fontWeight: 'bold',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  description: {
+    color: '#555',
+    lineHeight: 22,
+  },
+  variantsContainer: {
+    marginTop: 10,
+  },
+  variantItem: {
+    borderRadius: 8,
+    padding: 15,
+    marginBottom: 10,
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  selectedVariant: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#FF7000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  variantText: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 5,
+    color: '#000000',
+  },
+  variantPrice: {
+    color: '#000000',
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  variantStock: {
+    color: '#4CAF50',
+    fontSize: 14,
+  },
+  productHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  addToCartIcon: {
+    backgroundColor: '#FF7000',
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  quantityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'transparent', 
+    borderRadius: 20,
+    overflow: 'visible', 
+  },
+  quantityButton: {
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FF7000',
+  },
+  quantityButtonActive: {
+    backgroundColor: '#FF7000',
+  },
+  quantityText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    minWidth: 30,
+    textAlign: 'center',
+  },
+  plusIcon: {
     color: 'white',
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  footer: {
+    padding: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    backgroundColor: 'white',
+    alignItems: 'center',
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: 'red',
+    textAlign: 'center',
+    marginTop: 20,
+    fontSize: 18,
+    marginBottom: 20,
+  },
+  backButton: {
+    backgroundColor: Constants.pink,
+    padding: 15,
+    borderRadius: 8,
+    width: '80%',
+    alignItems: 'center',
+  },
+  backButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  scrollContent: {
+    paddingBottom: 100,
+  },
+  mainImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain',
+  },
+  dotsContainer: {
+    position: 'absolute',
+    bottom: 15,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#D1D5DB',
+    marginHorizontal: 4,
+  },
+  activeDot: {
+    width: 24,
+    backgroundColor: Constants.pink,
+  },
+  infoSection: {
+    padding: 16,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  productName: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: Constants.black,
+    flex: 1,
+    marginRight: 10,
+  },
+  categoryText: {
+    fontSize: 16,
+    color: Constants.customgrey,
+    marginBottom: 12,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  ratingText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Constants.black,
+    marginRight: 4,
+  },
+  starText: {
+    fontSize: 14,
+    color: '#F59E0B',
+  },
+  section: {
+    marginBottom: 20,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Constants.black,
+  },
+  descriptionText: {
+    fontSize: 15,
+    color: Constants.customgrey,
+    lineHeight: 22,
+  },
+  variantsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: -6,
+    gap: 15,
+  },
+  variantCard: {
+    width: '30%',
+    margin: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    padding: 10,
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  selectedVariantCard: {
+    borderColor: Constants.pink,
+    backgroundColor: '#FFF0F0',
+  },
+  variantImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginBottom: 8,
+    backgroundColor: '#F5F5F5',
+  },
+  colorIndicator: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  variantText: {
+    fontSize: 12,
+    color: Constants.black,
+    textAlign: 'center',
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  priceSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 8,
+  },
+  originalPrice: {
+    fontSize: 16,
+    color: '#9CA3AF',
+    textDecorationLine: 'line-through',
+    marginRight: 8,
+  },
+  discountedPrice: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: Constants.black,
+  },
+  discountBadge: {
+    backgroundColor: '#FEE2E2',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  discountText: {
+    color: Constants.pink,
+    fontSize: 14,
     fontWeight: '600',
   },
+  bulkOrderContainer: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 12,
+  },
+  bulkOrderTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Constants.black,
+    marginBottom: 8,
+  },
+  bulkOrderRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: -6,
+  },
+  bulkOrderItem: {
+    width: '50%',
+    padding: 6,
+  },
+  bulkOrderText: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  writeReviewButton: {
+    backgroundColor: Constants.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  writeReviewButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  infoLabel: {
+    width: 100,
+    fontSize: 14,
+    color: Constants.customgrey,
+    fontWeight: '500',
+  },
+  infoValue: {
+    flex: 1,
+    fontSize: 14,
+    color: Constants.black,
+  },
+
+  /* Enhanced Review Section Styles */
+  reviewSection: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+  },
+  reviewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  reviewSectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  ratingSummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  averageRating: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#111827',
+    marginRight: 8,
+  },
+  ratingBreakdown: {
+    marginLeft: 8,
+  },
+  ratingStars: {
+    flexDirection: 'row',
+    marginBottom: 4,
+  },
+  ratingStar: {
+    fontSize: 16,
+    marginRight: 2,
+  },
+  reviewCount: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  reviewsList: {
+    marginTop: 8,
+  },
+  reviewItem: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F9FAFB',
+    marginBottom: 12,
+  },
+  lastReviewItem: {
+    borderBottomWidth: 0,
+    marginBottom: 0,
+    paddingBottom: 0,
+  },
+  reviewerContainer: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  reviewerAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FF7000',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  avatarText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  reviewerInfo: {
+    flex: 1,
+  },
+  reviewerName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  reviewMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  reviewStars: {
+    flexDirection: 'row',
+    marginRight: 12,
+  },
+  star: {
+    fontSize: 14,
+    marginRight: 2,
+  },
+  filledStar: {
+    color: '#FF7000',
+  },
+  emptyStar: {
+    color: '#E5E7EB',
+  },
+  reviewDate: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  reviewContent: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: '#4B5563',
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  reviewGallery: {
+    marginBottom: 12,
+  },
+  galleryContent: {
+    paddingRight: 16,
+  },
+  imageWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    marginRight: 8,
+    overflow: 'hidden',
+    backgroundColor: '#F9FAFB',
+  },
+  reviewImage: {
+    width: '100%',
+    height: '100%',
+  },
+  reviewActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionButton: {
+    padding: 4,
+  },
+  actionText: {
+    fontSize: 13,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  divider: {
+    width: 1,
+    height: 16,
+    backgroundColor: '#E5E7EB',
+    marginHorizontal: 12,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 24,
+  },
+  emptyStateTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 16,
+    maxWidth: '80%',
+  },
+  primaryButton: {
+    backgroundColor: '#FF7000',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 6,
+    marginTop: 8,
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  viewAllButton: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 12,
+    marginTop: 8,
+    backgroundColor: '#FFF8F2',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#FFE5D5',
+  },
+  viewAllText: {
+    color: '#FF7000',
+    fontWeight: '600',
+    fontSize: 14,
+    marginRight: 4,
+  },
+  viewAllIcon: {
+    color: '#FF7000',
+    fontSize: 18,
+    lineHeight: 18,
+    marginTop: -2,
+  },
 });
-
-const renderReview = ({ item }) => (
-  <View style={styles.reviewCard}>
-    <View style={styles.userRow}>
-      <View style={styles.avatar}>
-        <Text style={styles.avatarText}>
-          {item?.posted_by?.username?.charAt(0).toUpperCase()}
-        </Text>
-      </View>
-      <View style={styles.userInfo}>
-        <View style={styles.usernameRow}>
-          <Text style={styles.username}>{item?.posted_by?.username}</Text>
-          {item?.verified_buyer && (
-            <Text style={styles.verified}>✓ Verified Buyer</Text>
-          )}
-        </View>
-        <Text style={styles.date}>
-          {moment(item?.createdAt).format('MMM DD, YYYY')}
-        </Text>
-      </View>
-    </View>
-
-    <Text style={styles.description}>{item?.description}</Text>
-
-    {/* Image Section */}
-    {item?.images && item?.images.length > 0 && (
-      <View style={styles.imageContainer}>
-        {item.images.length === 1 ? (
-          <Image
-            source={{ uri: item.images[0] }}
-            style={styles.singleImage}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={styles.multiImageGrid}>
-            {item.images.slice(0, 4).map((image, index) => (
-              <View key={index} style={styles.multiImageWrapper}>
-                <Image
-                  source={{ uri: image }}
-                  style={styles.multiImage}
-                  resizeMode="cover"
-                />
-                {index === 3 && item.images.length > 4 && (
-                  <View style={styles.overlay}>
-                    <Text style={styles.overlayText}>
-                      +{item.images.length - 4}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            ))}
-          </View>
-        )}
-      </View>
-    )}
-  </View>
-);
