@@ -130,19 +130,20 @@ export default function Navigation(props) {
           component={CheckoutOrder} 
           options={{ headerShown: false }} 
         />
-        <Stack.Screen name="OrderSuccess" 
+        <Stack.Screen 
+          name="OrderSuccess" 
           component={OrderSuccessScreen} 
-          options={{ 
+          options={{
             headerShown: false,
             gestureEnabled: false // Prevent swipe back
-          }} 
+          }}
         />
         <Stack.Screen 
-          name="ReviewScreen" 
-          component={ReviewScreen} 
+          name="Preview" 
+          component={Preview} 
           options={{
             headerShown: true,
-            title: 'Write a Review',
+            title: 'Product Details',
             headerStyle: {
               backgroundColor: '#FF7000',
             },

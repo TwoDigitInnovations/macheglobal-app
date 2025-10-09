@@ -235,11 +235,9 @@ const CheckoutOrderScreen = ({ route }) => {
 
     try {
       setIsLoading(true);
+     
       
-      // Prepare order data
-      console.log('Current user object:', user); // Debug log
-      
-      // Use the user ID from the delivery address
+     
       const orderData = {
         user: deliveryAddress.user,
         orderItems: cartItems.map(item => ({
@@ -248,6 +246,7 @@ const CheckoutOrderScreen = ({ route }) => {
           qty: item.qty,
           price: item.price,
           image: item.image,
+          seller: item.sellerId || '65f7b2e1a3b3e3b3e3b3e3b3', // Default seller ID if not available
         })),
         shippingAddress: {
           address: deliveryAddress.street || '',

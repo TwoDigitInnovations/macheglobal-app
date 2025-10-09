@@ -12,14 +12,13 @@ import {
   ActivityIndicator,
   Pressable,
 } from 'react-native';
-import { MinusIcon, Plus2Icon, PlusIcon } from '../../../Theme';
 import Constants, { Currency, FONTS } from '../../Assets/Helpers/constant';
 import { CartContext, LoadContext, ToastContext } from '../../../App';
 import { GetApi } from '../../Assets/Helpers/Service';
-import { goBack, navigate } from '../../../navigationRef';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
 import i18n from 'i18next';
+import { useNavigation } from '@react-navigation/native';
 import {
   BackIcon,
   CartFilledIcon,
@@ -29,6 +28,7 @@ import {
 const { width } = Dimensions.get('window');
 
 const Searchpage = () => {
+  const navigation = useNavigation();
   const { t } = useTranslation();
   const inputRef = useRef(null);
   const [toast, setToast] = useContext(ToastContext);
@@ -167,7 +167,7 @@ const Searchpage = () => {
       <TouchableOpacity
         key={item._id || index.toString()}
         style={styles.productCard}
-        onPress={() => navigate('Preview', item.slug)}
+        onPress={() => navigation.navigate('Preview', item.slug)}
         activeOpacity={0.8}>
         {/* Product Image */}
         <View style={styles.imageContainer}>
@@ -223,7 +223,7 @@ const Searchpage = () => {
     <SafeAreaView style={styles.container}>
       {/* Search Header */}
       <View style={styles.searchHeader}>
-        <TouchableOpacity onPress={goBack} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <BackIcon width={24} height={24} color="#000" />
         </TouchableOpacity>
         <View style={styles.searchContainer}>
@@ -240,7 +240,7 @@ const Searchpage = () => {
           />
         </View>
         <TouchableOpacity 
-          onPress={() => navigate('App', { screen: 'Cart' })}
+          onPress={() => navigation.navigate('Cart')}
           style={styles.cartButton}>
           <CartFilledIcon width={24} height={24} color="#000" />
         </TouchableOpacity>
