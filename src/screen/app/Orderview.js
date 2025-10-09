@@ -120,7 +120,7 @@ const Orderview = props => {
       
       {orderview ? (
         <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 20 }}>
-          {/* Order Summary Card */}
+          
           <View style={styles.card}>
            <View style={styles.sectionHeader}>
   <Text style={styles.sectionTitle}>{t('Order Summary')}</Text>
