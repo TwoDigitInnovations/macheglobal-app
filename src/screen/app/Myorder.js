@@ -32,15 +32,20 @@ import Toast from 'react-native-toast-message';
 import MultiImageUpload from '../../Assets/Component/MultiImageUpload';
 import { Image as ImageCompressor } from 'react-native-compressor';
 import i18n from 'i18next';
+import { RefreshControl } from 'react-native-gesture-handler';
+import { ActivityIndicator } from 'react-native-paper';
 
 const Myorder = () => {
   const { t } = useTranslation();
   const navigation = useNavigation();
-  const [orderlist, setorderlist] = useState();
+  const [orderlist, setorderlist] = useState([]);
   const [toast, setToast] = useContext(ToastContext);
   const [loading, setLoading] = useContext(LoadContext);
   const [user, setuser] = useContext(UserContext);
   const [page, setPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [alredyfavorite, setalredyfavorite] = useState(false);
   const [curentData, setCurrentData] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -66,21 +71,11 @@ const Myorder = () => {
     images: [],
   });
 
-  useEffect(() => {
-    if (IsFocused) {
-      getorders(1);
-      setalredyfavorite(false);
-    }
-    
-  }, [IsFocused]);
-
-  const getorders = (p, text, favorite) => {
-    setPage(p);
-    setLoading(true);
+  const getorders = (p, isRefreshing = false, text = '', favorite = false) => {
+    setLoadingMore(p > 1);
     let url;
+    let queryParams = `page=${p}&limit=10`;
     
-    // Build the query parameters
-    let queryParams = `page=${p}`;
     if (text) {
       queryParams += `&search=${encodeURIComponent(text)}`;
     }
@@ -88,58 +83,76 @@ const Myorder = () => {
       queryParams += '&filter=favorite';
     }
     
-    
     url = `orders/myorders?${queryParams}`;
     
     console.log('Fetching orders from:', url);
+    
     GetApi(url, {})
       .then(response => {
-        setLoading(false);
-        console.log('Raw API response:', response);
+        console.log('API Response:', JSON.stringify(response, null, 2));
         
-       
+        // If response is an array, handle as direct array response
+        if (Array.isArray(response)) {
+          console.log('Received array response, setting as orders');
+          setorderlist(response);
+          setCurrentData(response);
+          setHasMore(false);
+          return;
+        }
+        
+        // Handle paginated response
         const ordersData = response.data || [];
-        console.log('Orders data:', ordersData);
+        const totalPages = response.totalPages || 1;
         
-      
-        if (p === 1) {
+        console.log('Orders data:', ordersData);
+        console.log(`Current page: ${p}, Total pages: ${totalPages}`);
+        
+        setHasMore(p < totalPages);
+        setPage(p);
+        
+        if (p === 1 || isRefreshing) {
           setorderlist(ordersData);
           setCurrentData(ordersData);
         } else {
-          setorderlist(prevOrders => [...prevOrders, ...ordersData]);
+          setorderlist(prevOrders => {
+            // Filter out duplicates based on order ID
+            const existingIds = new Set(prevOrders.map(item => item._id));
+            const newOrders = ordersData.filter(item => !existingIds.has(item._id));
+            return [...prevOrders, ...newOrders];
+          });
         }
       })
       .catch(err => {
-        setLoading(false);
         console.error('Error fetching orders:', err);
         setToast({
           type: 'error',
           message: 'Failed to fetch orders. Please try again.',
           visible: true,
         });
+      })
+      .finally(() => {
+        setLoadingMore(false);
+        setRefreshing(false);
+        setLoading(false);
       });
   };
-  const getordersearch = text => {
-    // setLoading(true);
-    GetApi(`order/my-orders?page=1&search=${text}`).then(
-      async res => {
-        // setLoading(false);
-        console.log(res);
-        setorderlist(res.data);
-      },
-      err => {
-        setLoading(false);
-        console.log(err);
-      },
-    );
-  };
-  const fetchNextPage = () => {
-    // console.log('end');
-    // console.log('end', curentData.length);
-    if (curentData.length === 20) {
-      getorders(page + 1);
-      // setPage(page + 1);
+  
+  useEffect(() => {
+    if (IsFocused) {
+      getorders(1);
+      setalredyfavorite(false);
     }
+  }, [IsFocused]);
+  const fetchNextPage = () => {
+    if (!loadingMore && hasMore) {
+      console.log('Loading more orders, current page:', page);
+      getorders(page + 1);
+    }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    getorders(1, '', false, true);
   };
   const rating = (productId, review, images) => {
     const d = {
@@ -331,879 +344,815 @@ const Myorder = () => {
       });
   };
 
-return (
-  <SafeAreaView style={styles.container}>
-    <DriverHeader item={t('My Order')} showback={true} />
-    
-    <View style={{ paddingHorizontal: 16, flex: 1 }}>
-      <FlatList
-        data={orderlist}
-        ListEmptyComponent={() => (
-          <View style={styles.emptyStateContainer}>
-            <View style={{ 
-              backgroundColor: '#FFF7ED', 
-              padding: 24, 
-              borderRadius: 100,
-              marginBottom: 8 
-            }}>
-              <OrderIcon height={48} width={48} color="#FF7000" />
-            </View>
-            <Text style={styles.emptyStateText}>
-              {!orderlist ? t('Loading...') : t('No Orders')}
-            </Text>
-            <Text style={[styles.qty, { marginTop: 8, textAlign: 'center' }]}>
-              {t('Your order history will appear here')}
-            </Text>
-          </View>
-        )}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100, paddingTop: 12 }}
-      renderItem={({ item, index }) => (
-  <TouchableOpacity
-    style={[styles.card, { marginBottom: orderlist.length === index + 1 ? 20 : 0 }]}
-    activeOpacity={0.7}
-    onPress={() => navigate('Orderview', { id: item?._id })}>
-    
-    {/* Header Section */}
-    <View style={{
-      flexDirection: 'row',
-      marginBottom: 12,
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-    }}>
-      <View style={{ flexDirection: 'row', flex: 1, marginRight: 12 }}>
-        <View style={styles.ordiccov}>
-          <OrderIcon color="#FFFFFF" />
-        </View>
-        <View style={{ flexDirection: 'column', marginLeft: 12, flex: 1 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-            <Text style={styles.txt1}>#{item?._id?.substring(0, 8)}</Text>
-            <Text style={[styles.txt2, { color: '#6B7280', fontSize: 12 }]}>
-              {moment(item?.createdAt).format('MMM D, YYYY h:mm A')}
-            </Text>
-          </View>
-          
-          {/* Delivery Address */}
-          {item?.shippingAddress && (
-            <View style={styles.addressContainer}>
-              <Text style={styles.addressText} numberOfLines={1}>
-                {item.shippingAddress.name} • {item.shippingAddress.phone}
+  return (
+    <SafeAreaView style={styles.container}>
+      <DriverHeader item={t('My Order')} showback={true} />
+      
+      <View style={{ paddingHorizontal: 16, flex: 1 }}>
+        <FlatList
+          data={orderlist}
+          onEndReached={fetchNextPage}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={() =>
+            loadingMore ? (
+              <View style={{ padding: 15, alignItems: 'center' }}>
+                <ActivityIndicator size="small" color="#FF7000" />
+              </View>
+            ) : null
+          }
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#FF7000']}
+              tintColor="#FF7000"
+            />
+          }
+          keyExtractor={(item, index) => item._id + index.toString()}
+          ListEmptyComponent={() => (
+            <View style={styles.emptyStateContainer}>
+              <View style={{ 
+                backgroundColor: '#FFF7ED', 
+                padding: 24, 
+                borderRadius: 100,
+                marginBottom: 8 
+              }}>
+                <OrderIcon height={48} width={48} color="#FF7000" />
+              </View>
+              <Text style={styles.emptyStateText}>
+                {!orderlist ? t('Loading...') : t('No Orders')}
               </Text>
-              <Text style={styles.addressText} numberOfLines={1}>
-                {item.shippingAddress.address}, {item.shippingAddress.city}, {item.shippingAddress.country} - {item.shippingAddress.postalCode}
+              <Text style={[styles.qty, { marginTop: 8, textAlign: 'center' }]}>
+                {t('Your order history will appear here')}
               </Text>
             </View>
           )}
-          
-          <View style={styles.deliveryTypeContainer}>
-            <Text style={[styles.txt2, { fontSize: 12 }]}>
-              {item?.isOrderPickup
-                ? t('In Store Pickup')
-                : item?.isDriveUp
-                  ? t('Curbside Pickup')
-                  : item?.isLocalDelivery
-                    ? t('Next Day Local Delivery')
-                    : item?.isShipmentDelivery
-                      ? t('Shipping')
-                      : t('Delivery')}
-            </Text>
-            <Text style={[styles.txt2, { fontSize: 12, marginLeft: 8 }]}>
-              • {item?.orderItems?.length || 0} {item?.orderItems?.length === 1 ? 'item' : 'items'}
-            </Text>
-          </View>
-        </View>
-      </View>
-      
-      {/* Status Badge - Orange Circle */}
-    {/* <View 
-  style={{
-    backgroundColor: 
-      item?.isDelivered ? '#10B981' :
-      item?.isPaid ? '#3B82F6' : '#FF7000',
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  }}>
-  <Text style={{ 
-    fontSize: 20,
-    textAlign: 'center',
-  }}>
-    {item?.isDelivered ? '✓' : item?.isPaid ? '💳' : '📋'}
-  </Text>
-</View> */}
-    </View>
-
-    {/* Products Section with Dropdown */}
-    <View style={{ marginVertical: 8 }}>
-      {/* First Product - Always Visible */}
-      {item?.orderItems?.[0] && (
-        <View style={styles.productContainer}>
-          <Image
-            source={
-              item.orderItems[0]?.image
-                ? { uri: item.orderItems[0].image }
-                : require('../../Assets/Images/veg.png')
-            }
-            style={styles.cartimg}
-            resizeMode="cover"
-          />
-          <View style={{ flex: 1, marginLeft: 12, justifyContent: 'space-between' }}>
-            <View>
-              <Text style={styles.boxtxt} numberOfLines={2}>
-                {i18n.language === 'vi' 
-                  ? (item.orderItems[0]?.product?.vietnamiesName || item.orderItems[0]?.name) 
-                  : (item.orderItems[0]?.name || item.orderItems[0]?.product?.name)}
-              </Text>
-            </View>
-            
-            {/* Price and Rate Button Row */}
-            <View style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginTop: 8,
-            }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <View style={{
-                  backgroundColor: '#F3F4F6',
-                  paddingHorizontal: 10,
-                  paddingVertical: 4,
-                  borderRadius: 8,
-                  marginRight: 8,
-                }}>
-                  <Text style={styles.boxtxt2}>
-                    {t('Qty')}: {item.orderItems[0]?.qty}
-                  </Text>
-                </View>
-                <Text style={styles.boxtxt3}>
-                  {Currency} {Number(item.orderItems[0]?.price ?? 0).toFixed(2)}
-                </Text>
-              </View>
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 100, paddingTop: 12 }}
+          renderItem={({ item, index }) => (
+            <TouchableOpacity
+              style={[styles.card, { marginBottom: orderlist.length === index + 1 ? 20 : 0 }]}
+              activeOpacity={0.7}
+              onPress={() => navigate('Orderview', { id: item?._id })}>
               
-              {/* Rate Product Button - Only show for delivered/completed orders */}
-              {(item?.orderStatus === 'delivered' || item?.orderStatus === 'completed') && (
-                <TouchableOpacity
-                  onPress={() => {
-                    navigation.navigate('ReviewScreen', {
-                      orderId: item._id,
-                      product: {
-                        _id: item.orderItems[0]?.product?._id || item.orderItems[0]?._id,
-                        name: item.orderItems[0]?.name || item.orderItems[0]?.product?.name,
-                        images: item.orderItems[0]?.image ? [{ url: item.orderItems[0].image }] : []
+              {/* Header Section */}
+              <View style={{
+                flexDirection: 'row',
+                marginBottom: 12,
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+              }}>
+                <View style={{ flexDirection: 'row', flex: 1, marginRight: 12 }}>
+                  <View style={styles.ordiccov}>
+                    <OrderIcon color="#FFFFFF" />
+                  </View>
+                  <View style={{ flexDirection: 'column', marginLeft: 12, flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <Text style={styles.txt1}>#{item?._id?.substring(0, 8)}</Text>
+                      <Text style={[styles.txt2, { color: '#6B7280', fontSize: 12 }]}>
+                        {moment(item?.createdAt).format('MMM D, YYYY h:mm A')}
+                      </Text>
+                    </View>
+                    
+                    {/* Delivery Address */}
+                    {item?.shippingAddress && (
+                      <View style={styles.addressContainer}>
+                        <Text style={styles.addressText} numberOfLines={1}>
+                          {item.shippingAddress.name} • {item.shippingAddress.phone}
+                        </Text>
+                        <Text style={styles.addressText} numberOfLines={1}>
+                          {item.shippingAddress.address}, {item.shippingAddress.city}, {item.shippingAddress.country} - {item.shippingAddress.postalCode}
+                        </Text>
+                      </View>
+                    )}
+                    
+                    <View style={styles.deliveryTypeContainer}>
+                      <Text style={[styles.txt2, { fontSize: 12 }]}>
+                        {item?.isOrderPickup
+                          ? t('In Store Pickup')
+                          : item?.isDriveUp
+                            ? t('Curbside Pickup')
+                            : item?.isLocalDelivery
+                              ? t('Next Day Local Delivery')
+                              : item?.isShipmentDelivery
+                                ? t('Shipping')
+                                : t('Delivery')}
+                      </Text>
+                      <Text style={[styles.txt2, { fontSize: 12, marginLeft: 8 }]}>
+                        • {item?.orderItems?.length || 0} {item?.orderItems?.length === 1 ? 'item' : 'items'}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+  
+              {/* Products Section with Dropdown */}
+              <View style={{ marginVertical: 8 }}>
+                {/* First Product - Always Visible */}
+                {item?.orderItems?.[0] && (
+                  <View style={styles.productContainer}>
+                    <Image
+                      source={
+                        item.orderItems[0]?.image
+                          ? { uri: item.orderItems[0].image }
+                          : require('../../Assets/Images/veg.png')
                       }
-                    });
+                      style={styles.cartimg}
+                      resizeMode="cover"
+                    />
+                    <View style={{ flex: 1, marginLeft: 12, justifyContent: 'space-between' }}>
+                      <View>
+                        <Text style={styles.boxtxt} numberOfLines={2}>
+                          {i18n.language === 'vi' 
+                            ? (item.orderItems[0]?.product?.vietnamiesName || item.orderItems[0]?.name) 
+                            : (item.orderItems[0]?.name || item.orderItems[0]?.product?.name)}
+                        </Text>
+                      </View>
+                      
+                      {/* Price and Rate Button Row */}
+                      <View style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginTop: 8,
+                      }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          <View style={{
+                            backgroundColor: '#F3F4F6',
+                            paddingHorizontal: 10,
+                            paddingVertical: 4,
+                            borderRadius: 8,
+                            marginRight: 8,
+                          }}>
+                            <Text style={styles.boxtxt2}>
+                              {t('Qty')}: {item.orderItems[0]?.qty}
+                            </Text>
+                          </View>
+                          <Text style={styles.boxtxt3}>
+                            {Currency} {Number(item.orderItems[0]?.price ?? 0).toFixed(2)}
+                          </Text>
+                        </View>
+                        
+                       
+                        {(item?.orderStatus !== 'delivered' && item?.orderStatus !== 'completed') && (
+                          <TouchableOpacity
+                            onPress={() => {
+                              navigation.navigate('ReviewScreen', {
+                                orderId: item._id,
+                                product: {
+                                  _id: item.orderItems[0]?.product?._id || item.orderItems[0]?._id,
+                                  name: item.orderItems[0]?.name || item.orderItems[0]?.product?.name,
+                                  images: item.orderItems[0]?.image ? [{ url: item.orderItems[0].image }] : []
+                                }
+                              });
+                            }}
+                            style={{
+                              paddingVertical: 8,
+                              paddingHorizontal: 12,
+                              backgroundColor: '#FF7000',
+                              borderRadius: 6,
+                              minWidth: 100,
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}>
+                            <Text style={{ 
+                              fontSize: 12,
+                              color: '#FFFFFF',
+                              fontWeight: '600',
+                            }}>
+                              {t('Rate Product')}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                )}
+  
+                {/* Show More Products Dropdown */}
+                {item?.orderItems?.length > 1 && (
+                  <View>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        setorderlist(prevOrders => {
+                          return prevOrders.map(order => {
+                            if (order._id === item._id) {
+                              return {
+                                ...order,
+                                showAllProducts: !order.showAllProducts
+                              };
+                            }
+                            return order;
+                          });
+                        });
+                      }}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: '#FFF7ED',
+                        paddingVertical: 10,
+                        paddingHorizontal: 16,
+                        borderRadius: 10,
+                        marginTop: 8,
+                        borderWidth: 1,
+                        borderColor: '#FF7000',
+                        borderStyle: 'dashed',
+                      }}>
+                      <Text style={{
+                        color: '#FF7000',
+                        fontSize: 14,
+                        fontFamily: FONTS.Bold,
+                        marginRight: 8,
+                      }}>
+                        {item.showAllProducts 
+                          ? t('Hide Products') 
+                          : `${t('View')} ${item.orderItems.length - 1} ${t('More Products')}`}
+                      </Text>
+                      <Text style={{
+                        color: '#FF7000',
+                        fontSize: 16,
+                        transform: [{ rotate: item.showAllProducts ? '180deg' : '0deg' }],
+                      }}>
+                        ▼
+                      </Text>
+                    </TouchableOpacity>
+  
+                    {/* Additional Products */}
+                    {item.showAllProducts && item.orderItems.slice(1).map((prod, prodIndex) => (
+                      <View key={prodIndex + 1} style={[styles.productContainer, { marginTop: 8 }]}>
+                        <Image
+                          source={
+                            prod?.image
+                              ? { uri: prod.image }
+                              : require('../../Assets/Images/veg.png')
+                          }
+                          style={styles.cartimg}
+                          resizeMode="cover"
+                        />
+                        <View style={{ flex: 1, marginLeft: 12, justifyContent: 'space-between' }}>
+                          <View>
+                            <Text style={styles.boxtxt} numberOfLines={2}>
+                              {i18n.language === 'vi' 
+                                ? (prod?.product?.vietnamiesName || prod?.name) 
+                                : (prod?.name || prod?.product?.name)}
+                            </Text>
+                          </View>
+  
+                          <View style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginTop: 8,
+                          }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                              <View style={{
+                                backgroundColor: '#F3F4F6',
+                                paddingHorizontal: 10,
+                                paddingVertical: 4,
+                                borderRadius: 8,
+                                marginRight: 8,
+                              }}>
+                                <Text style={styles.boxtxt2}>
+                                  {t('Qty')}: {prod?.qty}
+                                </Text>
+                              </View>
+                              <Text style={styles.boxtxt3}>
+                                {Currency} {Number(prod?.price ?? 0).toFixed(2)}
+                              </Text>
+                            </View>
+  
+                            {/* Rate Product Button for additional products */}
+                            {(item?.orderStatus !== 'delivered' && item?.orderStatus !== 'completed') && (
+                              <TouchableOpacity
+                                onPress={() => {
+                                  navigation.navigate('ReviewScreen', {
+                                    orderId: item._id,
+                                    product: {
+                                      _id: prod?.product?._id || prod?._id,
+                                      name: prod?.name || prod?.product?.name,
+                                      images: prod?.image ? [{ url: prod.image }] : []
+                                    }
+                                  });
+                                }}
+                                style={{
+                                  paddingVertical: 8,
+                                  paddingHorizontal: 12,
+                                  backgroundColor: '#FF7000',
+                                  borderRadius: 6,
+                                  minWidth: 100,
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                }}>
+                                <Text style={{ 
+                                  fontSize: 12,
+                                  color: '#FFFFFF',
+                                  fontWeight: '600',
+                                }}>
+                                  {t('Rate Product')}
+                                </Text>
+                              </TouchableOpacity>
+                            )}
+                          </View>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+  
+              {/* Footer Section */}
+              <View style={styles.divider} />
+              
+              <View style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 12,
+              }}>
+                {/* Order Summary */}
+                <View style={{ flexDirection: 'column', gap: 4 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={[styles.txt2, { fontSize: 13 }]}>{t('Total Items')}: </Text>
+                    <Text style={[styles.txt3, { fontSize: 15 }]}>
+                      {item?.orderItems?.reduce((total, orderItem) => total + (parseInt(orderItem.qty) || 0), 0)}
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={[styles.txt2, { fontSize: 13 }]}>{t('Total')}: </Text>
+                    <Text style={styles.boxtxt3}>
+                      {Currency} {Number(item?.totalPrice || 0).toFixed(2)}
+                    </Text>
+                  </View>
+                </View>
+  
+                {/* Action Buttons Container */}
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end' }}>
+                  {/* Payment Status Badge */}
+                  {!item?.isPaid && (
+                    <View style={[styles.infoCard, { backgroundColor: '#FEF3C7' }]}>
+                      <Text style={[styles.txt4, { color: '#92400E', fontWeight: '700' }]}>
+                        💳 {t('Payment Pending')}
+                      </Text>
+                    </View>
+                  )}
+  
+                  {/* Secret Code Display */}
+                  {item?.SecretCode && (
+                    <View style={styles.infoCard}>
+                      <Text style={[styles.txt4, { color: '#FF7000', fontWeight: '700' }]}>
+                        {t('Secret Code')}: {item?.SecretCode}
+                      </Text>
+                    </View>
+                  )}
+  
+                  {/* Delivery Expected */}
+                  {item?.isShipmentDelivery && !item?.isDelivered && (
+                    <View style={[styles.infoCard, { minWidth: 200 }]}>
+                      <Text style={[styles.txt4, { fontWeight: '700', marginBottom: 4 }]}>
+                        {t('Delivery Expected')}
+                      </Text>
+                      <Text style={styles.txt4}>
+                        {formatDate2(addBusinessDays(new Date(item.createdAt), 5))} 11 PM
+                      </Text>
+                      {item?.trackingNo && (
+                        <View style={{ marginTop: 6 }}>
+                          <Text style={[styles.txt2, { fontSize: 12 }]}>
+                            {t('Tracking')}: {item?.trackingNo}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
+  
+                  {/* Cancel Order Button */}
+                  {(() => {
+                    const createdTime = new Date(item.createdAt);
+                    const now = new Date();
+                    const diffInMinutes = (now - createdTime) / (1000 * 60);
+                    return !item?.isPaid && !item?.isDelivered && diffInMinutes <= 15;
+                  })() && (
+                    <Pressable
+                      onPress={() => cancelOrder(item._id)}
+                      style={({ pressed }) => [
+                        styles.cancelButton,
+                        { opacity: pressed ? 0.85 : 1 }
+                      ]}>
+                      <Text style={styles.actionButtonText}>
+                        {t('Cancel Order')}
+                      </Text>
+                    </Pressable>
+                  )}
+  
+                  {/* I'm Here Buttons */}
+                  {!item?.isDelivered &&
+                    (item?.isDriveUp || item?.isOrderPickup) &&
+                    item?.createdAt &&
+                    new Date() - new Date(item?.createdAt) >= 30 * 60 * 1000 && (
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        {item?.isDriveUp && (
+                          <Pressable
+                            onPress={() => {
+                              setId(item?._id);
+                              setModalVisible(true);
+                            }}
+                            style={({ pressed }) => [
+                              styles.secondaryButton,
+                              { opacity: pressed ? 0.85 : 1 }
+                            ]}>
+                            <Text style={styles.actionButtonText}>
+                              {item?.parkingNo
+                                ? t('Update Parking Spot')
+                                : t("I'm here")}
+                            </Text>
+                          </Pressable>
+                        )}
+  
+                        {item?.isOrderPickup && (
+                          <Pressable
+                            onPress={() => getSecrectCode(item?._id)}
+                            style={({ pressed }) => [
+                              styles.secondaryButton,
+                              { opacity: pressed ? 0.85 : 1 }
+                            ]}>
+                            <Text style={styles.actionButtonText}>
+                              {t("I'm here")}
+                            </Text>
+                          </Pressable>
+                        )}
+                      </View>
+                    )}
+  
+                  {/* Return Order Button */}
+                  {item?.isDelivered &&
+                    item?.deliveredAt &&
+                    (item?.isShipmentDelivery || item?.isLocalDelivery) &&
+                    (() => {
+                      const deliveredTime = new Date(item?.deliveredAt).getTime();
+                      const currentTime = new Date().getTime();
+                      const hoursSinceDelivery = (currentTime - deliveredTime) / (1000 * 60 * 60);
+                      return hoursSinceDelivery <= 24;
+                    })() && (
+                      <Pressable
+                        onPress={() => {
+                          setId(item?._id);
+                          setModalVisible2(true);
+                        }}
+                        style={({ pressed }) => [
+                          styles.cancelButton,
+                          { opacity: pressed ? 0.85 : 1 }
+                        ]}>
+                        <Text style={styles.actionButtonText}>
+                          {t('Return Order')}
+                        </Text>
+                      </Pressable>
+                    )}
+                </View>
+              </View>
+            </TouchableOpacity>
+          )}
+        />
+        
+        {/* Modal for Parking Information */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => {
+            setModalVisible(false);
+            setId(null);
+          }}>
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <View style={{ backgroundColor: 'white', width: '100%' }}>
+                <Text style={[styles.txt, { textAlign: 'center' }]}>
+                  {t('Parking Information')}
+                </Text>
+                
+                <View style={styles.divider} />
+                
+                <Text style={styles.label}>{t('Car Brand')}</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder={t('Enter Car brand')}
+                  placeholderTextColor="#9CA3AF"
+                  value={modalText?.carBrand}
+                  onChangeText={carBrand => setModalText({ ...modalText, carBrand })}
+                />
+                
+                <Text style={styles.label}>{t('Car Color')}</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder={t('Enter Car color')}
+                  placeholderTextColor="#9CA3AF"
+                  value={modalText?.carColor}
+                  onChangeText={carColor => setModalText({ ...modalText, carColor })}
+                />
+                
+                <Text style={styles.label}>{t('Parking Pickup Spot')}</Text>
+                <Dropdown
+                  style={styles.input}
+                  data={[1, 2, 3, 4, 5, 6].map(zip => ({
+                    label: `Spot ${zip}`,
+                    value: zip,
+                  }))}
+                  value={modalText?.parkingNo}
+                  onChange={item => {
+                    setModalText(prev => ({ ...prev, parkingNo: item.value }));
                   }}
-                  style={{
-                    paddingVertical: 8,
-                    paddingHorizontal: 12,
-                    backgroundColor: '#FF7000',
-                    borderRadius: 6,
-                    minWidth: 100,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}>
-                  <Text style={{ 
-                    fontSize: 12,
-                    color: '#FFFFFF',
-                    fontWeight: '600',
-                  }}>
-                    {t('Rate Product')}
-                  </Text>
-                </TouchableOpacity>
-              )}
+                  placeholder={t('Select Parking spot')}
+                  placeholderStyle={{ color: '#9CA3AF' }}
+                  selectedTextStyle={{ color: Constants.black }}
+                  maxHeight={200}
+                  labelField="label"
+                  valueField="value"
+                  renderItem={item => (
+                    <Text style={{ padding: 12, color: Constants.black }}>
+                      {item.label}
+                    </Text>
+                  )}
+                />
+  
+                <View style={styles.cancelAndLogoutButtonWrapStyle}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      setModalVisible(false);
+                      setId(null);
+                      setModalText({ carBrand: '', carColor: '', parkingNo: '' });
+                    }}
+                    style={styles.logOutButtonStyle2}>
+                    <Text style={styles.modalText2}>{t('Cancel')}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={handleSubmit}
+                    style={styles.logOutButtonStyle}>
+                    <Text style={styles.modalText}>{t('Submit')}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
           </View>
-        </View>
-      )}
-
-      {/* Show More Products Dropdown */}
-      {item?.orderItems?.length > 1 && (
-        <View>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => {
-              setorderlist(prevOrders => {
-                return prevOrders.map(order => {
-                  if (order._id === item._id) {
-                    return {
-                      ...order,
-                      showAllProducts: !order.showAllProducts
-                    };
-                  }
-                  return order;
-                });
-              });
-            }}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: '#FFF7ED',
-              paddingVertical: 10,
-              paddingHorizontal: 16,
-              borderRadius: 10,
-              marginTop: 8,
-              borderWidth: 1,
-              borderColor: '#FF7000',
-              borderStyle: 'dashed',
-            }}>
-            <Text style={{
-              color: '#FF7000',
-              fontSize: 14,
-              fontFamily: FONTS.Bold,
-              marginRight: 8,
-            }}>
-              {item.showAllProducts 
-                ? t('Hide Products') 
-                : `${t('View')} ${item.orderItems.length - 1} ${t('More Products')}`}
-            </Text>
-            <Text style={{
-              color: '#FF7000',
-              fontSize: 16,
-              transform: [{ rotate: item.showAllProducts ? '180deg' : '0deg' }],
-            }}>
-              ▼
-            </Text>
-          </TouchableOpacity>
-
-         
-          {item.showAllProducts && item.orderItems.slice(1).map((prod, prodIndex) => (
-            <View key={prodIndex + 1} style={[styles.productContainer, { marginTop: 8 }]}>
-              <Image
-                source={
-                  prod?.image
-                    ? { uri: prod.image }
-                    : require('../../Assets/Images/veg.png')
-                }
-                style={styles.cartimg}
-                resizeMode="cover"
-              />
-              <View style={{ flex: 1, marginLeft: 12, justifyContent: 'space-between' }}>
-                <View>
-                  <Text style={styles.boxtxt} numberOfLines={2}>
-                    {i18n.language === 'vi' 
-                      ? (prod?.product?.vietnamiesName || prod?.name) 
-                      : (prod?.name || prod?.product?.name)}
-                  </Text>
+        </Modal>
+  
+        {/* Return Order Confirmation Modal */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={modalVisible2}
+          onRequestClose={() => {
+            setModalVisible2(false);
+            setId(null);
+          }}>
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <View style={{ backgroundColor: 'white', width: '100%', alignItems: 'center' }}>
+                <View style={{
+                  backgroundColor: '#FEE2E2',
+                  padding: 16,
+                  borderRadius: 100,
+                  marginBottom: 16,
+                }}>
+                  <Text style={{ fontSize: 32 }}>⚠️</Text>
                 </View>
-
+                
+                <Text style={[styles.txt, { textAlign: 'center', marginBottom: 8 }]}>
+                  {t('Are you sure?')}
+                </Text>
+                <Text style={[styles.label, { textAlign: 'center', color: '#6B7280', fontWeight: '400' }]}>
+                  {t('Do you really want to Return your order?')}
+                </Text>
+  
+                <View style={styles.cancelAndLogoutButtonWrapStyle}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      setModalVisible2(false);
+                      setId(null);
+                    }}
+                    style={styles.logOutButtonStyle2}>
+                    <Text style={styles.modalText2}>{t('No, keep it')}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={ReturnOrder}
+                    style={styles.logOutButtonStyle}>
+                    <Text style={styles.modalText}>{t('Yes, Return it!')}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </View>
+        </Modal>
+  
+        {/* Review/Rating Modal */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={ratingModal}
+          onRequestClose={() => {
+            setRatingModal(false);
+            setId(null);
+          }}>
+          <View style={styles.centeredView}>
+            <View style={[styles.modalView, { paddingTop: 20, maxHeight: '85%' }]}>
+              <View style={{ backgroundColor: 'white', width: '100%' }}>
+                {/* Modal Header */}
                 <View style={{
                   flexDirection: 'row',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  marginTop: 8,
+                  paddingBottom: 16,
+                  borderBottomWidth: 1,
+                  borderBottomColor: '#E5E7EB',
+                  marginBottom: 16,
                 }}>
-                
-
-                  {/* Rate Product Button for additional products - Only show for delivered/completed orders */}
-                  {(item?.orderStatus === 'delivered' || item?.orderStatus === 'completed') && (
-                    <TouchableOpacity
-                      onPress={() => {
-                        navigation.navigate('ReviewScreen', {
-                          orderId: item._id,
-                          product: {
-                            _id: prod?.product?._id || prod?._id,
-                            name: prod?.name || prod?.product?.name,
-                            images: prod?.image ? [{ url: prod.image }] : []
-                          }
-                        });
-                      }}
-                      style={{
-                        paddingVertical: 8,
-                        paddingHorizontal: 12,
-                        backgroundColor: '#FF7000',
-                        borderRadius: 6,
-                        minWidth: 100,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}>
-                      <Text style={{ 
-                        fontSize: 12,
-                        color: '#FFFFFF',
-                        fontWeight: '600',
-                      }}>
-                        {t('Rate Product')}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                  <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                  <Text style={[styles.txt, { marginVertical: 0, flex: 1 }]}>
+                    {t('Review Product')}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setRatingModal(false);
+                      setModalData({
+                        productId: null,
+                        orderId: null,
+                        productName: '',
+                        productImage: '',
+                      });
+                      setId(null);
+                      setRatingData({ review: '', images: [] });
+                    }}
+                    style={{
+                      padding: 4,
+                      backgroundColor: '#F3F4F6',
+                      borderRadius: 8,
+                    }}>
+                    <Text style={{ fontSize: 18, color: '#6B7280' }}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+  
+                {/* Product Name Badge */}
+                <View style={{
+                  backgroundColor: '#FFF7ED',
+                  paddingVertical: 10,
+                  paddingHorizontal: 16,
+                  borderRadius: 12,
+                  marginBottom: 20,
+                  borderLeftWidth: 4,
+                  borderLeftColor: '#FF7000',
+                }}>
+                  <Text style={[styles.label, { 
+                    textAlign: 'center', 
+                    color: '#FF7000',
+                    fontSize: 16,
+                  }]}>
+                    {modalData?.productName}
+                  </Text>
+                </View>
+  
+                {/* Review Input Section */}
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={[styles.label, {
+                    fontFamily: FONTS.Bold,
+                    fontSize: 15,
+                    marginBottom: 8,
+                  }]}>
+                    {t('Write your review')}
+                  </Text>
+                  <TextInput
+                    style={[styles.input, { 
+                      height: 120, 
+                      textAlignVertical: 'top',
+                      paddingTop: 12,
+                      fontSize: 14,
+                      lineHeight: 20,
+                    }]}
+                    placeholder={t('Share your experience with this product...')}
+                    placeholderTextColor="#9CA3AF"
+                    value={ratingData.review}
+                    onChangeText={review => setRatingData({ ...ratingData, review })}
+                    multiline={true}
+                    numberOfLines={5}
+                  />
+                </View>
+  
+                {/* Image Upload Section */}
+                <View style={{ marginBottom: 20 }}>
+                  <View style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 8,
+                  }}>
+                    <Text style={[styles.label, {
+                      fontFamily: FONTS.Bold,
+                      fontSize: 15,
+                    }]}>
+                      {t('Upload Images')}
+                    </Text>
                     <View style={{
                       backgroundColor: '#F3F4F6',
                       paddingHorizontal: 10,
                       paddingVertical: 4,
                       borderRadius: 8,
                     }}>
-                      <Text style={styles.boxtxt2}>
-                        {t('Qty')}: {prod?.qty}
+                      <Text style={[styles.txt2, { fontSize: 12 }]}>
+                        {ratingData.images.length}/6
                       </Text>
                     </View>
-                    <Text style={styles.boxtxt3}>
-                      {Currency} {Number(prod?.price ?? 0).toFixed(2)}
-                    </Text>
-                    {true && (
-                      <TouchableOpacity
-                        onPress={() => {
-navigation.navigate('ReviewScreen', {
-                            orderId: item._id,
-                            product: {
-                              _id: prod?.product?._id || prod?._id,
-                              name: prod?.name || prod?.product?.name,
-                              images: prod?.image ? [{ url: prod.image }] : []
-                            }
-                          });
-                        }}
-                        style={{
-                          marginLeft: 8,
-                          paddingHorizontal: 10,
-                          paddingVertical: 4,
-                          backgroundColor: '#FF7000',
-                          borderRadius: 6,
-                        }}
-                      >
-                        <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>
-                          {t('Rate Product')}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
                   </View>
                   
-                  {/* Review Button */}
-                  {item?.isDelivered && (
-                    <Pressable
-                      onPress={() => {
-                        setModalData({
-                          productId: prod?.product?._id,
-                          orderId: item?._id,
-                          productName: prod?.name || prod?.product?.name,
-                          productImage: prod?.image,
-                        });
-                        setRatingModal(true);
-                      }}
-                      style={({ pressed }) => [
-                        styles.actionButton,
-                        {
-                          opacity: pressed ? 0.8 : 1,
-                          paddingVertical: 6,
-                          paddingHorizontal: 12,
-                        },
-                      ]}>
-                      <Text style={[styles.actionButtonText, { fontSize: 12 }]}>
-                        {t('Review')}
-                      </Text>
-                    </Pressable>
-                  )}
-                </View>
-              </View>
-            </View>
-          ))}
-        </View>
-      )}
-    </View>
-
-    {/* Footer Section */}
-    <View style={styles.divider} />
-    
-    <View style={{
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      flexWrap: 'wrap',
-      gap: 12,
-    }}>
-      {/* Order Summary */}
-      <View style={{ flexDirection: 'column', gap: 4 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Text style={[styles.txt2, { fontSize: 13 }]}>{t('Total Items')}: </Text>
-          <Text style={[styles.txt3, { fontSize: 15 }]}>
-            {item?.orderItems?.reduce((total, orderItem) => total + (parseInt(orderItem.qty) || 0), 0)}
-          </Text>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Text style={[styles.txt2, { fontSize: 13 }]}>{t('Total')}: </Text>
-          <Text style={styles.boxtxt3}>
-            {Currency} {Number(item?.totalPrice || 0).toFixed(2)}
-          </Text>
-        </View>
-      </View>
-
-      {/* Action Buttons Container */}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end' }}>
-        {/* Payment Status Badge */}
-        {!item?.isPaid && (
-          <View style={[styles.infoCard, { backgroundColor: '#FEF3C7' }]}>
-            <Text style={[styles.txt4, { color: '#92400E', fontWeight: '700' }]}>
-              💳 {t('Payment Pending')}
-            </Text>
-          </View>
-        )}
-
-        {/* Secret Code Display */}
-        {item?.SecretCode && (
-          <View style={styles.infoCard}>
-            <Text style={[styles.txt4, { color: '#FF7000', fontWeight: '700' }]}>
-              {t('Secret Code')}: {item?.SecretCode}
-            </Text>
-          </View>
-        )}
-
-        {/* Delivery Expected */}
-        {item?.isShipmentDelivery && !item?.isDelivered && (
-          <View style={[styles.infoCard, { minWidth: 200 }]}>
-            <Text style={[styles.txt4, { fontWeight: '700', marginBottom: 4 }]}>
-              {t('Delivery Expected')}
-            </Text>
-            <Text style={styles.txt4}>
-              {formatDate2(addBusinessDays(new Date(item.createdAt), 5))} 11 PM
-            </Text>
-            {item?.trackingNo && (
-              <View style={{ marginTop: 6 }}>
-                <Text style={[styles.txt2, { fontSize: 12 }]}>
-                  {t('Tracking')}: {item?.trackingNo}
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* Cancel Order Button */}
-        {(() => {
-          const createdTime = new Date(item.createdAt);
-          const now = new Date();
-          const diffInMinutes = (now - createdTime) / (1000 * 60);
-          return !item?.isPaid && !item?.isDelivered && diffInMinutes <= 15;
-        })() && (
-          <Pressable
-            onPress={() => cancelOrder(item._id)}
-            style={({ pressed }) => [
-              styles.cancelButton,
-              { opacity: pressed ? 0.85 : 1 }
-            ]}>
-            <Text style={styles.actionButtonText}>
-              {t('Cancel Order')}
-            </Text>
-          </Pressable>
-        )}
-
-        {/* I'm Here Buttons */}
-        {!item?.isDelivered &&
-          (item?.isDriveUp || item?.isOrderPickup) &&
-          item?.createdAt &&
-          new Date() - new Date(item?.createdAt) >= 30 * 60 * 1000 && (
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              {item?.isDriveUp && (
-                <Pressable
-                  onPress={() => {
-                    setId(item?._id);
-                    setModalVisible(true);
-                  }}
-                  style={({ pressed }) => [
-                    styles.secondaryButton,
-                    { opacity: pressed ? 0.85 : 1 }
-                  ]}>
-                  <Text style={styles.actionButtonText}>
-                    {item?.parkingNo
-                      ? t('Update Parking Spot')
-                      : t("I'm here")}
-                  </Text>
-                </Pressable>
-              )}
-
-              {item?.isOrderPickup && (
-                <Pressable
-                  onPress={() => getSecrectCode(item?._id)}
-                  style={({ pressed }) => [
-                    styles.secondaryButton,
-                    { opacity: pressed ? 0.85 : 1 }
-                  ]}>
-                  <Text style={styles.actionButtonText}>
-                    {t("I'm here")}
-                  </Text>
-                </Pressable>
-              )}
-            </View>
-          )}
-
-        {/* Return Order Button */}
-        {item?.isDelivered &&
-          item?.deliveredAt &&
-          (item?.isShipmentDelivery || item?.isLocalDelivery) &&
-          (() => {
-            const deliveredTime = new Date(item?.deliveredAt).getTime();
-            const currentTime = new Date().getTime();
-            const hoursSinceDelivery = (currentTime - deliveredTime) / (1000 * 60 * 60);
-            return hoursSinceDelivery <= 24;
-          })() && (
-            <Pressable
-              onPress={() => {
-                setId(item?._id);
-                setModalVisible2(true);
-              }}
-              style={({ pressed }) => [
-                styles.cancelButton,
-                { opacity: pressed ? 0.85 : 1 }
-              ]}>
-              <Text style={styles.actionButtonText}>
-                {t('Return Order')}
-              </Text>
-            </Pressable>
-          )}
-      </View>
-    </View>
-  </TouchableOpacity>
-)}
-        onEndReached={() => {
-          if (orderlist && orderlist.length > 0) {
-            fetchNextPage();
-          }
-        }}
-        onEndReachedThreshold={0.05}
-      />
-
-      {/* Parking Information Modal */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => {
-          setModalVisible(false);
-          setId(null);
-        }}>
-        <View style={styles.centeredView}>
-          <View style={styles.modalView}>
-            <View style={{ backgroundColor: 'white', width: '100%' }}>
-              <Text style={[styles.txt, { textAlign: 'center' }]}>
-                {t('Parking Information')}
-              </Text>
-              
-              <View style={styles.divider} />
-              
-              <Text style={styles.label}>{t('Car Brand')}</Text>
-              <TextInput
-                style={styles.input}
-                placeholder={t('Enter Car brand')}
-                placeholderTextColor="#9CA3AF"
-                value={modalText?.carBrand}
-                onChangeText={carBrand => setModalText({ ...modalText, carBrand })}
-              />
-              
-              <Text style={styles.label}>{t('Car Color')}</Text>
-              <TextInput
-                style={styles.input}
-                placeholder={t('Enter Car color')}
-                placeholderTextColor="#9CA3AF"
-                value={modalText?.carColor}
-                onChangeText={carColor => setModalText({ ...modalText, carColor })}
-              />
-              
-              <Text style={styles.label}>{t('Parking Pickup Spot')}</Text>
-              <Dropdown
-                style={styles.input}
-                data={[1, 2, 3, 4, 5, 6].map(zip => ({
-                  label: `Spot ${zip}`,
-                  value: zip,
-                }))}
-                value={modalText?.parkingNo}
-                onChange={item => {
-                  setModalText(prev => ({ ...prev, parkingNo: item.value }));
-                }}
-                placeholder={t('Select Parking spot')}
-                placeholderStyle={{ color: '#9CA3AF' }}
-                selectedTextStyle={{ color: Constants.black }}
-                maxHeight={200}
-                labelField="label"
-                valueField="value"
-                renderItem={item => (
-                  <Text style={{ padding: 12, color: Constants.black }}>
-                    {item.label}
-                  </Text>
-                )}
-              />
-
-              <View style={styles.cancelAndLogoutButtonWrapStyle}>
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => {
-                    setModalVisible(false);
-                    setId(null);
-                    setModalText({ carBrand: '', carColor: '', parkingNo: '' });
-                  }}
-                  style={styles.logOutButtonStyle2}>
-                  <Text style={styles.modalText2}>{t('Cancel')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={handleSubmit}
-                  style={styles.logOutButtonStyle}>
-                  <Text style={styles.modalText}>{t('Submit')}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Return Order Confirmation Modal */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={modalVisible2}
-        onRequestClose={() => {
-          setModalVisible2(false);
-          setId(null);
-        }}>
-        <View style={styles.centeredView}>
-          <View style={styles.modalView}>
-            <View style={{ backgroundColor: 'white', width: '100%', alignItems: 'center' }}>
-              <View style={{
-                backgroundColor: '#FEE2E2',
-                padding: 16,
-                borderRadius: 100,
-                marginBottom: 16,
-              }}>
-                <Text style={{ fontSize: 32 }}>⚠️</Text>
-              </View>
-              
-              <Text style={[styles.txt, { textAlign: 'center', marginBottom: 8 }]}>
-                {t('Are you sure?')}
-              </Text>
-              <Text style={[styles.label, { textAlign: 'center', color: '#6B7280', fontWeight: '400' }]}>
-                {t('Do you really want to Return your order?')}
-              </Text>
-
-              <View style={styles.cancelAndLogoutButtonWrapStyle}>
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => {
-                    setModalVisible2(false);
-                    setId(null);
-                  }}
-                  style={styles.logOutButtonStyle2}>
-                  <Text style={styles.modalText2}>{t('No, keep it')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={ReturnOrder}
-                  style={styles.logOutButtonStyle}>
-                  <Text style={styles.modalText}>{t('Yes, Return it!')}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Review/Rating Modal */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={ratingModal}
-        onRequestClose={() => {
-          setRatingModal(false);
-          setId(null);
-        }}>
-        <View style={styles.centeredView}>
-          <View style={[styles.modalView, { paddingTop: 20, maxHeight: '85%' }]}>
-            <View style={{ backgroundColor: 'white', width: '100%' }}>
-              {/* Modal Header */}
-              <View style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                paddingBottom: 16,
-                borderBottomWidth: 1,
-                borderBottomColor: '#E5E7EB',
-                marginBottom: 16,
-              }}>
-                <Text style={[styles.txt, { marginVertical: 0, flex: 1 }]}>
-                  {t('Review Product')}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    setRatingModal(false);
-                    setModalData({
-                      productId: null,
-                      orderId: null,
-                      productName: '',
-                      productImage: '',
-                    });
-                    setId(null);
-                    setRatingData({ review: '', images: [] });
-                  }}
-                  style={{
-                    padding: 4,
-                    backgroundColor: '#F3F4F6',
-                    borderRadius: 8,
-                  }}>
-                  <Text style={{ fontSize: 18, color: '#6B7280' }}>✕</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Product Name Badge */}
-              <View style={{
-                backgroundColor: '#FFF7ED',
-                paddingVertical: 10,
-                paddingHorizontal: 16,
-                borderRadius: 12,
-                marginBottom: 20,
-                borderLeftWidth: 4,
-                borderLeftColor: '#FF7000',
-              }}>
-                <Text style={[styles.label, { 
-                  textAlign: 'center', 
-                  color: '#FF7000',
-                  fontSize: 16,
-                }]}>
-                  {modalData?.productName}
-                </Text>
-              </View>
-
-              {/* Review Input Section */}
-              <View style={{ marginBottom: 16 }}>
-                <Text style={[styles.label, {
-                  fontFamily: FONTS.Bold,
-                  fontSize: 15,
-                  marginBottom: 8,
-                }]}>
-                  {t('Write your review')}
-                </Text>
-                <TextInput
-                  style={[styles.input, { 
-                    height: 120, 
-                    textAlignVertical: 'top',
-                    paddingTop: 12,
-                    fontSize: 14,
-                    lineHeight: 20,
-                  }]}
-                  placeholder={t('Share your experience with this product...')}
-                  placeholderTextColor="#9CA3AF"
-                  value={ratingData.review}
-                  onChangeText={review => setRatingData({ ...ratingData, review })}
-                  multiline={true}
-                  numberOfLines={5}
-                />
-              </View>
-
-              {/* Image Upload Section */}
-              <View style={{ marginBottom: 20 }}>
-                <View style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: 8,
-                }}>
-                  <Text style={[styles.label, {
-                    fontFamily: FONTS.Bold,
-                    fontSize: 15,
-                  }]}>
-                    {t('Upload Images')}
-                  </Text>
                   <View style={{
-                    backgroundColor: '#F3F4F6',
-                    paddingHorizontal: 10,
-                    paddingVertical: 4,
-                    borderRadius: 8,
+                    backgroundColor: '#F9FAFB',
+                    borderRadius: 12,
+                    padding: 12,
+                    borderWidth: 1,
+                    borderColor: '#E5E7EB',
+                    borderStyle: 'dashed',
                   }}>
-                    <Text style={[styles.txt2, { fontSize: 12 }]}>
-                      {ratingData.images.length}/6
-                    </Text>
-                  </View>
-                </View>
-                
-                <View style={{
-                  backgroundColor: '#F9FAFB',
-                  borderRadius: 12,
-                  padding: 12,
-                  borderWidth: 1,
-                  borderColor: '#E5E7EB',
-                  borderStyle: 'dashed',
-                }}>
-                  <MultiImageUpload
-                    maxImages={6}
-                    onImagesUpload={async images => {
-                      if (!images || images.length === 0) {
-                        return;
-                      }
-
-                      if (ratingData.images.length + images.length > 6) {
-                        Toast.show({
-                          type: 'error',
-                          text1: t("Maximum 6 images allowed"),
-                        })
-                        return;
-                      }
-
-                      for (let i = 0; i < images.length; i++) {
-                        const image = images[i];
-
-                        try {
-                          setLoading(true);
-
-                          const compressedImage = await ImageCompressor.compress(
-                            image.uri || image,
-                            {
-                              compressionMethod: 'auto',
-                              maxWidth: 800,
-                              maxHeight: 800,
-                              quality: 0.7,
-                            },
-                          );
-
-                          const imageForUpload = {
-                            uri: compressedImage,
-                            type: image.type || 'image/jpeg',
-                            fileName: image.fileName || 'compressed_image.jpg',
-                          };
-
-                          const result = await ApiFormData(imageForUpload);
-
-                          if (result && result.status && result.data && result.data.file) {
-                            setRatingData(prevData => ({
-                              ...prevData,
-                              images: [...prevData.images, result.data.file],
-                            }));
-                            Toast.show({
-                              type: 'success',
-                              text1: t("Image uploaded successfully"),
-                            })
-                            console.log('Image uploaded successfully:', result.data.file);
-                          } else {
-                            console.log('Upload failed for image:', image);
-                            Toast.show({
-                              type: 'error',
-                              text1: t("Failed to upload image"),
-                            })
-                          }
-                        } catch (error) {
-                          console.log('Error uploading image:', error);
+                    <MultiImageUpload
+                      maxImages={6}
+                      onImagesUpload={async images => {
+                        if (!images || images.length === 0) {
+                          return;
+                        }
+  
+                        if (ratingData.images.length + images.length > 6) {
                           Toast.show({
                             type: 'error',
-                            text1: t("Error uploading image"),
+                            text1: t("Maximum 6 images allowed"),
                           })
-                        } finally {
-                          setLoading(false);
+                          return;
                         }
-                      }
-                    }}
-                  />
+  
+                        for (let i = 0; i < images.length; i++) {
+                          const image = images[i];
+  
+                          try {
+                            setLoading(true);
+  
+                            const compressedImage = await ImageCompressor.compress(
+                              image.uri || image,
+                              {
+                                compressionMethod: 'auto',
+                                maxWidth: 800,
+                                maxHeight: 800,
+                                quality: 0.7,
+                              },
+                            );
+  
+                            const imageForUpload = {
+                              uri: compressedImage,
+                              type: image.type || 'image/jpeg',
+                              fileName: image.fileName || 'compressed_image.jpg',
+                            };
+  
+                            const result = await ApiFormData(imageForUpload);
+  
+                            if (result && result.status && result.data && result.data.file) {
+                              setRatingData(prevData => ({
+                                ...prevData,
+                                images: [...prevData.images, result.data.file],
+                              }));
+                              Toast.show({
+                                type: 'success',
+                                text1: t("Image uploaded successfully"),
+                              })
+                              console.log('Image uploaded successfully:', result.data.file);
+                            } else {
+                              console.log('Upload failed for image:', image);
+                              Toast.show({
+                                type: 'error',
+                                text1: t("Failed to upload image"),
+                              })
+                            }
+                          } catch (error) {
+                            console.log('Error uploading image:', error);
+                            Toast.show({
+                              type: 'error',
+                              text1: t("Error uploading image"),
+                            })
+                          } finally {
+                            setLoading(false);
+                          }
+                        }
+                      }}
+                    />
+                  </View>
+                  <Text style={[styles.txt2, { 
+                    fontSize: 12, 
+                    marginTop: 8,
+                    textAlign: 'center',
+                  }]}>
+                    {t('Add up to 6 photos to help others')}
+                  </Text>
                 </View>
-                <Text style={[styles.txt2, { 
-                  fontSize: 12, 
-                  marginTop: 8,
-                  textAlign: 'center',
-                }]}>
-                  {t('Add up to 6 photos to help others')}
-                </Text>
-              </View>
-
-              {/* Action Buttons */}
-              <View style={styles.cancelAndLogoutButtonWrapStyle}>
+  
+                {/* Action Buttons */}
+                <View style={styles.cancelAndLogoutButtonWrapStyle}>
                 <TouchableOpacity
                   activeOpacity={0.8}
                   onPress={() => {

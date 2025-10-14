@@ -30,10 +30,13 @@ export default function CategoriesScreen() {
       if (response.status) {
         setCategories([{ _id: 'all', name: 'All' }, ...response.data]);
         
+        // Keep 'all' as the selected category by default
         if (response.data.length > 0) {
-          setSelectedCategory(response.data[0]._id);
-          setSubcategories(response.data[0].Subcategory || []);
+          // Set subcategories for 'all' category by combining all subcategories
+          const allSubcategories = response.data.flatMap(cat => cat.Subcategory || []);
+          setSubcategories(allSubcategories);
         }
+        setSelectedCategory('all');
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -41,6 +44,11 @@ export default function CategoriesScreen() {
       setLoading(false);
     }
   };
+  
+  // Set 'all' as the selected category by default
+  useEffect(() => {
+    setSelectedCategory('all');
+  }, []);
 
   const fetchSubcategories = (categoryId) => {
     if (categoryId === 'all') {
@@ -161,7 +169,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   header: {
-    backgroundColor: '#1D283A',
+    backgroundColor: '#FF7000',
     paddingTop: 50,
     paddingBottom: 18,
     paddingHorizontal: 20,

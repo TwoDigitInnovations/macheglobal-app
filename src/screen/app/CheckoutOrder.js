@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
+  Dimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -17,6 +18,9 @@ import { Post } from '../../Assets/Helpers/Service';
 import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import OrderSuccess from '../../components/OrderSuccess';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2; // Two cards with spacing
 
 const CheckoutOrderScreen = ({ route }) => {
   const navigation = useNavigation();
@@ -28,6 +32,8 @@ const CheckoutOrderScreen = ({ route }) => {
   const [deliveryAddress, setDeliveryAddress] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState(null);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const scrollViewRef = useRef(null);
 
   useEffect(() => {
     
@@ -63,7 +69,8 @@ const CheckoutOrderScreen = ({ route }) => {
       image: item.image || 'https://via.placeholder.com/200',
       qty: item.qty || 1,
       deliveryBy: item.deliveryBy || '20th, Sep 2025',
-      isFreeShipping: item.isFreeShipping || false
+      isFreeShipping: item.isFreeShipping || false,
+      sellerId: item.seller_id
     }));
     
     console.log('Checkout - Transformed Items:', transformedItems);
@@ -289,6 +296,70 @@ const CheckoutOrderScreen = ({ route }) => {
     }
   };
 
+  const handleScroll = (event) => {
+    const scrollPosition = event.nativeEvent.contentOffset.x;
+    const index = Math.round(scrollPosition / CARD_WIDTH);
+    setActiveSlide(index);
+  };
+
+  const renderProductCarousel = (items) => {
+    return (
+      <View style={styles.carouselContainer}>
+        <ScrollView
+          ref={scrollViewRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          contentContainerStyle={styles.carouselContent}
+        >
+          {items.map((item, index) => (
+            <View key={item.id} style={styles.carouselCard}>
+              <Image 
+                source={{ uri: item.image }} 
+                style={styles.carouselImage} 
+                resizeMode="contain"
+              />
+              <View style={styles.carouselInfo}>
+                <Text style={styles.carouselProductName} numberOfLines={2}>
+                  {item.name}
+                </Text>
+                <View style={styles.carouselPriceRow}>
+                  {item.originalPrice !== item.price && (
+                    <Text style={styles.carouselOriginalPrice}>
+                      ${item.originalPrice}
+                    </Text>
+                  )}
+                  <Text style={styles.carouselPrice}>
+                    ${item.price}
+                  </Text>
+                </View>
+                {item.qty > 1 && (
+                  <Text style={styles.carouselQty}>Qty: {item.qty}</Text>
+                )}
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+        
+        {/* Pagination Dots */}
+        {items.length > 2 && (
+          <View style={styles.paginationContainer}>
+            {items.map((_, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.paginationDot,
+                  index === Math.floor(activeSlide / 2) && styles.paginationDotActive
+                ]}
+              />
+            ))}
+          </View>
+        )}
+      </View>
+    );
+  };
+
   return (
     <View style={{flex: 1}}>
       <SafeAreaView style={styles.safeContainer}>
@@ -349,7 +420,7 @@ const CheckoutOrderScreen = ({ route }) => {
             )}
           </View>
 
-          {/* Dynamic Delivery Groups */}
+          {/* Dynamic Delivery Groups with Carousel */}
           {cartItems.length > 0 ? (
             deliveryGroups.map((group, groupIndex) => (
               <View key={groupIndex} style={styles.deliveryGroup}>
@@ -362,63 +433,7 @@ const CheckoutOrderScreen = ({ route }) => {
                   )}
                 </View>
                 
-                <View style={styles.productsRow}>
-                  {group.items.map((item, itemIndex) => (
-                    itemIndex % 2 === 0 && (
-                      <React.Fragment key={item.id}>
-                        <View style={styles.productCard}>
-                          <Image 
-                            source={{ uri: item.image }} 
-                            style={styles.productImage} 
-                          />
-                          <Text style={styles.productName} numberOfLines={2}>
-                            {item.name}
-                          </Text>
-                          <View style={styles.priceRow}>
-                            {item.originalPrice !== item.price && (
-                              <Text style={styles.originalPrice}>
-                                ${item.originalPrice}
-                              </Text>
-                            )}
-                            <Text style={styles.productPrice}>
-                              ${item.price}
-                            </Text>
-                          </View>
-                          {item.qty > 1 && (
-                            <Text style={styles.qtyText}>Qty: {item.qty}</Text>
-                          )}
-                        </View>
-
-                        {group.items[itemIndex + 1] && (
-                          <View style={styles.productCard}>
-                            <Image 
-                              source={{ uri: group.items[itemIndex + 1].image }} 
-                              style={styles.productImage} 
-                            />
-                            <Text style={styles.productName} numberOfLines={2}>
-                              {group.items[itemIndex + 1].name}
-                            </Text>
-                            <View style={styles.priceRow}>
-                              {group.items[itemIndex + 1].originalPrice !== group.items[itemIndex + 1].price && (
-                                <Text style={styles.originalPrice}>
-                                  ${group.items[itemIndex + 1].originalPrice}
-                                </Text>
-                              )}
-                              <Text style={styles.productPrice}>
-                                ${group.items[itemIndex + 1].price}
-                              </Text>
-                            </View>
-                            {group.items[itemIndex + 1].qty > 1 && (
-                              <Text style={styles.qtyText}>
-                                Qty: {group.items[itemIndex + 1].qty}
-                              </Text>
-                            )}
-                          </View>
-                        )}
-                      </React.Fragment>
-                    )
-                  ))}
-                </View>
+                {renderProductCarousel(group.items)}
               </View>
             ))
           ) : (
@@ -662,48 +677,77 @@ const styles = StyleSheet.create({
     color: '#FF6B35',
     fontWeight: '500',
   },
-  productsRow: {
-    flexDirection: 'row',
+  carouselContainer: {
+    width: '100%',
+  },
+  carouselContent: {
     paddingHorizontal: 16,
     gap: 12,
   },
-  productCard: {
-    flex: 1,
+  carouselCard: {
+    width: CARD_WIDTH,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    overflow: 'hidden',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  carouselImage: {
+    width: '100%',
+    height: 160,
+    backgroundColor: '#F0F0F0',
+  },
+  carouselInfo: {
+    padding: 8,
     backgroundColor: '#FFFFFF',
   },
-  productImage: {
-    width: '100%',
-    height: 140,
-    borderRadius: 8,
-    backgroundColor: '#F0F0F0',
-    marginBottom: 8,
-  },
-  productName: {
-    fontSize: 13,
-    color: '#000000',
-    marginBottom: 4,
-    lineHeight: 18,
-  },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-  },
-  originalPrice: {
+  carouselProductName: {
     fontSize: 12,
-    color: '#999999',
-    textDecorationLine: 'line-through',
-    marginRight: 6,
-  },
-  productPrice: {
-    fontSize: 14,
     fontWeight: '600',
     color: '#000000',
+    marginBottom: 4,
+    lineHeight: 16,
   },
-  qtyText: {
-    fontSize: 12,
+  carouselPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  carouselOriginalPrice: {
+    fontSize: 14,
+    color: '#999999',
+    textDecorationLine: 'line-through',
+    marginRight: 8,
+  },
+  carouselPrice: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FF7000',
+  },
+  carouselQty: {
+    fontSize: 14,
     color: '#666666',
     marginTop: 4,
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  paginationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#CCCCCC',
+    marginHorizontal: 4,
+  },
+  paginationDotActive: {
+    backgroundColor: '#FF7000',
+    width: 24,
   },
   paymentSection: {
     backgroundColor: '#FFFFFF',

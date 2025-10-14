@@ -257,6 +257,9 @@ const AddAddressScreen = ({ route }) => {
                       building: selectedAddress.building || '',
                     });
                     
+                    if (selectedAddress.countryCode) {
+                      setCountryCode(selectedAddress.countryCode);
+                    }
                     if (selectedAddress.street || selectedAddress.city) {
                       setShowManualEntry(true);
                     }

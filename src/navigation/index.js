@@ -41,6 +41,7 @@ import { ProductForm } from '../screen/Employee/ProductForm';
 import TestMap from '../screen/driver/TestMap';
 import CategoryFilter from '../screen/app/CategoryFilter';
 import SellerStore from '../screen/seller/SellerStore';
+import { SellerTabs } from './SellerTabs';
 import CategorySubCat from '../screen/app/CategorySubCat';
 import HelpCenter from '../screen/app/HelpCenter';
 import CheckoutOrder from '../screen/app/CheckoutOrder';
@@ -97,6 +98,7 @@ export default function Navigation(props) {
         <Stack.Screen name="Orderview" component={Orderview} />
         <Stack.Screen name="Searchpage" component={Searchpage} />
         <Stack.Screen name="MapAddress" component={MapAddress} />
+        <Stack.Screen name="ReviewScreen" component={ReviewScreen} />
         {/* <Stack.Screen name="Checkout" component={Checkout} /> */}
         <Stack.Screen name="Notification" component={Notification} />
         <Stack.Screen name="SubcategoryProducts" component={SubcategoryProducts} />
@@ -124,6 +126,7 @@ export default function Navigation(props) {
         <Stack.Screen name="AddProduct" component={ProductForm} />
         <Stack.Screen name="TestMap" component={TestMap} />
         <Stack.Screen name="SellerStore" component={SellerStore} />
+        <Stack.Screen name="SellerTabs" component={SellerTabs} />
         <Stack.Screen name="CategorySubCat" component={CategorySubCat} />
         <Stack.Screen 
           name="CheckoutOrder" 

@@ -166,7 +166,7 @@ const AddressListScreen = ({ navigation, route }) => {
             </TouchableOpacity>
             <View style={styles.headerTitleContainer}>
               <Icon name="location-on" size={24} color="#FFFFFF" style={styles.headerIcon} />
-              <Text style={styles.headerTitle}>My Addresses</Text>
+              <Text style={styles.headerTitle}>My Address</Text>
             </View>
           </View>
         </View>

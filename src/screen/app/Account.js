@@ -31,6 +31,7 @@ import { useTranslation } from 'react-i18next';
 import InAppBrowser from 'react-native-inappbrowser-reborn';
 import Language from './Language';
 import { ScrollView } from 'react-native';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 const Account = () => {
   const { t } = useTranslation();
@@ -205,12 +206,28 @@ const Account = () => {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.box, styles.shadowProp]}
-            onPress={() => navigate('Shipping')}>
+            onPress={() => navigate('AddressListScreen')}>
             <View style={styles.btmboxfirpart}>
               <View style={styles.iconcov}>
                 <LocationIcon height={20} width={20} color={Constants.white} />
               </View>
               <Text style={styles.protxt}>{t('My address')}</Text>
+            </View>
+            <RightarrowIcon
+              color={Constants.saffron}
+              height={15}
+              width={15}
+              style={styles.aliself}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.box, styles.shadowProp]}
+            onPress={() => navigate('Favorites')}>
+            <View style={styles.btmboxfirpart}>
+              <View style={styles.iconcov}>
+                <Icon name="heart" size={20} color={Constants.white} />
+              </View>
+              <Text style={styles.protxt}>{t('My Favorites')}</Text>
             </View>
             <RightarrowIcon
               color={Constants.saffron}

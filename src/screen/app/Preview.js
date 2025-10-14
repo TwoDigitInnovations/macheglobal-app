@@ -10,13 +10,15 @@ import {
   View,
   ActivityIndicator
 } from 'react-native';
+// import Carousel from 'react-native-snap-carousel'
 import Constants, { FONTS, Currency } from '../../Assets/Helpers/constant';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DriverHeader from '../../Assets/Component/DriverHeader';
 import { useTranslation } from 'react-i18next';
-import { GetApi } from '../../Assets/Helpers/Service';
+import { GetApi, Post, Delete } from '../../Assets/Helpers/Service';
 import { useIsFocused } from '@react-navigation/native';
 import { CartContext, ToastContext } from '../../../App';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 const ProductDetail = ({ route, navigation }) => {
   const { t } = useTranslation();
@@ -25,12 +27,19 @@ const ProductDetail = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [notFound, setNotFound] = useState(false);
+  const [activeSlide, setActiveSlide] = useState(0);
   const [mainImage, setMainImage] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [showQuantityControls, setShowQuantityControls] = useState(false);
   const [cartdetail, setcartdetail] = useContext(CartContext);
   const [toast, setToast] = useContext(ToastContext);
+  const isFlashSale = route.params?.flashSalePrice !== undefined;
+const flashSalePrice = route.params?.flashSalePrice || 0;
+const flashOriginalPrice = route.params?.originalPrice || 0;
+const flashDiscount = route.params?.discount || 0;
   const isFocused = useIsFocused();
+  const [isInWishlist, setIsInWishlist] = useState(false);
+  const [isLoadingFavorite, setIsLoadingFavorite] = useState(false);
   // If route.params is a string, use it as the slug, otherwise try to get slug from params object
   const slug = typeof route.params === 'string' ? route.params : (route.params?.slug || '');
   useEffect(() => {
@@ -47,20 +56,126 @@ const ProductDetail = ({ route, navigation }) => {
       }
     }
   }, [product, cartdetail]);
-  // Fetch product details when component mounts or slug changes
   useEffect(() => {
-    console.log('useEffect triggered with slug:', slug);
-    console.log('Route params:', route.params); // Log all route params
-    
+    console.log('📦 Route params received:', {
+      isFlashSale: route.params?.flashSalePrice !== undefined,
+      flashSalePrice: route.params?.flashSalePrice,
+      originalPrice: route.params?.originalPrice,
+      slug: route.params?.slug
+    });
+  }, [route.params]);
+  useEffect(() => {
     if (slug) {
-      console.log('Fetching product details...');
       fetchProductDetails();
+      checkIfInWishlist();
     } else {
-      console.log('No slug provided, not fetching');
-      // Set loading to false since we're not fetching anything
       setLoading(false);
     }
   }, [slug, isFocused]);
+
+  const checkIfInWishlist = async () => {
+    try {
+      const user = await AsyncStorage.getItem('userDetail');
+      if (!user) return;
+      
+      const response = await GetApi('wishlist/check', null, { productId: slug });
+      if (response && response.status) {
+        setIsInWishlist(response.isInWishlist || false);
+      }
+    } catch (error) {
+      console.error('Error checking wishlist status:', error);
+    }
+  };
+
+  const toggleFavorite = async () => {
+    console.log('🔵 Toggle favorite called. Current isInWishlist:', isInWishlist);
+    console.log('🔵 Product ID:', product?._id);
+    
+    try {
+      setIsLoadingFavorite(true);
+      
+      // Get user details
+      const user = await AsyncStorage.getItem('userDetail');
+      console.log('🔵 User found in AsyncStorage:', !!user);
+      
+      if (!user) {
+        console.log('🔴 No user found, redirecting to login');
+        navigation.navigate('Login');
+        return;
+      }
+
+      if (isInWishlist) {
+        // Remove from wishlist
+        console.log('🟡 Attempting to remove from wishlist...');
+        const response = await Post('user/addremovefavourite', { product: product._id });
+        console.log('🟣 Remove from wishlist response:', response);
+        
+        if (response) {
+          console.log('🔵 Remove API Response Status:', response.status);
+          console.log('🔵 Response Data:', response.data);
+          
+          if (response.status) {
+            console.log('🟢 Successfully removed from wishlist');
+            setIsInWishlist(false);
+            setToast({
+              show: true,
+              message: 'Removed from favorites',
+              type: 'success'
+            });
+          } else {
+            console.log('🔴 Failed to remove from wishlist:', response.message || 'Unknown error');
+          }
+        } else {
+          console.log('🔴 No response received from remove wishlist API');
+        }
+      } else {
+        // Add to wishlist
+        console.log('🟡 Attempting to add to wishlist...');
+        const response = await Post('user/addremovefavourite', { product: product._id });
+        console.log('🟣 Add to wishlist response:', response);
+        
+        if (response) {
+          console.log('🔵 Add API Response Status:', response.status);
+          console.log('🔵 Response Data:', response.data);
+          
+          if (response.status) {
+            console.log('🟢 Successfully added to wishlist');
+            setIsInWishlist(true);
+            setToast({
+              show: true,
+              message: 'Added to favorites',
+              type: 'success'
+            });
+          } else {
+            console.log('🔴 Failed to add to wishlist:', response.message || 'Unknown error');
+          }
+        } else {
+          console.log('🔴 No response received from add to wishlist API');
+        }
+      }
+    } catch (error) {
+      console.error('Error updating wishlist:', error);
+      setToast({
+        show: true,
+        message: 'Failed to update favorites',
+        type: 'error'
+      });
+    } finally {
+      setIsLoadingFavorite(false);
+    }
+  };
+
+  const renderCarouselItem = ({ item, index }) => {
+    return (
+      <View style={styles.carouselSlide}>
+        <Image
+          source={{ uri: item }}
+          style={styles.carouselImage}
+          resizeMode="contain"
+        />
+      </View>
+    );
+  };
 
   const fetchProductDetails = async () => {
     try {
@@ -134,8 +249,19 @@ const ProductDetail = ({ route, navigation }) => {
   if (product && !mainImage && product.varients?.[0]?.image?.[0]) {
     setMainImage(product.varients[0].image[0]);
   }
-  const originalPrice = parseFloat(product.varients?.[0]?.selected?.[0]?.price) || 0;
-  const discountedPrice = parseFloat(product.varients?.[0]?.selected?.[0]?.offerprice) || originalPrice;
+  const originalPrice = isFlashSale 
+  ? flashOriginalPrice 
+  : (parseFloat(product?.varients?.[0]?.selected?.[0]?.price) || 0);
+  
+const discountedPrice = isFlashSale 
+  ? flashSalePrice 
+  : (parseFloat(product?.varients?.[0]?.selected?.[0]?.offerprice) || originalPrice);
+
+console.log('Final Prices:', { 
+  isFlashSale, 
+  originalPrice, 
+  discountedPrice 
+});
   
   const cartdata = async () => {
     const existingCart = Array.isArray(cartdetail) ? cartdetail : [];
@@ -143,9 +269,14 @@ const ProductDetail = ({ route, navigation }) => {
     // Get the selected variant or first variant
     const selectedVariant = product.varients?.[selectedVariant] || product.varients?.[0];
     const variantPrice = parseFloat(selectedVariant?.selected?.[0]?.price) || 0;
-    const variantOfferPrice = parseFloat(selectedVariant?.selected?.[0]?.offerprice) || variantPrice;
+    let variantOfferPrice = parseFloat(selectedVariant?.selected?.[0]?.offerprice) || variantPrice;
     
-    console.log('Adding to cart - Price:', variantPrice, 'Offer Price:', variantOfferPrice);
+    // Use flash sale price if available
+    if (isFlashSale) {
+      variantOfferPrice = flashSalePrice;
+    }
+    
+    console.log('Adding to cart - Price:', variantPrice, 'Offer Price:', variantOfferPrice, 'Is Flash Sale:', isFlashSale);
 
     // Find existing product in cart
     const existingProduct = existingCart.find(
@@ -158,7 +289,7 @@ const ProductDetail = ({ route, navigation }) => {
         productid: product._id,
         productname: product.name,
         vietnamiesName: product?.vietnamiesName,
-        price: variantPrice,
+        price: isFlashSale ? flashOriginalPrice : variantPrice,
         offer: variantOfferPrice,
         image: selectedVariant?.image?.[0] || '',
         price_slot: product?.price_slot?.[0] || {},
@@ -223,164 +354,219 @@ const ProductDetail = ({ route, navigation }) => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}>
         
-        {/* Main Product Image */}
         <View style={styles.imageContainer}>
-          <Image
-            source={{ uri: mainImage }}
-            style={styles.mainImage}
-            resizeMode="contain"
-          />
+          {product.varients?.[selectedVariant]?.image?.length > 0 ? (
+            <View style={{ width: '100%', height: 390 }}>
+              <ScrollView
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onScroll={(event) => {
+                  const slideIndex = Math.round(
+                    event.nativeEvent.contentOffset.x / Dimensions.get('window').width
+                  );
+                  setActiveSlide(slideIndex);
+                }}
+                scrollEventThrottle={16}
+              >
+                {product.varients[selectedVariant].image.map((imageUri, index) => (
+                  <View key={index} style={styles.carouselSlide}>
+                    <Image
+                      source={{ uri: imageUri }}
+                      style={styles.carouselImage}
+                      resizeMode="contain"
+                    />
+                  </View>
+                ))}
+              </ScrollView>
+              <View style={styles.dotsContainer}>
+                {product.varients[selectedVariant].image.map((_, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.dot,
+                      index === activeSlide && styles.activeDot
+                    ]}
+                  />
+                ))}
+              </View>
+            </View>
+          ) : (
+            <View style={styles.noImage}>
+              <Text>No Image Available</Text>
+            </View>
+          )}
         </View>
-
-       
+  
         <View style={styles.detailsContainer}>
           <View style={styles.productHeader}>
-            <Text style={styles.productName}>{product.name}</Text>
-            <View style={styles.quantityContainer}>
-  {!showQuantityControls ? (
-    <TouchableOpacity 
-      style={styles.addToCartIcon}
-      onPress={async () => {
-        await cartdata(); 
-        setShowQuantityControls(true);
-      }}
-    >
-      <Text style={styles.plusIcon}>+</Text>
-    </TouchableOpacity>
-  ) : (
-    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F5F5', borderRadius: 20 }}>
-<TouchableOpacity
-  style={styles.quantityButton}
-  onPress={async () => {
-    const existingCart = Array.isArray(cartdetail) ? [...cartdetail] : [];
-    const existingProductIndex = existingCart.findIndex(
-      f => f.productid === product._id
-    );
-
-    if (existingProductIndex !== -1) {
-     
-      if (existingCart[existingProductIndex].qty > 1) {
-        existingCart[existingProductIndex] = {
-          ...existingCart[existingProductIndex],
-          qty: existingCart[existingProductIndex].qty - 1
-        };
-      } else {
-       
-        existingCart.splice(existingProductIndex, 1);
-        setShowQuantityControls(false); 
-      }
-     
-      setcartdetail(existingCart);
-      await AsyncStorage.setItem('cartdata', JSON.stringify(existingCart));
-    }
-  }}
->
-  <Text style={styles.quantityText}>-</Text>
-</TouchableOpacity>
-<Text style={styles.quantityText}>
-  {(() => {
-    const existingCart = Array.isArray(cartdetail) ? cartdetail : [];
-    const existingProduct = existingCart.find(
-      (f) => f.productid === product._id
-    );
-    return existingProduct ? existingProduct.qty : 0;
-  })()}
-</Text>
-      <TouchableOpacity
-        style={styles.quantityButton}
-        onPress={async () => {
-          const existingCart = Array.isArray(cartdetail) ? cartdetail : [];
-          const existingProduct = existingCart.find(
-            f => f.productid === product._id
-          );
-
-          if (existingProduct) {
-            
-            const updatedCart = existingCart.map(_i =>
-              _i.productid === product._id ? { ..._i, qty: _i.qty + 1 } : _i
-            );
-            setcartdetail(updatedCart);
-            await AsyncStorage.setItem('cartdata', JSON.stringify(updatedCart));
-          } else {
-            
-            await cartdata();
-          }
-        }}
-      >
-        <Text style={styles.quantityText}>+</Text>
-      </TouchableOpacity>
-    </View>
-  )}
-</View>
+            <View style={styles.titleRow}>
+              <Text style={styles.productName}>{product.name}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
+              <TouchableOpacity 
+                onPress={toggleFavorite}
+                style={[styles.wishlistButton, isInWishlist && styles.wishlistButtonActive]}
+                disabled={isLoadingFavorite}
+              >
+                <Icon 
+                  name={isInWishlist ? 'heart' : 'heart-o'} 
+                  size={28} 
+                  color={isInWishlist ? '#FF0000' : '#333'} 
+                />
+                {isLoadingFavorite && (
+                  <ActivityIndicator size="small" color="#000" style={styles.loader} />
+                )}
+              </TouchableOpacity>
+              
+              <View style={styles.quantityContainer}>
+                {!showQuantityControls ? (
+                  <TouchableOpacity 
+                    style={styles.addToCartIcon}
+                    onPress={async () => {
+                      await cartdata(); 
+                      setShowQuantityControls(true);
+                    }}
+                  >
+                    <Text style={styles.plusIcon}>+</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F5F5', borderRadius: 20, marginLeft: 10 }}>
+                    <TouchableOpacity
+                      style={styles.quantityButton}
+                      onPress={async () => {
+                        const existingCart = Array.isArray(cartdetail) ? [...cartdetail] : [];
+                        const existingProductIndex = existingCart.findIndex(
+                          f => f.productid === product._id
+                        );
+  
+                        if (existingProductIndex !== -1) {
+                          if (existingCart[existingProductIndex].qty > 1) {
+                            existingCart[existingProductIndex] = {
+                              ...existingCart[existingProductIndex],
+                              qty: existingCart[existingProductIndex].qty - 1
+                            };
+                          } else {
+                            existingCart.splice(existingProductIndex, 1);
+                            setShowQuantityControls(false); 
+                          }
+                          setcartdetail(existingCart);
+                          await AsyncStorage.setItem('cartdata', JSON.stringify(existingCart));
+                        }
+                      }}
+                    >
+                      <Text style={styles.quantityText}>-</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.quantityText}>
+                      {(() => {
+                        const existingCart = Array.isArray(cartdetail) ? cartdetail : [];
+                        const existingProduct = existingCart.find(
+                          (f) => f.productid === product._id
+                        );
+                        return existingProduct ? existingProduct.qty : 0;
+                      })()}
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.quantityButton}
+                      onPress={async () => {
+                        const existingCart = Array.isArray(cartdetail) ? cartdetail : [];
+                        const existingProduct = existingCart.find(
+                          f => f.productid === product._id
+                        );
+  
+                        if (existingProduct) {
+                          const updatedCart = existingCart.map(_i =>
+                            _i.productid === product._id ? { ..._i, qty: _i.qty + 1 } : _i
+                          );
+                          setcartdetail(updatedCart);
+                          await AsyncStorage.setItem('cartdata', JSON.stringify(updatedCart));
+                        } else {
+                          await cartdata();
+                        }
+                      }}
+                    >
+                      <Text style={styles.quantityText}>+</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            </View>
           </View>
+          
           <Text style={styles.category}>{product.categoryName} • {product.subCategoryName}</Text>
-                    {/* Variants */}
-                    {product.varients?.length > 0 && (
-  <>
-    <Text style={styles.sectionTitle}>Available Variants</Text>
-    <View style={styles.variantsContainer}>
-      {product.varients.map((variant, index) => {
-        const variantName = variant.selected?.[0]?.attributes?.[0]?.value;
-        
-        return (
-          <TouchableOpacity 
-            key={index}
-            style={[
-              styles.variantItem,
-              selectedVariant === index && styles.selectedVariant
-            ]}
-            onPress={() => {
-              setSelectedVariant(index);
-              if (variant.image?.[0]) {
-                setMainImage(variant.image[0]);
-              }
-            }}
-          >
-            {variant.image?.[0] && (
-              <Image 
-                source={{ uri: variant.image[0] }}
-                style={styles.variantItemImage}
-                resizeMode="cover"
-              />
-            )}
-            
-            <Text style={styles.variantText}>
-              {variantName && variantName.trim() !== '' ? variantName : `Variant ${index + 1}`}
-            </Text>
-            <Text style={styles.variantPrice}>
-              {Currency} {variant.selected?.[0]?.offerprice || variant.selected?.[0]?.price}
-            </Text>
-            <Text style={styles.variantStock}>
-              {variant.selected?.[0]?.qty} in stock
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  </>
-)}
+  
+          {/* Variants */}
+          {product.varients?.length > 0 && (
+            <>
+              <Text style={styles.sectionTitle}>Available Variants</Text>
+              <View style={styles.variantsContainer}>
+                {product.varients.map((variant, index) => {
+                  const variantName = variant.selected?.[0]?.attributes?.[0]?.value;
+                  
+                  return (
+                    <TouchableOpacity 
+                      key={index}
+                      style={[
+                        styles.variantItem,
+                        selectedVariant === index && styles.selectedVariant
+                      ]}
+                      onPress={() => {
+                        setSelectedVariant(index);
+                        setActiveSlide(0); 
+                        if (variant.image?.[0]) {
+                          setMainImage(variant.image[0]);
+                        }
+                      }}
+                    >
+                      {variant.image?.[0] && (
+                        <Image 
+                          source={{ uri: variant.image[0] }}
+                          style={styles.variantItemImage}
+                          resizeMode="cover"
+                        />
+                      )}
+                      
+                      <Text style={styles.variantText}>
+                        {variantName && variantName.trim() !== '' ? variantName : `Variant ${index + 1}`}
+                      </Text>
+                      <Text style={styles.variantPrice}>
+                        {Currency} {variant.selected?.[0]?.offerprice || variant.selected?.[0]?.price}
+                      </Text>
+                      <Text style={styles.variantStock}>
+                        {variant.selected?.[0]?.qty} in stock
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </>
+          )}
+  
           <View style={styles.priceContainer}>
+            {isFlashSale && (
+              <View style={styles.flashSaleBadge}>
+                <Text style={styles.flashSaleBadgeText}>⚡ FLASH SALE</Text>
+              </View>
+            )}
             <Text style={styles.price}>{Currency} {discountedPrice.toFixed(2)}</Text>
             {originalPrice > discountedPrice && (
               <Text style={styles.originalPrice}>{Currency} {originalPrice.toFixed(2)}</Text>
             )}
             {originalPrice > discountedPrice && (
               <Text style={styles.discount}>
-                {Math.round(((originalPrice - discountedPrice) / originalPrice) * 100)}% OFF
+                {isFlashSale ? flashDiscount : Math.round(((originalPrice - discountedPrice) / originalPrice) * 100)}% OFF
               </Text>
             )}
           </View>
-
+  
           <Text style={styles.sectionTitle}>Description</Text>
-<Text style={styles.description}>
-  {(product.long_description || product.short_description || 'No description available')
-    .replace(/<[^>]*>/g, '')  
-    .replace(/&nbsp;/g, ' ')  
-  }
-</Text>
-
-
-
+          <Text style={styles.description}>
+            {(product.long_description || product.short_description || 'No description available')
+              .replace(/<[^>]*>/g, '')  
+              .replace(/&nbsp;/g, ' ')  
+            }
+          </Text>
+  
           {/* Bulk Order Quotes */}
           {bulkOrders.length > 0 && (
             <View style={styles.bulkOrderContainer}>
@@ -395,7 +581,7 @@ const ProductDetail = ({ route, navigation }) => {
               </View>
             </View>
           )}
-
+  
           {/* Delivery Information */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Delivery Information</Text>
@@ -408,7 +594,7 @@ const ProductDetail = ({ route, navigation }) => {
               <Text style={styles.infoValue}>30 days return policy</Text>
             </View>
           </View>
-
+  
           {/* Reviews Section */}
           <View style={styles.reviewSection}>
             <View style={styles.reviewHeader}>
@@ -437,7 +623,7 @@ const ProductDetail = ({ route, navigation }) => {
                 </View>
               )}
             </View>
-
+  
             {product.reviews?.length > 0 ? (
               <View style={styles.reviewsList}>
                 {product.reviews.slice(0, 2).map((review, index, arr) => {
@@ -519,14 +705,6 @@ const ProductDetail = ({ route, navigation }) => {
                 <Text style={styles.emptyStateText}>
                   Be the first to share your thoughts about this product!
                 </Text>
-                <TouchableOpacity 
-                  style={styles.primaryButton}
-                  onPress={() => {
-                    // navigation.navigate('WriteReview', { productId: product._id });
-                  }}
-                >
-                  <Text style={styles.primaryButtonText}>Write a Review</Text>
-                </TouchableOpacity>
               </View>
             )}
           </View>
@@ -760,7 +938,7 @@ const styles = StyleSheet.create({
   },
   activeDot: {
     width: 24,
-    backgroundColor: Constants.pink,
+    backgroundColor: '#FF7000',
   },
   infoSection: {
     padding: 16,
@@ -804,6 +982,17 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 20,
   },
+  // carouselSlide: {
+  //   width: '100%',
+  //   height: 390,
+  //   justifyContent: 'center',
+  //   alignItems: 'center',
+  //   backgroundColor: 'white',
+  // },
+  carouselImage: {
+    width: '100%',
+    height: '100%',
+  },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -839,6 +1028,21 @@ const styles = StyleSheet.create({
   selectedVariantCard: {
     borderColor: Constants.pink,
     backgroundColor: '#FFF0F0',
+  },
+  flashSaleBadge: {
+    backgroundColor: '#FF6B00',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginRight: 10,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  flashSaleBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontFamily: FONTS.bold,
+    fontWeight: '700',
   },
   variantImage: {
     width: 60,
@@ -1149,5 +1353,42 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 18,
     marginTop: -2,
+  },
+  imageContainer: {
+    width: '100%',
+    height: 390,
+    backgroundColor: 'white',
+    marginBottom: 10,
+    position: 'relative',
+  },
+  carouselSlide: {
+    width: Dimensions.get('window').width,
+    // width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  carouselImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain',
+  },
+  dotsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    position: 'absolute',
+    bottom: 10,
+    width: '100%',
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#ccc',
+    marginHorizontal: 4,
+  },
+  activeDot: {
+    backgroundColor: '#FF7000',
+    width: 20,
   },
 });

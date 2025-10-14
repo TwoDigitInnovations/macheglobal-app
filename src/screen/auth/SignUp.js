@@ -209,6 +209,7 @@ export default function SignupScreen({ navigation }) {
                 margin: 0,
                 padding: 0,
                 alignItems: 'center',
+                borderWidth: 0,
               }}
               textContainerStyle={{
                 backgroundColor: 'transparent',
@@ -516,9 +517,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 8,
-    paddingHorizontal: 0,
+    paddingHorizontal: 8, 
     height: 50,
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   dropdownArrow: {
     color: '#6b7280',

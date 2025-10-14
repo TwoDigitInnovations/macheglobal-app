@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { 
   View, 
   Text, 
@@ -13,17 +13,19 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { BackIcon } from '../../../Theme';
 import { CartContext } from '../../../App';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function CartScreen() {
   const navigation = useNavigation();
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [cartContext] = useContext(CartContext) || [];
+  const [cartContext = [], setCartContext] = useContext(CartContext) || [[], () => {}];
+  const [selectedItems, setSelectedItems] = useState([]);
 
   useEffect(() => {
     console.log('Cart Context:', cartContext);
     
-    if (!cartContext || cartContext.length === 0) {
+    if (!cartContext || !Array.isArray(cartContext) || cartContext.length === 0) {
       console.log('No items in cart, adding sample data for testing');
       const sampleItems = [{
         id: 'test1',
@@ -44,9 +46,10 @@ export default function CartScreen() {
       return;
     }
 
-    const transformedItems = cartContext.map((item, index) => ({
+    const transformedItems = (cartContext || []).map((item, index) => ({
       id: item.productid || `item-${index}`,
       productName: item.productname || 'Product Name',
+      originalIndex: index,
       variants: [{
         id: item.productid || `variant-${index}`,
         name: item.vietnamiesName || item.productname || 'Product Variant',
@@ -64,9 +67,55 @@ export default function CartScreen() {
     setLoading(false);
   }, [cartContext]);
 
+  const toggleItemSelection = useCallback((itemId) => {
+    setSelectedItems(prevSelectedItems => {
+      if (prevSelectedItems.includes(itemId)) {
+        return prevSelectedItems.filter(id => id !== itemId);
+      } else {
+        return [...prevSelectedItems, itemId];
+      }
+    });
+  }, []);
+
+  const removeSelectedItems = async () => {
+    if (selectedItems.length === 0) {
+      alert('Please select items to remove');
+      return;
+    }
+
+    // Get indices of items to remove
+    const indicesToRemove = cartItems
+      .filter(item => selectedItems.includes(item.id))
+      .map(item => item.originalIndex)
+      .sort((a, b) => b - a); // Sort in descending order
+
+    // Create new cart array without selected items
+    const newCart = [...cartContext];
+    indicesToRemove.forEach(index => {
+      if (index !== undefined) {
+        newCart.splice(index, 1);
+      }
+    });
+
+    try {
+      // Save to AsyncStorage
+      await AsyncStorage.setItem('cartdata', JSON.stringify(newCart));
+      
+      // Update cart context
+      setCartContext(newCart);
+      setSelectedItems([]);
+      
+      console.log('Removed items. New cart length:', newCart.length);
+    } catch (error) {
+      console.error('Error saving cart data:', error);
+      alert('Failed to update cart. Please try again.');
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, styles.centerContent]}>
+
         <ActivityIndicator size="large" color="#FF7000" />
       </SafeAreaView>
     );
@@ -83,7 +132,7 @@ export default function CartScreen() {
   const totalAmount = calculateTotal();
 
   console.log('Rendering Cart. Items count:', cartItems.length);
-  console.log('Should show checkout:', cartItems.length > 0);
+  console.log('Selected items:', selectedItems.length);
 
   return (
     <SafeAreaView style={styles.safeContainer}>
@@ -100,6 +149,20 @@ export default function CartScreen() {
             Cart {cartItems.length > 0 ? `(${cartItems.length})` : ''}
           </Text>
         </View>
+
+        {/* Remove Button - Show when items are selected */}
+        {selectedItems.length > 0 && (
+          <View style={styles.removeButtonContainer}>
+            <TouchableOpacity 
+              style={styles.removeButton}
+              onPress={removeSelectedItems}
+            >
+              <Text style={styles.removeButtonText}>
+                Remove ({selectedItems.length}) {selectedItems.length === 1 ? 'Item' : 'Items'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Cart Items with Flex Layout */}
         <View style={styles.contentWrapper}>
@@ -123,6 +186,21 @@ export default function CartScreen() {
 
                   {item.variants.map((variant) => (
                     <View key={`${item.id}-${variant.id}`} style={styles.variantCard}>
+                      {/* Checkbox */}
+                      <TouchableOpacity 
+                        style={styles.checkboxContainer}
+                        onPress={() => toggleItemSelection(item.id)}
+                      >
+                        <View style={[
+                          styles.checkbox,
+                          selectedItems.includes(item.id) && styles.checkboxSelected
+                        ]}>
+                          {selectedItems.includes(item.id) && (
+                            <Text style={styles.checkmark}>✓</Text>
+                          )}
+                        </View>
+                      </TouchableOpacity>
+
                       <View style={styles.productImagePlaceholder}>
                         <Image 
                           source={{ uri: variant.image }}
@@ -163,7 +241,7 @@ export default function CartScreen() {
             )}
           </ScrollView>
 
-          {/* Bottom Checkout Section - NEW APPROACH */}
+          {/* Bottom Checkout Section */}
           {cartItems.length > 0 && (
             <View style={styles.checkoutWrapper}>
               <View style={styles.checkoutContainer}>
@@ -178,7 +256,7 @@ export default function CartScreen() {
                     navigation.navigate('CheckoutOrder');
                   }}
                 >
-                  <Text style={styles.checkoutButtonText}> Checkout</Text>
+                  <Text style={styles.checkoutButtonText}>Checkout</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -267,7 +345,23 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     flex: 1,
   },
-  // NEW: Content Wrapper with Flex
+  removeButtonContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+  },
+  removeButton: {
+    backgroundColor: '#FF7000',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  removeButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   contentWrapper: {
     flex: 1,
     backgroundColor: '#f5f5f5',
@@ -277,7 +371,7 @@ const styles = StyleSheet.create({
   },
   scrollContentContainer: {
     paddingTop: 16,
-    paddingBottom: 180, // Extra space for checkout button + bottom nav
+    paddingBottom: 180,
   },
   deliverySection: {
     marginBottom: 24,
@@ -316,6 +410,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
+  checkboxContainer: {
+    marginRight: 12,
+    padding: 4,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: '#999',
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxSelected: {
+    backgroundColor: '#FF7000',
+    borderColor: '#FF7000',
+  },
+  checkmark: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
   productImagePlaceholder: {
     width: 80,
     height: 80,
@@ -347,10 +464,9 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 4,
   },
-  // NEW: Checkout Wrapper
   checkoutWrapper: {
     backgroundColor: '#fff',
-    paddingBottom: 70, // Space for bottom navigation
+    paddingBottom: 70,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     ...Platform.select({

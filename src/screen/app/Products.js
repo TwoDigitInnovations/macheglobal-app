@@ -67,6 +67,7 @@ const Products = props => {
       let url = `product/getProduct?page=${p}&limit=${limit}`;
       
       if (data) {
+        console.log('data', data);
         // Check if it's a subcategory or category
         if (isSubcategory) {
           url += `&subcategoryId=${data}`;
@@ -101,6 +102,7 @@ const Products = props => {
     setLoading(true);
     try {
       const res = await GetApi(`getTopSoldProduct?page=${p}`);
+      console.log('stoooo',res)
       setLoading(false);
       if (res.status) {
         if (p === 1) {

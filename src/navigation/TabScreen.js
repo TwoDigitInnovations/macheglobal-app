@@ -53,6 +53,7 @@ const HomeStack = () => (
 );
 
 import CategorySubCat from '../screen/app/CategorySubCat';
+import Favorites from '../screen/app/Favorites';
 
 const CategoriesStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -78,9 +79,10 @@ export const TabNav = () => {
   const { t } = useTranslation();
   const [cartdetail, setcartdetail] = useContext(CartContext);
 
-  const AccountStack = () => (
+const AccountStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="AccountTab" component={Account} />
+    <Stack.Screen name="Favorites" component={Favorites} />
   </Stack.Navigator>
 );
 

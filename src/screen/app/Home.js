@@ -15,6 +15,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import Constants, { Currency, FONTS } from '../../Assets/Helpers/constant';
@@ -53,46 +54,221 @@ const Home = () => {
   const [carosalimg, setcarosalimg] = useState([]);
   const [isSale, setIsSale] = useState(false);
   const [activeTab, setActiveTab] = useState('Products');
-  // const dumydata = [
-  //   {
-  //     name: 'Tata Salt',
-  //     weight: '500g',
-  //     off: '5',
-  //     mainprice: 25,
-  //     price: 24,
-  //   },
-  //   {
-  //     name: 'Kurkure Yummy Puffcorn Yumm...',
-  //     weight: '50g',
-  //     price: 22,
-  //   },
-  //   {
-  //     name: 'The Whole Truth Mini Proteine B...',
-  //     weight: '27g',
-  //     price: 44,
-  //     off: '20',
-  //     mainprice: 55,
-  //   },
-  // ];
-  // const dumydata2 = [
-  //   {img: require('../../Assets/Images/veg.png'), name: 'Fruits & Vegetables'},
-  //   {
-  //     img: require('../../Assets/Images/oil.png'),
-  //     name: 'Atta, Rice, Oil & Dals',
-  //   },
-  //   {
-  //     img: require('../../Assets/Images/dairy.png'),
-  //     name: 'Dairy, Bread & Eggs',
-  //   },
-  //   {
-  //     img: require('../../Assets/Images/cold.png'),
-  //     name: 'Cold Drinks & Juices',
-  //   },
-  // ];
+  const [flashSaleProducts, setFlashSaleProducts] = useState([]);
+  const [isLoadingFlashSale, setIsLoadingFlashSale] = useState(false);
+  const [exploreProducts, setExploreProducts] = useState([]);
+const [isLoadingExplore, setIsLoadingExplore] = useState(false);
+
+const getExploreProducts = async () => {
+  try {
+    setIsLoadingExplore(true);
+    const url = `product/getProduct?page=1&limit=4`;
+    const res = await GetApi(url, {});
+    console.log('explore',res)
+    setIsLoadingExplore(false);
+    
+    if (res && res.status) {
+      setExploreProducts(res.data);
+    }
+  } catch (err) {
+    setIsLoadingExplore(false);
+    console.error('Error fetching explore products:', err);
+  }
+};
+  const CountdownTimer = ({ endDate }) => {
+    const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
+  
+    useEffect(() => {
+      const calculateTimeLeft = () => {
+        const difference = new Date(endDate) - new Date();
+        if (difference > 0) {
+          return {
+            hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+            minutes: Math.floor((difference / 1000 / 60) % 60),
+            seconds: Math.floor((difference / 1000) % 60),
+          };
+        }
+        return { hours: 0, minutes: 0, seconds: 0 };
+      };
+  
+      const timer = setInterval(() => {
+        setTimeLeft(calculateTimeLeft());
+      }, 1000);
+  
+      return () => clearInterval(timer);
+    }, [endDate]);
+  
+    return (
+      <View style={styles.countdownContainer}>
+        <View style={styles.timeBox}>
+          <Text style={styles.timeNumber}>{String(timeLeft.hours).padStart(2, '0')}</Text>
+          <Text style={styles.timeLabel}>hrs</Text>
+        </View>
+        <Text style={styles.timeSeparator}>:</Text>
+        <View style={styles.timeBox}>
+          <Text style={styles.timeNumber}>{String(timeLeft.minutes).padStart(2, '0')}</Text>
+          <Text style={styles.timeLabel}>min</Text>
+        </View>
+        <Text style={styles.timeSeparator}>:</Text>
+        <View style={styles.timeBox}>
+          <Text style={styles.timeNumber}>{String(timeLeft.seconds).padStart(2, '0')}</Text>
+          <Text style={styles.timeLabel}>sec</Text>
+        </View>
+      </View>
+    );
+  };
+  
+  // 2. Flash Sale section ko replace karo (line 547 se 625 tak)
+  {/* Flash Sale Section */}
+<View style={styles.flashSaleSection}>
+  <View style={styles.flashSaleHeader}>
+    <View style={styles.flashSaleTitleContainer}>
+      <Text style={styles.flashSaleTitle}>⚡ Flash Sale</Text>
+      <Text style={styles.flashSaleSubtitle}>Limited time offers</Text>
+    </View>
+  </View>
+  
+  {isLoadingFlashSale ? (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color={Constants.saffron} />
+    </View>
+  ) : flashSaleProducts.length > 0 ? (
+    <FlatList
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      data={flashSaleProducts}
+      keyExtractor={(item, index) => `flash-sale-${item._id || index}`}
+      contentContainerStyle={styles.flashSaleList}
+      renderItem={({ item, index }) => {
+        // Prices
+        const salePrice = item.price || 0; // 50
+        const originalPrice = item.originalPrice || 0; // 199
+        const discountPercent = originalPrice > salePrice 
+          ? Math.round(((originalPrice - salePrice) / originalPrice) * 100) 
+          : 0;
+        
+        console.log('Item prices:', {
+          itemPrice: item.price,
+          itemOriginal: item.originalPrice,
+          salePrice,
+          originalPrice,
+          discountPercent
+        });
+        
+        return (
+          <TouchableOpacity 
+          style={styles.flashSaleCard}
+          onPress={() => {
+            console.log('🔥 Navigating with params:', {
+              slug: item.product?.slug,
+              flashSalePrice: item.price,
+              originalPrice: item.originalPrice,
+              discount: discountPercent
+            });
+            
+            navigate('Preview', {
+              slug: item.product?.slug || item.product?._id,
+              flashSalePrice: item.price,
+              originalPrice: item.originalPrice,
+              discount: discountPercent,
+              flashSaleId: item._id,
+              endDateTime: item.endDateTime
+            });
+          }}
+        >
+            {/* Discount Badge */}
+            {discountPercent > 0 && (
+              <View style={styles.saleBadge}>
+                <Text style={styles.saleBadgeText}>{discountPercent}% OFF</Text>
+              </View>
+            )}
+      
+            {/* Product Number */}
+            <View style={styles.productNumber}>
+              <Text style={styles.productNumberText}>#{index + 1}</Text>
+            </View>
+      
+            {/* Image */}
+            <View style={styles.flashImageContainer}>
+              <Image 
+                source={{ uri: item.variant?.image?.[0] }} 
+                style={styles.flashImage}
+                resizeMode="cover"
+              />
+              <View style={styles.timerBelowImage}>
+                <CountdownTimer endDate={item.endDateTime} />
+              </View>
+            </View>
+      
+            {/* Details */}
+            <View style={styles.flashDetails}>
+              <Text style={styles.flashProductName} numberOfLines={2}>
+                {item.product?.name}
+              </Text>
+              
+              {/* Price Display */}
+              <View style={styles.flashPriceRow}>
+                <Text style={styles.flashOfferPrice}>
+                  {Currency} {salePrice}
+                </Text>
+                {originalPrice > salePrice && (
+                  <Text style={styles.flashOriginalPrice}>
+                    {Currency} {originalPrice}
+                  </Text>
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
+        );
+      }}
+    />
+  ) : (
+    <View style={styles.noFlashSale}>
+      <Text style={styles.noFlashSaleText}>🔥 No active flash sales</Text>
+      <Text style={styles.noFlashSaleSubtext}>Check back soon for amazing deals!</Text>
+    </View>
+  )}
+</View>
+  const getFlashSaleProducts = async () => {
+    try {
+      setIsLoadingFlashSale(true);
+      const user = await AsyncStorage.getItem('userDetail');
+      const userDetail = JSON.parse(user);
+      
+      const response = await GetApi('sale/getActiveFlashSales');
+      console.log('Flash Sale API Response:', response);
+      
+      if (response && response.status) {
+        if (Array.isArray(response.data) && response.data.length > 0) {
+          // YAHAN BAS DIRECT DATA SET KARO - KUCH TRANSFORM NAHI
+          setFlashSaleProducts(response.data);
+          
+          // Console check karo
+          console.log('First flash sale item:', {
+            price: response.data[0].price,
+            originalPrice: response.data[0].originalPrice,
+            productName: response.data[0].product?.name
+          });
+        } else {
+          setFlashSaleProducts([]);
+        }
+      } else {
+        setFlashSaleProducts([]);
+      }
+    } catch (error) {
+      console.error('Error fetching flash sale products:', error);
+      setFlashSaleProducts([]);
+    } finally {
+      setIsLoadingFlashSale(false);
+    }
+  };
+
   useEffect(() => {
     getCategory();
     getTopSoldProduct();
     getSetting();
+    getFlashSaleProducts();
+    getExploreProducts();
     console.log('cartdetail', cartdetail);
     AsyncStorage.getItem('cartdata').then(res => {
       console.log('cartdata', res);
@@ -255,19 +431,7 @@ const Home = () => {
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => setActiveTab('Manufacturers')}>
-            <Text
-              style={{
-                fontSize: 17,
-                fontFamily: FONTS.Bold,
-                color: Constants.white,
-                textDecorationLine: activeTab === 'Manufacturers' ? 'underline' : 'none',
-                textDecorationColor: Constants.white,
-              }}>
-              {t('Manufacturers')}
-            </Text>
-          </TouchableOpacity>
+      
         </View>
       </View>
       <TouchableOpacity style={{ backgroundColor: Constants.saffron, paddingBottom: 15 }}
@@ -403,6 +567,115 @@ const Home = () => {
         }}
         ListFooterComponent={
           <View >
+         <View style={styles.flashSaleSection}>
+  <View style={styles.flashSaleHeader}>
+    <View style={styles.flashSaleTitleContainer}>
+      <Text style={styles.flashSaleTitle}>⚡ Flash Sale</Text>
+      <Text style={styles.flashSaleSubtitle}>Limited time offers</Text>
+    </View>
+  </View>
+  
+  {isLoadingFlashSale ? (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color={Constants.saffron} />
+    </View>
+  ) : flashSaleProducts.length > 0 ? (
+    <FlatList
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      data={flashSaleProducts}
+      keyExtractor={(item, index) => `flash-sale-${item._id || index}`}
+      contentContainerStyle={styles.flashSaleList}
+      renderItem={({ item, index }) => {
+        // Prices
+        const salePrice = item.price || 0; // 50
+        const originalPrice = item.originalPrice || 0; // 199
+        const discountPercent = originalPrice > salePrice 
+          ? Math.round(((originalPrice - salePrice) / originalPrice) * 100) 
+          : 0;
+        
+        console.log('Item prices:', {
+          itemPrice: item.price,
+          itemOriginal: item.originalPrice,
+          salePrice,
+          originalPrice,
+          discountPercent
+        });
+        
+        return (
+          <TouchableOpacity 
+  style={styles.flashSaleCard}
+  onPress={() => {
+    console.log('🔥 Navigating with params:', {
+      slug: item.product?.slug,
+      flashSalePrice: item.price,
+      originalPrice: item.originalPrice,
+      discount: discountPercent
+    });
+    
+    navigate('Preview', {
+      slug: item.product?.slug || item.product?._id,
+      flashSalePrice: item.price,
+      originalPrice: item.originalPrice,
+      discount: discountPercent,
+      flashSaleId: item._id,
+      endDateTime: item.endDateTime
+    });
+  }}
+>
+            {/* Discount Badge */}
+            {discountPercent > 0 && (
+              <View style={styles.saleBadge}>
+                <Text style={styles.saleBadgeText}>{discountPercent}% OFF</Text>
+              </View>
+            )}
+      
+            {/* Product Number */}
+            <View style={styles.productNumber}>
+              <Text style={styles.productNumberText}>#{index + 1}</Text>
+            </View>
+      
+            {/* Image */}
+            <View style={styles.flashImageContainer}>
+              <Image 
+                source={{ uri: item.variant?.image?.[0] }} 
+                style={styles.flashImage}
+                resizeMode="cover"
+              />
+              <View style={styles.timerBelowImage}>
+                <CountdownTimer endDate={item.endDateTime} />
+              </View>
+            </View>
+      
+            {/* Details */}
+            <View style={styles.flashDetails}>
+              <Text style={styles.flashProductName} numberOfLines={2}>
+                {item.product?.name}
+              </Text>
+              
+              {/* Price Display */}
+              <View style={styles.flashPriceRow}>
+                <Text style={styles.flashOfferPrice}>
+                  {Currency} {salePrice}
+                </Text>
+                {originalPrice > salePrice && (
+                  <Text style={styles.flashOriginalPrice}>
+                    {Currency} {originalPrice}
+                  </Text>
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
+        );
+      }}
+    />
+  ) : (
+    <View style={styles.noFlashSale}>
+      <Text style={styles.noFlashSaleText}>🔥 No active flash sales</Text>
+      <Text style={styles.noFlashSaleSubtext}>Check back soon for amazing deals!</Text>
+    </View>
+  )}
+</View>
             {/* Categories Section */}
             <View style={styles.sectionContainer}>
               <View style={styles.sectionHeader}>
@@ -429,7 +702,7 @@ const Home = () => {
                     <TouchableOpacity
                       key={item._id}
                       style={styles.categoryItem}
-                      onPress={() => navigate('CategoryFilter', { item: item._id, name: item.name })}
+                      onPress={() => navigate('CategorySubCat')}
                     >
                       <View style={styles.categoryCircle}>
                         <Image
@@ -459,7 +732,7 @@ const Home = () => {
   </TouchableOpacity>
 
   {/* Local Industries Card */}
-  <TouchableOpacity 
+  {/* <TouchableOpacity 
     style={styles.localIndustryCard}
     onPress={() => navigate('LocalIndustryDetail', { type: 'haiti-crafts' })}>
   <ImageBackground
@@ -470,7 +743,105 @@ const Home = () => {
      
     </View>
   </ImageBackground>
-</TouchableOpacity>
+</TouchableOpacity> */}
+</View>
+
+{/* Flash Sale Section */}
+
+<View style={styles.flashSaleSection}>
+  <View style={styles.flashSaleHeader}>
+    <View style={styles.flashSaleTitleContainer}>
+      <Text style={styles.flashSaleTitle}>🛍️ Explore Our Products</Text>
+      <Text style={styles.flashSaleSubtitle}>Discover amazing items</Text>
+    </View>
+    <TouchableOpacity
+      style={styles.seeAllButton}
+      onPress={() => navigate('Products', { name: 'All Products' })}>
+      <Text style={styles.seeAllText}>See all</Text>
+      <View style={{marginTop: -10}}>
+        <RightarrowIcon height={14} width={14} color="#1F2937" />
+      </View>
+    </TouchableOpacity>
+  </View>
+  
+  {isLoadingExplore ? (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color={Constants.saffron} />
+    </View>
+  ) : exploreProducts.length > 0 ? (
+    <FlatList
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      data={exploreProducts}
+      keyExtractor={(item, index) => `explore-${item._id || index}`}
+      contentContainerStyle={styles.flashSaleList}
+      renderItem={({ item, index }) => {
+        const cartItem = Array.isArray(cartdetail)
+          ? cartdetail.find(it => it?.productid === item?._id)
+          : undefined;
+        
+        // Price logic - varients se price nikalna
+        const offerPrice = item?.varients?.[0]?.selected?.[0]?.offerprice || 
+                          item?.price_slot?.[0]?.our_price || 0;
+        const originalPrice = item?.varients?.[0]?.selected?.[0]?.price || 
+                             item?.price_slot?.[0]?.other_price || 0;
+        
+        return (
+          <TouchableOpacity 
+            style={styles.flashSaleCard}
+            onPress={() => navigate('Preview', item?.slug || item?._id)}
+          >
+            {/* Discount Badge - agar discount hai to show karo */}
+            {originalPrice > offerPrice && (
+              <View style={styles.saleBadge}>
+                <Text style={styles.saleBadgeText}>
+                  {Math.round(((originalPrice - offerPrice) / originalPrice) * 100)}% OFF
+                </Text>
+              </View>
+            )}
+
+            {/* Product Number */}
+            <View style={styles.productNumber}>
+              <Text style={styles.productNumberText}>#{index + 1}</Text>
+            </View>
+
+            {/* Product Image */}
+            <View style={styles.flashImageContainer}>
+              <Image 
+                source={{ uri: item.varients?.[0]?.image?.[0] || 'https://via.placeholder.com/150' }} 
+                style={styles.flashImage}
+                resizeMode="cover"
+              />
+            </View>
+
+            {/* Product Details */}
+            <View style={styles.flashDetails}>
+              <Text style={styles.flashProductName} numberOfLines={2}>
+                {item?.name || 'Product'}
+              </Text>
+              
+              {/* Price Row */}
+              <View style={styles.flashPriceRow}>
+                <Text style={styles.flashOfferPrice}>
+                  {Currency} {offerPrice}
+                </Text>
+                {originalPrice > offerPrice && (
+                  <Text style={styles.flashOriginalPrice}>
+                    {Currency} {originalPrice}
+                  </Text>
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
+        );
+      }}
+    />
+  ) : (
+    <View style={styles.noFlashSale}>
+      <Text style={styles.noFlashSaleText}>📦 No products available</Text>
+      <Text style={styles.noFlashSaleSubtext}>Check back soon!</Text>
+    </View>
+  )}
 </View>
             </View>
 
@@ -484,12 +855,272 @@ const Home = () => {
 export default Home;
 
 const styles = StyleSheet.create({
+  // Flash Sale Styles
+  flashSaleList: {
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+  },
+  exploreWeight: {
+    fontSize: 12,
+    fontFamily: FONTS.medium,
+    color: '#666',
+    marginTop: 4,
+  },
+  
+  flashSaleSection: {
+    marginTop: -15,
+    marginBottom: 20,
+  },
+  flashSaleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    marginBottom: 15,
+  },
+  flashSaleTitleContainer: {
+    flex: 1,
+  },
+  flashSaleTitle: {
+    fontSize: 22,
+    fontFamily: FONTS.extrabold,
+    color: Constants.black,
+    marginBottom: 4,
+  },
+  flashSaleSubtitle: {
+    fontSize: 13,
+    fontFamily: FONTS.medium,
+    color: '#666',
+  },
+  flashSaleCard: {
+    width: 160,             
+    height: 200,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    marginHorizontal: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 5,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  saleBadge: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    backgroundColor: Constants.saffron,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    zIndex: 10,
+  },
+  saleBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontFamily: FONTS.bold,
+    fontWeight: '700',
+  },
+  productNumber: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  productNumberText: {
+    color: '#fff',
+    fontSize: 12,
+    fontFamily: FONTS.bold,
+  },
+  flashImageContainer: {
+    width: '100%',
+    height: 120,            
+    backgroundColor: '#f9f9f9',
+  },
+  flashImage: {
+    width: '100%',
+    height: '100%',
+  },
+  flashDetails: {
+    padding: 10,
+    paddingBottom: 12,
+  },
+  flashProductName: {
+    fontSize: 13,
+    fontFamily: FONTS.semibold,
+    color: '#333',
+    marginBottom: -5,
+    height: 30,
+    lineHeight: 12,
+  },
+  flashPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  flashOfferPrice: {
+    fontSize: 16,
+    fontFamily: FONTS.bold,
+    color: Constants.saffron,
+    marginRight: 6,
+  },
+  flashOriginalPrice: {
+    fontSize: 13,
+    fontFamily: FONTS.medium,
+    color: '#999',
+    textDecorationLine: 'line-through',
+  },
+  countdownContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 245, 240, 0.7)', // Added opacity to background
+    borderRadius: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 6,
+    position: 'absolute', // Position absolute to center it
+    bottom: 10, // Position from bottom
+    left: '25%', // Center horizontally
+    right: '25%', // Center horizontally
+    opacity: 10, // Reduced opacity
+  },
+  timeBox: {
+    alignItems: 'center',
+    minWidth: 30,
+  },
+  timeNumber: {
+    fontSize: 14,
+    fontFamily: FONTS.bold,
+    color: Constants.saffron,
+  },
+  timeLabel: {
+    fontSize: 9,
+    fontFamily: FONTS.medium,
+    color: '#666',
+    marginTop: 2,
+  },
+  timeSeparator: {
+    fontSize: 14,
+    fontFamily: FONTS.bold,
+    color: Constants.saffron,
+    marginHorizontal: 4,
+  },
+  addToCartBtn: {
+    backgroundColor: Constants.saffron,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  addToCartBtnActive: {
+    backgroundColor: '#10B981',
+  },
+  addToCartText: {
+    color: '#fff',
+    fontSize: 14,
+    fontFamily: FONTS.bold,
+  },
+  noFlashSale: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  noFlashSaleText: {
+    fontSize: 16,
+    fontFamily: FONTS.bold,
+    color: '#666',
+    marginBottom: 6,
+  },
+  noFlashSaleSubtext: {
+    fontSize: 13,
+    fontFamily: FONTS.medium,
+    color: '#999',
+  },
+  loadingContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  flashSaleImageContainer: {
+    width: '100%',
+    height: 140,
+    position: 'relative',
+  },
+  flashSaleImage: {
+    width: '100%',
+    height: '100%',
+  },
+  discountBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: Constants.primaryColor,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  discountText: {
+    color: '#fff',
+    fontSize: 12,
+    fontFamily: FONTS.semiBold,
+  },
+  flashSaleDetails: {
+    padding: 10,
+  },
+  flashSaleName: {
+    fontSize: 14,
+    fontFamily: FONTS.medium,
+    color: '#333',
+    marginBottom: 4,
+  },
+  flashSaleWeight: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 6,
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  flashSalePrice: {
+    fontSize: 16,
+    fontFamily: FONTS.bold,
+    color: Constants.primaryColor,
+    marginRight: 8,
+  },
+  originalPrice: {
+    fontSize: 12,
+    color: '#999',
+    textDecorationLine: 'line-through',
+  },
+  timerContainer: {
+    backgroundColor: '#FFF5F5',
+    padding: 4,
+    borderRadius: 4,
+    marginTop: 4,
+  },
+  timerText: {
+    fontSize: 10,
+    color: '#E53E3E',
+    textAlign: 'center',
+    fontFamily: FONTS.medium,
+  },
+  noFlashSaleContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   container: {
     flex: 1,
     backgroundColor: Constants.saffron,
   },
   inpcov: {
-    // borderWidth: 1,
     borderColor: Constants.customgrey,
     backgroundColor: Constants.white,
     borderRadius: 22,
@@ -520,8 +1151,6 @@ const styles = StyleSheet.create({
   },
   localIndustryOverlay: {
     flex: 1,
-   
- 
     justifyContent: 'space-between',
   },
   localIndustryHeader: {
@@ -557,7 +1186,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'left',
     minHeight: 45,
-    // backgroundColor:Constants.red
   },
   btn: {
     height: 40,
@@ -587,15 +1215,11 @@ const styles = StyleSheet.create({
   },
   caroimg: {
     width: '100%',
-    // resizeMode:'contain',
-    // backgroundColor:'red',
     marginVertical: 20,
   },
   box: {
-    // width: 180,
     marginVertical: 5,
     marginHorizontal: 15,
-    // boxShadow: '0 0 6 0.5 grey',
   },
   cardimg: {
     height: 130,
@@ -603,7 +1227,6 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
     alignSelf: 'center',
     borderRadius: 10,
-    // backgroundColor:'red'
   },
   cardimg2: {
     height: 50,
@@ -613,7 +1236,6 @@ const styles = StyleSheet.create({
     top: -20,
     justifyContent: 'center',
     alignItems: 'center',
-    // backgroundColor:Constants.red
   },
   seealltxt: {
     fontSize: 18,
@@ -631,19 +1253,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginHorizontal: 20,
     marginVertical: 10,
-    // backgroundColor:Constants.red
-    // marginTop:80
   },
-  // Categories Section Styles
   sectionContainer: {
-    marginTop: -20,  // Reduced from -2 to -20 to move content up
+    marginTop: -10,  
     paddingHorizontal: 10,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 10,  // Added margin to compensate for the upward movement
+    marginTop: 10, 
   },
   sectionTitle: {
     fontSize: 18,
@@ -654,18 +1273,17 @@ const styles = StyleSheet.create({
   seeAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 5,  // Keep padding for touch area
-    marginTop: -5,  // Slight adjustment for vertical alignment
+    paddingVertical: 5,  
+    marginTop: -5,  
   },
   seeAllText: {
-    color: 'black', // gray-800
+    color: 'black', 
     marginRight: 5,
     fontSize: 14,
     fontFamily: FONTS.bold,
-    marginTop: -10,  // Move only the text up
-    lineHeight: 20,  // Ensure consistent line height
+    marginTop: -10,
+    lineHeight: 20,
   },
-  // Categories Grid
   categoriesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -710,3 +1328,4 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 });
+

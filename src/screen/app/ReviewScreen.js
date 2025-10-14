@@ -169,9 +169,19 @@ const ReviewScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-     
+      {/* Header with back button */}
+      <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Icon name="arrow-back" size={24} color={COLORS.black} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Write a Review</Text>
+        <View style={{ width: 24 }} /> {/* For alignment */}
+      </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: 10 }]}>
         <View style={styles.productContainer}>
           <Image 
             source={{ uri: product.images?.[0]?.url || 'https://via.placeholder.com/100' }} 
@@ -269,6 +279,22 @@ const ReviewScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.lightGray,
+  },
+  backButton: {
+    padding: 5,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.black,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.white,
