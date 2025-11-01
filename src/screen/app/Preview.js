@@ -727,6 +727,11 @@ console.log('Final Prices:', {
   );
 };
 
+// Set navigation options to hide the default header
+ProductDetail.navigationOptions = {
+  headerShown: false,
+};
+
 export default ProductDetail;
 
 const styles = StyleSheet.create({

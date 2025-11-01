@@ -6,7 +6,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import SellerOrders from '../screen/seller/SellerOrders';
 import SellerProducts from '../screen/seller/SellerProducts';
 import SellerWallet from '../screen/seller/SellerWallet';
-import SellerAccount from '../screen/seller/SellerAccount';
+import Account from '../screen/app/Account';
 import TransactionHistory from '../screen/seller/TransactionHistory';
 import OrderDetails from '../screen/seller/OrderDetails';
 
@@ -99,7 +99,7 @@ const SellerTabs = () => {
       <Tab.Screen name="Products" component={SellerProducts} />
       <Tab.Screen name="Orders" component={OrdersStackScreen} />
       <Tab.Screen name="Wallet" component={WalletStackScreen} />
-      <Tab.Screen name="Account" component={SellerAccount} />
+      <Tab.Screen name="Account" component={Account} options={{ headerShown: false }} />
     </Tab.Navigator>
   );
 };

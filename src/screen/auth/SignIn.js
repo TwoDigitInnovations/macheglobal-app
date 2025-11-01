@@ -1,4 +1,6 @@
+import { useNavigation } from '@react-navigation/native';
 import React, { useState, useContext } from 'react';
+import Constants from '../../Assets/Helpers/constant';
 import {
   View,
   Text,
@@ -9,6 +11,7 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  StatusBar,
 } from 'react-native';
 import { Post } from '../../Assets/Helpers/Service';
 import { LoadContext, ToastContext } from '../../../App';
@@ -164,8 +167,18 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
+  const handleSkip = () => {
+    navigation.replace('App');
+  };
+
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleSkip} style={styles.skipButton}>
+          <Text style={styles.skipText}>Skip</Text>
+        </TouchableOpacity>
+      </View>
       <View style={styles.content}>
         {/* Title */}
         <Text style={styles.title}>
@@ -293,6 +306,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'white',
     justifyContent: 'center',
+  },
+  header: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    zIndex: 1,
+  },
+  skipButton: {
+    padding: 10,
+  },
+  skipText: {
+    color: Constants.saffron,
+    fontSize: 16,
+    fontWeight: '500',
   },
   content: {
     paddingHorizontal: 24,

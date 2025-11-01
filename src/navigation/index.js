@@ -48,6 +48,7 @@ import CheckoutOrder from '../screen/app/CheckoutOrder';
 import OrderSuccessScreen from '../screen/app/OrderSuccessScreen';
 import AddAddressScreen from '../screen/app/AddAddressScreen';
 import SearchAddressScreen from '../screen/app/SearchAddressScreen';
+import ProductDetails from '../screen/seller/ProductDetails';
 import AddressListScreen from '../screen/app/AddressListScreen';
 import SubcategoryProducts from '../screen/app/SubcategoryProducts';
 
@@ -126,6 +127,21 @@ export default function Navigation(props) {
         <Stack.Screen name="AddProduct" component={ProductForm} />
         <Stack.Screen name="TestMap" component={TestMap} />
         <Stack.Screen name="SellerStore" component={SellerStore} />
+        <Stack.Screen 
+          name="ProductDetails" 
+          component={ProductDetails} 
+          options={{
+            headerShown: true,
+            title: 'Product Details',
+            headerStyle: {
+              backgroundColor: '#FF7000',
+            },
+            headerTintColor: '#fff',
+            headerTitleStyle: {
+              fontWeight: '600',
+            },
+          }}
+        />
         <Stack.Screen name="SellerTabs" component={SellerTabs} />
         <Stack.Screen name="CategorySubCat" component={CategorySubCat} />
         <Stack.Screen 
@@ -145,15 +161,7 @@ export default function Navigation(props) {
           name="Preview" 
           component={Preview} 
           options={{
-            headerShown: true,
-            title: 'Product Details',
-            headerStyle: {
-              backgroundColor: '#FF7000',
-            },
-            headerTintColor: '#fff',
-            headerTitleStyle: {
-              fontWeight: '600',
-            },
+            headerShown: false
           }}
         />
       </Stack.Navigator>
