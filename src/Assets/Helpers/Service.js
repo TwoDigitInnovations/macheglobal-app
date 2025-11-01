@@ -17,7 +17,6 @@ const GetApi = async (url, props, data) => {
           let userDetail = JSON.parse(user);
           console.log(Constants.baseUrl + url);
           console.log(`jwt ${userDetail?.token}`);
-
           axios
             .get(Constants.baseUrl + url, {
               headers: {
@@ -113,19 +112,19 @@ const Post = async (url, data, props = {}) => {
           console.log('url===>', Constants.baseUrl + url);
           console.log('token===>', `jwt ${userDetail?.token}`);
           console.log('data=====>', data);
-          
+
           // Prepare headers
           const headers = {
             'Content-Type': 'application/json',
             ...(userDetail?.token && { Authorization: `jwt ${userDetail.token}` }),
             ...(props.headers || {})
           };
-          
+
           // If it's FormData, let the browser set the Content-Type with boundary
           if (data instanceof FormData) {
             delete headers['Content-Type'];
           }
-          
+
           axios
             .post(Constants.baseUrl + url, data, { headers })
             .then(res => {
