@@ -13,7 +13,8 @@ import {
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { GetApi } from '../../Assets/Helpers/Service';
+import { GetApi, Delete } from '../../Assets/Helpers/Service';
+import { Alert } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -61,16 +62,29 @@ const SellerProducts = () => {
   };
 
   const getProductImage = (item) => {
+  
     if (item?.varients && Array.isArray(item.varients) && item.varients.length > 0) {
       const variant = item.varients[0];
+     
       if (variant?.images && Array.isArray(variant.images) && variant.images.length > 0) {
-        return variant.images[0]?.url || variant.images[0];
+        
+        return typeof variant.images[0] === 'string' 
+          ? variant.images[0] 
+          : variant.images[0]?.url;
+      }
+      
+      if (variant?.image) {
+        return Array.isArray(variant.image) 
+          ? variant.image[0]?.url || variant.image[0]
+          : variant.image;
       }
     }
+ 
     if (item?.category?.image?.url) {
       return item.category.image.url;
     }
-    return null;
+
+    return 'https://via.placeholder.com/150';
   };
 
   const getProductPrice = (item) => {
@@ -112,6 +126,50 @@ const SellerProducts = () => {
     return item?.pieces || 0;
   };
 
+  const navigateToProductDetails = (product) => {
+    navigation.navigate('ProductDetails', { productId: product._id });
+  };
+
+  const handleDeleteProduct = (productId) => {
+    Alert.alert(
+      'Delete Product',
+      'Are you sure you want to delete this product?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => deleteProduct(productId),
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const deleteProduct = async (productId) => {
+    try {
+      setLoading(true);
+      // Using Delete method and passing ID in URL as per backend route
+      const response = await Delete(`product/deleteProduct/${productId}`, {});
+      
+      if (response?.status) {
+        // Remove the deleted product from the list
+        setProducts(products.filter(product => product._id !== productId));
+        Alert.alert('Success', 'Product deleted successfully');
+      } else {
+        throw new Error(response?.message || 'Failed to delete product');
+      }
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      Alert.alert('Error', error.message || 'An error occurred while deleting the product');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const renderItem = ({ item }) => {
     const imageUrl = getProductImage(item);
     const { originalPrice, offerPrice } = getProductPrice(item);
@@ -119,7 +177,10 @@ const SellerProducts = () => {
     const hasDiscount = originalPrice > offerPrice;
 
     return (
-      <View style={styles.productCard}>
+      <TouchableOpacity 
+        style={styles.productCard}
+        onPress={() => navigateToProductDetails(item)}
+      >
         <View style={styles.cardContent}>
           {/* Product Image */}
           <View style={styles.imageWrapper}>
@@ -165,15 +226,18 @@ const SellerProducts = () => {
 
           {/* Action Buttons */}
           <View style={styles.actionButtons}>
-            <TouchableOpacity style={styles.iconButton}>
+            {/* <TouchableOpacity style={styles.iconButton}>
               <Icon name="edit" size={18} color="#3B82F6" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton}>
+            </TouchableOpacity> */}
+            <TouchableOpacity 
+              style={styles.iconButton}
+              onPress={() => handleDeleteProduct(item._id)}
+            >
               <Icon name="delete-outline" size={18} color="#EF4444" />
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -239,12 +303,12 @@ const SellerProducts = () => {
           <Icon name="arrow-back" size={24} color="#111827" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Products</Text>
-        <TouchableOpacity 
+        {/* <TouchableOpacity 
           style={styles.addButton}
           onPress={() => navigation.navigate('AddProduct')}
         >
           <Text style={styles.addButtonText}>+ Add Product</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
       
       <FlatList
