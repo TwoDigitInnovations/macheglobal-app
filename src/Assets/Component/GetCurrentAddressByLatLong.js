@@ -14,11 +14,13 @@ import {
   geocode,
   RequestType,
 } from 'react-geocode';
+import Constants, { Googlekey } from '../Helpers/constant';
+
 
 const GetCurrentAddressByLatLong = (props) => {
   console.log(props);
   setDefaults({
-    key: "AIzaSyCre5Sym7PzqWQjHoNz7A3Z335oqtkUa9k", // Your API key here.
+    key: Googlekey, // Your API key here.
     language: "en", // Default language for responses.
     region: "es", // Default region for responses.
   });
