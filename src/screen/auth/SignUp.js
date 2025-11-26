@@ -16,8 +16,9 @@ import {
   Platform,
 } from 'react-native';
 import { Post } from '../../Assets/Helpers/Service';
-import PhoneInput from 'react-native-phone-number-input';
+import CountryPicker from 'react-native-country-picker-modal';
 import Icon from 'react-native-vector-icons/Feather';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SuccessPopup = ({ visible, onClose }) => {
   return (
@@ -59,9 +60,9 @@ export default function SignupScreen({ navigation }) {
   });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
-
-  // Phone input ref
-  const phoneInput = useRef(null);
+  const [countryCode, setCountryCode] = useState('IN');
+  const [callingCode, setCallingCode] = useState('91');
+  const [countryPickerVisible, setCountryPickerVisible] = useState(false);
 
   const handleInputChange = (name, value) => {
     setFormData({
@@ -108,6 +109,8 @@ export default function SignupScreen({ navigation }) {
       const response = await Post('auth/register', payload);
 
       if (response.success) {
+        // Remove guest user flag on successful registration
+        await AsyncStorage.removeItem('isGuestUser');
         setShowSuccess(true);
         // Auto navigate after 2 seconds
         setTimeout(() => {
@@ -194,64 +197,37 @@ export default function SignupScreen({ navigation }) {
 
         {/* Phone Number Input */}
         <View style={styles.inputContainer}>
-          <View style={styles.phoneInputContainer}>
-            <PhoneInput
-              ref={phoneInput}
-              defaultValue={formData.phone}
-              defaultCode="IN"
-              layout="first"
-              withShadow={false}
-              withDarkTheme={false}
-              containerStyle={{
-                flex: 1,
-                backgroundColor: 'transparent',
-                height: 50,
-                margin: 0,
-                padding: 0,
-                alignItems: 'center',
-                borderWidth: 0,
-              }}
-              textContainerStyle={{
-                backgroundColor: 'transparent',
-                padding: 0,
-                margin: 0,
-                height: 50,
-                borderWidth: 0,
-                marginLeft: 8,
-              }}
-              textInputStyle={{
-                color: '#1F2937',
-                fontSize: 16,
-                height: 48,
-                padding: 0,
-                margin: 0,
-                textAlignVertical: 'center',
-                flex: 1,
-              }}
-              codeTextStyle={{
-                color: '#1F2937',
-                fontSize: 16,
-                height: 50,
-                padding: 0,
-                margin: 0,
-                textAlignVertical: 'center',
-              }}
-              flagButtonStyle={{
-                width: 40,
-                height: 30,
-                padding: 0,
-                margin: 0,
-                justifyContent: 'center',
-                alignItems: 'center',
-                marginRight: 5,
-              }}
-              textInputProps={{
-                placeholder: 'Phone Number',
-                placeholderTextColor: '#9CA3AF',
-              }}
-              onChangeFormattedText={(text) => {
-                handleInputChange('phone', text);
-              }}
+          <View style={styles.phoneInputWrapper}>
+            <TouchableOpacity 
+              style={styles.countrySelector}
+              onPress={() => setCountryPickerVisible(true)}
+            >
+              <CountryPicker
+                countryCode={countryCode}
+                withFlag
+                withCallingCode
+                withFilter
+                withAlphaFilter
+                withEmoji
+                onSelect={(country) => {
+                  setCountryCode(country.cca2);
+                  setCallingCode(country.callingCode[0]);
+                  setCountryPickerVisible(false);
+                }}
+                visible={countryPickerVisible}
+                onClose={() => setCountryPickerVisible(false)}
+                containerButtonStyle={styles.countryButton}
+              />
+              <Text style={styles.callingCode}>+{callingCode}</Text>
+              <Icon name="chevron-down" size={16} color="#6B7280" />
+            </TouchableOpacity>
+            <TextInput
+              style={styles.phoneInput}
+              placeholder="Phone Number"
+              placeholderTextColor="#9CA3AF"
+              keyboardType="phone-pad"
+              value={formData.phone}
+              onChangeText={(text) => handleInputChange('phone', `+${callingCode}${text}`)}
             />
           </View>
           {errors.phone && <Text style={{ color: 'red' }}>{errors.phone}</Text>}
@@ -328,6 +304,17 @@ export default function SignupScreen({ navigation }) {
             </View>
           </TouchableOpacity>
         </View> */}
+
+        {/* Skip Button */}
+        <TouchableOpacity 
+          style={styles.skipButton}
+          onPress={async () => {
+            await AsyncStorage.setItem('isGuestUser', 'true');
+            navigation.replace('App');
+          }}
+        >
+          <Text style={styles.skipButtonText}>Skip</Text>
+        </TouchableOpacity>
 
         {/* Bottom Text */}
         <View style={styles.bottomContainer}>
@@ -511,20 +498,35 @@ const styles = StyleSheet.create({
     color: '#374151',
     fontSize: 16,
   },
-  phoneInputContainer: {
-    width: '100%',
+  phoneInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 8,
-    paddingHorizontal: 8, 
+    paddingHorizontal: 12,
     height: 50,
-    justifyContent: 'center',
-    overflow: 'hidden',
   },
-  dropdownArrow: {
-    color: '#6b7280',
-    fontSize: 10,
+  countrySelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: 8,
+  },
+  countryButton: {
+    marginRight: 4,
+  },
+  callingCode: {
+    fontSize: 16,
+    color: '#374151',
+    marginRight: 4,
+    fontWeight: '500',
+  },
+  phoneInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#374151',
+    padding: 0,
   },
   termsContainer: {
     marginBottom: 24,
@@ -566,6 +568,19 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     fontSize: 14,
     marginTop: 8
+  },
+  skipButton: {
+    alignItems: 'center',
+    paddingVertical: 2,
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  skipButtonText: {
+    color: '#f97316',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 10,
+    textDecorationLine: 'underline',
   },
   socialContainer: {
     flexDirection: 'row',

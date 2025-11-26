@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   CartFilledIcon,
   CartIcon,
@@ -36,6 +37,7 @@ import Products from '../screen/app/Products';
 import SubcategoryProducts from '../screen/app/SubcategoryProducts';
 import { createStackNavigator } from '@react-navigation/stack';
 import { CartContext } from '../../App';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Tab = createBottomTabNavigator();
 
@@ -78,6 +80,31 @@ const CartStack = () => (
 export const TabNav = () => {
   const { t } = useTranslation();
   const [cartdetail, setcartdetail] = useContext(CartContext);
+  const [isGuestUser, setIsGuestUser] = React.useState(false);
+  const [refreshKey, setRefreshKey] = React.useState(0);
+
+  // Check guest status on mount and periodically
+  React.useEffect(() => {
+    const checkGuestStatus = async () => {
+      const guestStatus = await AsyncStorage.getItem('isGuestUser');
+      const userDetail = await AsyncStorage.getItem('userDetail');
+      console.log('Guest status check:', guestStatus, 'User detail exists:', !!userDetail);
+      
+      // If user is logged in (has userDetail), they are NOT a guest
+      if (userDetail) {
+        setIsGuestUser(false);
+      } else {
+        setIsGuestUser(guestStatus === 'true');
+      }
+    };
+    
+    checkGuestStatus();
+    
+    // Check every 1 second for changes
+    const interval = setInterval(checkGuestStatus, 1000);
+    
+    return () => clearInterval(interval);
+  }, [refreshKey]);
 
 const AccountStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -86,7 +113,7 @@ const AccountStack = () => (
   </Stack.Navigator>
 );
 
-const TabArr = [
+const allTabs = [
     {
       iconActive: <HomeIcon color={Constants.saffron} height={24} />,
       iconInActive: (
@@ -127,8 +154,14 @@ const TabArr = [
       component: AccountStack,
       routeName: 'Account',
       name: 'Account',
+      hideForGuest: true,
     },
   ];
+
+  // Always show all tabs
+  const TabArr = allTabs;
+
+  console.log('TabNav render - isGuestUser:', isGuestUser, 'TabArr length:', TabArr.length);
 
   const TabButton = useCallback(
     ({ accessibilityState, onPress, onclick, item, index }) => {

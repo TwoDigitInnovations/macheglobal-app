@@ -48,6 +48,21 @@ const Account = () => {
     avatar: user?.user?.avatar || user?.user?.profile || '',
   });
   
+  // Check if user is guest and redirect to login
+  useEffect(() => {
+    const checkGuestUser = async () => {
+      const isGuest = await AsyncStorage.getItem('isGuestUser');
+      const userDetail = await AsyncStorage.getItem('userDetail');
+      
+      if (isGuest === 'true' || !userDetail) {
+        // Guest user - redirect to login
+        reset('Auth');
+      }
+    };
+    
+    checkGuestUser();
+  }, []);
+  
   // Update userDetail when user context changes
   useEffect(() => {
     

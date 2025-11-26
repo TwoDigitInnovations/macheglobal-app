@@ -91,6 +91,8 @@ const LoginScreen = ({ navigation }) => {
       // Save user data to AsyncStorage
       try {
         await AsyncStorage.setItem('userDetail', JSON.stringify(userData));
+        // Remove guest user flag on successful login
+        await AsyncStorage.removeItem('isGuestUser');
         console.log('User data saved to AsyncStorage');
       } catch (storageError) {
         console.error('Error saving to AsyncStorage:', storageError);
@@ -167,18 +169,9 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
-  const handleSkip = () => {
-    navigation.replace('App');
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleSkip} style={styles.skipButton}>
-          <Text style={styles.skipText}>Skip</Text>
-        </TouchableOpacity>
-      </View>
       <View style={styles.content}>
         {/* Title */}
         <Text style={styles.title}>
@@ -279,16 +272,17 @@ const LoginScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View> */}
 
-        {/* Bottom Text */}
-        <View style={styles.bottomContainer}>
-          <View style={styles.bottomTextContainer}>
-            <Text style={styles.bottomText}>Have an account ? </Text>
-            <TouchableOpacity>
-              <Text style={styles.bottomLinkText}>Log in</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-        
+        {/* Skip Button */}
+        <TouchableOpacity 
+          style={styles.skipButtonCenter}
+          onPress={async () => {
+            await AsyncStorage.setItem('isGuestUser', 'true');
+            navigation.replace('App');
+          }}
+        >
+          <Text style={styles.skipButtonCenterText}>Skip</Text>
+        </TouchableOpacity>
+
         {/* Don't have an account? Sign up */}
         <View style={styles.signupContainer}>
           <Text style={styles.signupText}>Don't have an account? </Text>
@@ -307,20 +301,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     justifyContent: 'center',
   },
-  header: {
-    position: 'absolute',
-    top: 40,
-    right: 20,
-    zIndex: 1,
-  },
-  skipButton: {
-    padding: 10,
-  },
-  skipText: {
-    color: Constants.saffron,
-    fontSize: 16,
-    fontWeight: '500',
-  },
+
   content: {
     paddingHorizontal: 24,
     borderRadius: 24,
@@ -426,6 +407,19 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     fontSize: 14,
   },
+  skipButtonCenter: {
+    alignItems: 'center',
+    paddingVertical: 2,
+    marginTop: 8,
+    marginBottom: 6,
+  },
+  skipButtonCenterText: {
+    color: '#f97316',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 10,
+    textDecorationLine: 'underline',
+  },
   socialContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -476,28 +470,9 @@ const styles = StyleSheet.create({
     height: 36,
     
   },
-  bottomContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    paddingBottom: 32,
-  },
-  bottomTextContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  bottomText: {
-    color: '#6b7280',
-    fontSize: 14,
-  },
-  bottomLinkText: {
-    color: '#f97316',
-    fontSize: 14,
-    fontWeight: '500',
-  },
   signupContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 24,
     marginBottom: 32,
   },
   signupText: {
