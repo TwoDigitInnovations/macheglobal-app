@@ -14,7 +14,7 @@ import React, { useState, useEffect, useRef, useContext } from 'react';
 import Geocode, { fromAddress, setDefaults, setKey } from 'react-geocode';
 // import Ionicons from 'react-native-vector-icons/Ionicons';
 // import Constants from '../Helpers/constant';
-import Constants from '../Helpers/constant';
+import Constants, { Googlekey } from '../Helpers/constant';
 
 
 import axios from 'axios';
@@ -89,7 +89,7 @@ const LocationDropdown = props => {
     'https://maps.googleapis.com/maps/api/place';
 
   const GooglePlacesInput = async text => {
-    const apiUrl = `${GOOGLE_PACES_API_BASE_URL}/autocomplete/json?key=AIzaSyDHd5FoyP2sDBo0vO2i0Zq7TIUZ_7GhBcI&input=${text}`;
+    const apiUrl = `${GOOGLE_PACES_API_BASE_URL}/autocomplete/json?key=${Googlekey}&input=${text}`;
     //&components=country:ec
     try {
       if (Platform.OS === 'ios') {
@@ -178,7 +178,7 @@ const LocationDropdown = props => {
 
   const checkLocation = async add => {
     try {
-      setKey('AIzaSyCre5Sym7PzqWQjHoNz7A3Z335oqtkUa9k');
+      setKey(Googlekey);
 
       if (add) {
         const response = await fromAddress(add);

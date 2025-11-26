@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import {View, Text, PermissionsAndroid, Platform} from 'react-native';
+import { View, Text, PermissionsAndroid, Platform } from 'react-native';
 import React from 'react';
 import Geolocation from 'react-native-geolocation-service';
 import {
@@ -19,6 +19,8 @@ import {
   geocode,
   RequestType,
 } from 'react-geocode';
+import { Googlekey } from '../Helpers/constant';
+
 
 const CustomCurrentLocation = async getLocation => {
   try {
@@ -29,7 +31,7 @@ const CustomCurrentLocation = async getLocation => {
           Geolocation.getCurrentPosition(
             position => {
               setDefaults({
-                key: 'AIzaSyDHd5FoyP2sDBo0vO2i0Zq7TIUZ_7GhBcI', // Your API key here.
+                key: Googlekey, // Your API key here.
                 language: 'en', // Default language for responses.
                 region: 'es', // Default region for responses.
               });
@@ -37,9 +39,9 @@ const CustomCurrentLocation = async getLocation => {
                 position?.coords?.latitude,
                 position?.coords?.longitude,
               )
-                .then(({results}) => {
+                .then(({ results }) => {
                   getLocation(position, results);
-                  const {lat, lng} = results[0].geometry.location;
+                  const { lat, lng } = results[0].geometry.location;
                   console.log(lat, lng);
                 })
                 .catch(console.error);
@@ -48,7 +50,7 @@ const CustomCurrentLocation = async getLocation => {
               console.log(error.code, error.message);
               //   return error;
             },
-            {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
           );
         }
       });
@@ -61,14 +63,14 @@ const CustomCurrentLocation = async getLocation => {
         Geolocation.getCurrentPosition(
           position => {
             setDefaults({
-              key: 'AIzaSyDHd5FoyP2sDBo0vO2i0Zq7TIUZ_7GhBcI', // Your API key here.
+              key: Googlekey, // Your API key here.
               language: 'en', // Default language for responses.
               region: 'es', // Default region for responses.
             });
             fromLatLng(position?.coords?.latitude, position?.coords?.longitude)
-              .then(({results}) => {
+              .then(({ results }) => {
                 getLocation(position, results);
-                const {lat, lng} = results[0].geometry.location;
+                const { lat, lng } = results[0].geometry.location;
                 console.log(lat, lng);
               })
               .catch(console.error);
@@ -77,7 +79,7 @@ const CustomCurrentLocation = async getLocation => {
             console.log(error.code, error.message);
             //   return error;
           },
-          {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
         );
       } else {
         console.log('location permission denied');

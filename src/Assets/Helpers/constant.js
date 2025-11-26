@@ -5,7 +5,7 @@
 const prodUrl = 'https://api.macheglobal.com/api/';
 
 let apiUrl = prodUrl;
-export const Googlekey = 'AIzaSyCre5Sym7PzqWQjHoNz7A3Z335oqtkUa9k';
+export const Googlekey = 'AIzaSyB7uae9_UQGuFbdzHKJq1UXZJDufQUjyME';
 export const Currency = '$';
 
 export const Constants = {
