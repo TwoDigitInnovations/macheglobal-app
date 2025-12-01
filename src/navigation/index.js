@@ -145,6 +145,11 @@ export default function Navigation(props) {
         <Stack.Screen name="SellerTabs" component={SellerTabs} />
         <Stack.Screen name="CategorySubCat" component={CategorySubCat} />
         <Stack.Screen 
+          name="HelpCenter" 
+          component={HelpCenter} 
+          options={{ headerShown: false }} 
+        />
+        <Stack.Screen 
           name="CheckoutOrder" 
           component={CheckoutOrder} 
           options={{ headerShown: false }} 

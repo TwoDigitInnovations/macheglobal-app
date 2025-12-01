@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useCallback } from 'react';
 import Constants, { FONTS } from '../../Assets/Helpers/constant';
 import { reset, navigate } from '../../../navigationRef';
 import { LoadContext, ToastContext, UserContext } from '../../../App';
@@ -32,6 +32,7 @@ import InAppBrowser from 'react-native-inappbrowser-reborn';
 import Language from './Language';
 import { ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import { useFocusEffect } from '@react-navigation/native';
 
 const Account = () => {
   const { t } = useTranslation();
@@ -48,20 +49,46 @@ const Account = () => {
     avatar: user?.user?.avatar || user?.user?.profile || '',
   });
   
-  // Check if user is guest and redirect to login
-  useEffect(() => {
-    const checkGuestUser = async () => {
-      const isGuest = await AsyncStorage.getItem('isGuestUser');
-      const userDetail = await AsyncStorage.getItem('userDetail');
+  // Load user data whenever screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      const loadUserData = async () => {
+        const isGuest = await AsyncStorage.getItem('isGuestUser');
+        const userDetailString = await AsyncStorage.getItem('userDetail');
+        
+        if (isGuest === 'true' || !userDetailString) {
+          // Guest user - redirect to login
+          reset('Auth');
+        } else {
+          // Load user data from AsyncStorage
+          try {
+            const userData = JSON.parse(userDetailString);
+            console.log('Loaded user data from AsyncStorage:', userData);
+            
+            // Check both user object and root level for avatar
+            const avatarUrl = userData?.user?.avatar || 
+                            userData?.user?.profile || 
+                            userData?.avatar || 
+                            userData?.profile || 
+                            '';
+            
+            console.log('Avatar URL:', avatarUrl);
+            
+            setUserDetail({
+              email: userData?.user?.email || userData?.email || '',
+              name: userData?.user?.name || userData?.name || '',
+              phone: userData?.user?.phone || userData?.user?.number || userData?.phone || userData?.number || '',
+              avatar: avatarUrl,
+            });
+          } catch (error) {
+            console.error('Error parsing user data:', error);
+          }
+        }
+      };
       
-      if (isGuest === 'true' || !userDetail) {
-        // Guest user - redirect to login
-        reset('Auth');
-      }
-    };
-    
-    checkGuestUser();
-  }, []);
+      loadUserData();
+    }, [])
+  );
   
   // Update userDetail when user context changes
   useEffect(() => {
@@ -193,8 +220,8 @@ const Account = () => {
             )}
           </View>
           <View style={{ marginLeft: 15 }}>
-            <Text style={styles.protxt}>{user?.name || 'User'}</Text>
-            <Text style={styles.protxt2}>{user?.email || ''}</Text>
+            <Text style={styles.protxt}>{userDetail?.name || 'User'}</Text>
+            <Text style={styles.protxt2}>{userDetail?.email || ''}</Text>
           </View>
         </TouchableOpacity>
         <ScrollView

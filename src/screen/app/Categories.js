@@ -105,34 +105,48 @@ const Categories = ({ navigation }) => {
           scrollEnabled={false}
           numColumns={4}
           style={{ width: '100%', gap: 5, marginVertical: 10 }}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={{ flex: 1, marginVertical: 10 }}
-              onPress={() =>
-                navigation.navigate('CategorySubCat', { 
-                  categoryId: item._id, 
-                  categoryName: item.name,
-                  categoryImage: item.image
-                })
-              }>
-              <View style={styles.categorycircle}>
-                <Image
-                  // source={item.img}
-                  source={
-                    item?.image
-                      ? {
-                        uri: `${item?.image}`,
-                      }
-                      : require('../../Assets/Images/veg.png')
+          renderItem={({ item }) => {
+            const hasSubcategory = item.Subcategory && Array.isArray(item.Subcategory) && item.Subcategory.length > 0;
+            console.log('Category:', item.name, 'hasSubcategory:', hasSubcategory, 'Subcategory:', item.Subcategory);
+            
+            return (
+              <TouchableOpacity
+                style={{ flex: 1, marginVertical: 10 }}
+                onPress={() => {
+                  if (hasSubcategory) {
+                    navigation.navigate('CategorySubCat', { 
+                      categoryId: item._id, 
+                      categoryName: item.name,
+                      categoryImage: item.image
+                    });
+                  } else {
+                    navigation.navigate('SubcategoryProducts', {
+                      item: item._id,
+                      name: item.name
+                    });
                   }
-                  style={styles.categoryimg}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.categorytxt2}>{item.name}</Text>
-              </View>
-            </TouchableOpacity>
-          )}
+                }}>
+                <View style={styles.categorycircle}>
+                  <Image
+                    source={
+                      item?.image
+                        ? {
+                          uri: `${item?.image}`,
+                        }
+                        : require('../../Assets/Images/veg.png')
+                    }
+                    style={styles.categoryimg}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.categorytxt2}>{item.name}</Text>
+                  {!hasSubcategory && (
+                    <Text style={styles.viewProductsTxt}>{t('View Products')}</Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          }}
         />
         {/* <LinearGradient
         start={{x: 0, y: 0}}
@@ -327,5 +341,13 @@ const styles = StyleSheet.create({
     // height:100,
     // width:'100%',
     // backgroundColor: Constants.lightblue,
+  },
+  viewProductsTxt: {
+    fontSize: 10,
+    color: Constants.pink,
+    fontFamily: FONTS.Medium,
+    textAlign: 'center',
+    marginTop: 2,
+    fontWeight: '600',
   },
 });

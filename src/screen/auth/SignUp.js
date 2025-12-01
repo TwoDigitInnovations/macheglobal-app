@@ -99,7 +99,7 @@ export default function SignupScreen({ navigation }) {
     const payload = {
       name: formData.name,
       email: formData.email,
-      phone: formData.phone,
+      phone: `+${callingCode}${formData.phone}`,
       password: formData.password,
       role: userType === 'user' ? 'User' : 'Seller', // Changed from userType to role and capitalize first letter
     };
@@ -227,7 +227,7 @@ export default function SignupScreen({ navigation }) {
               placeholderTextColor="#9CA3AF"
               keyboardType="phone-pad"
               value={formData.phone}
-              onChangeText={(text) => handleInputChange('phone', `+${callingCode}${text}`)}
+              onChangeText={(text) => handleInputChange('phone', text)}
             />
           </View>
           {errors.phone && <Text style={{ color: 'red' }}>{errors.phone}</Text>}

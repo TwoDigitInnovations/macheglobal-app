@@ -65,13 +65,32 @@ const SubcategoryProducts = props => {
       if (res?.status) {
       
         let products = Array.isArray(res.data) ? res.data : [];
+        console.log('Total products from API:', products.length);
+        console.log('Filtering by subcategoryId:', subcategoryId);
         
         if (subcategoryId) {
           products = products.filter(product => {
-           
-            return product.subcategory === subcategoryId || 
-                   (product.category?.Subcategory?.some(sub => sub._id === subcategoryId));
+            // Check if subcategoryId matches subcategory field
+            if (product.subcategory === subcategoryId) {
+              console.log('Match found - subcategory:', product.name);
+              return true;
+            }
+            
+            // Check if subcategoryId matches category field (for products without subcategory)
+            if (product.category === subcategoryId || product.category?._id === subcategoryId) {
+              console.log('Match found - category:', product.name);
+              return true;
+            }
+            
+            // Check if subcategoryId is in category's Subcategory array
+            if (product.category?.Subcategory?.some(sub => sub._id === subcategoryId)) {
+              console.log('Match found - category subcategory:', product.name);
+              return true;
+            }
+            
+            return false;
           });
+          console.log('Filtered products count:', products.length);
         }
         
         
@@ -228,16 +247,24 @@ const SubcategoryProducts = props => {
 
   if (loading && productlist.length === 0) {
     return (
-      <SafeAreaView style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color={Constants.primaryColor} />
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        {renderHeader()}
+        <View style={styles.centerContent}>
+          <ActivityIndicator size="large" color={Constants.primaryColor} />
+        </View>
       </SafeAreaView>
     );
   }
 
   if (productlist.length === 0 && !loading) {
     return (
-      <SafeAreaView style={[styles.container, styles.centerContent]}>
-        <Text style={styles.noProductsText}>{t('No products found')}</Text>
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        {renderHeader()}
+        <View style={styles.centerContent}>
+          <Text style={styles.noProductsText}>{t('No products found')}</Text>
+        </View>
       </SafeAreaView>
     );
   }
@@ -290,6 +317,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   centerContent: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },

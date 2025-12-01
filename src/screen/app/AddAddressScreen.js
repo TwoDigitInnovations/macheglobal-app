@@ -14,7 +14,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import CountryPicker from 'react-native-country-picker-modal';
-import { Post, Put } from '../../Assets/Helpers/Service';
+import { Post, Put, GetApi } from '../../Assets/Helpers/Service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AddAddressScreen = ({ route }) => {
@@ -76,6 +76,22 @@ const AddAddressScreen = ({ route }) => {
 
     try {
       setIsLoading(true);
+      
+      // Check address limit only when creating new address (not editing)
+      if (!isEditMode) {
+        const addressesResponse = await GetApi('addresses');
+        if (addressesResponse.success && addressesResponse.data) {
+          if (addressesResponse.data.length >= 5) {
+            Alert.alert(
+              'Address Limit Reached',
+              'You can only create up to 5 addresses. Please delete an old address to create a new one.',
+              [{ text: 'OK' }]
+            );
+            setIsLoading(false);
+            return;
+          }
+        }
+      }
       
       // First, handle default address if needed
       if (isDefaultAddress) {

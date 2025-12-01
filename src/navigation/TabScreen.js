@@ -83,12 +83,11 @@ export const TabNav = () => {
   const [isGuestUser, setIsGuestUser] = React.useState(false);
   const [refreshKey, setRefreshKey] = React.useState(0);
 
-  // Check guest status on mount and periodically
+  // Check guest status on mount only
   React.useEffect(() => {
     const checkGuestStatus = async () => {
       const guestStatus = await AsyncStorage.getItem('isGuestUser');
       const userDetail = await AsyncStorage.getItem('userDetail');
-      console.log('Guest status check:', guestStatus, 'User detail exists:', !!userDetail);
       
       // If user is logged in (has userDetail), they are NOT a guest
       if (userDetail) {
@@ -99,12 +98,7 @@ export const TabNav = () => {
     };
     
     checkGuestStatus();
-    
-    // Check every 1 second for changes
-    const interval = setInterval(checkGuestStatus, 1000);
-    
-    return () => clearInterval(interval);
-  }, [refreshKey]);
+  }, []);
 
 const AccountStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>

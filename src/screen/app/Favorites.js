@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { CartContext } from '../../../App';
+import { CartContext, ToastContext } from '../../../App';
 import { 
   View, 
   Text, 
@@ -15,17 +15,44 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { GetApi, Post } from '../../Assets/Helpers/Service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
+import { navigate } from '../../../navigationRef';
+import DriverHeader from '../../Assets/Component/DriverHeader';
+import { useTranslation } from 'react-i18next';
 
-const Favorites = () => {
-  const [quantities, setQuantities] = useState({});
+const Favorites = ({ navigation }) => {
+  const { t } = useTranslation();
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [cartdetail, setcartdetail] = useContext(CartContext);
+  const [toast, setToast] = useContext(ToastContext);
+  const [showQuantityControls, setShowQuantityControls] = useState({});
 
   useEffect(() => {
     fetchFavorites();
   }, []);
+
+  useEffect(() => {
+    if (favorites && cartdetail) {
+      const existingCart = Array.isArray(cartdetail) ? cartdetail : [];
+      const newShowQuantityControls = {};
+      
+      favorites.forEach(item => {
+        const product = item.product || item;
+        const existingProduct = existingCart.find(
+          f => f.productid === product._id
+        );
+        
+        if (existingProduct && existingProduct.qty > 0) {
+          newShowQuantityControls[product._id] = true;
+        } else {
+          newShowQuantityControls[product._id] = false;
+        }
+      });
+      
+      setShowQuantityControls(newShowQuantityControls);
+    }
+  }, [favorites, cartdetail]);
 
   const fetchFavorites = async () => {
     try {
@@ -117,108 +144,63 @@ const Favorites = () => {
     }
   };
 
-  const handleAddToCart = async (item) => {
-    try {
-      console.log('Starting add to cart process...');
-      const user = await AsyncStorage.getItem('userDetail');
-      
-      if (!user) {
-        console.log('User not logged in');
-        Toast.show({
-          type: 'error',
-          text1: 'Error',
-          text2: 'Please login to add items to cart',
-          visibilityTime: 2000,
-        });
-        return;
-      }
+  const cartdata = async (item) => {
+    const product = item.product || item;
+    const existingCart = Array.isArray(cartdetail) ? cartdetail : [];
+    
+    // Get the selected variant or first variant
+    const selectedVariant = product.varients?.[0];
+    const variantPrice = parseFloat(selectedVariant?.selected?.[0]?.price) || 0;
+    const variantOfferPrice = parseFloat(selectedVariant?.selected?.[0]?.offerprice) || variantPrice;
 
-      const product = item.product || item;
-      console.log('Product data:', JSON.stringify(product, null, 2));
-      
-      const variant = product.varients?.[0]?.selected?.[0];
-      console.log('Selected variant:', variant);
-      
-      if (!variant) {
-        const errorMsg = 'No variant available for this product';
-        console.log(errorMsg);
-        Toast.show({
-          type: 'error',
-          text1: 'Error',
-          text2: errorMsg,
-          visibilityTime: 2000,
-        });
-        return;
-      }
+    // Find existing product in cart
+    const existingProduct = existingCart.find(
+      f => f.productid === product._id
+    );
 
-      // Get existing cart from context
-      const existingCart = Array.isArray(cartdetail) ? [...cartdetail] : [];
-      
-      // Find if product already exists in cart
-      const existingProductIndex = existingCart.findIndex(
-        cartItem => cartItem.productid === product._id
-      );
+    if (!existingProduct) {
+      // Add new product to cart
+      const newProduct = {
+        productid: product._id,
+        productname: product.name,
+        vietnamiesName: product?.vietnamiesName,
+        price: variantPrice,
+        offer: variantOfferPrice,
+        image: selectedVariant?.image?.[0] || '',
+        price_slot: product?.price_slot?.[0] || {},
+        qty: 1,
+        seller_id: product.SellerId,
+        slug: product.slug,
+        total: variantOfferPrice,
+        BarCode: product.BarCode || '',
+        isShipmentAvailable: product.isShipmentAvailable !== false,
+        isInStoreAvailable: product.isInStoreAvailable !== false,
+        isCurbSidePickupAvailable: product.isCurbSidePickupAvailable !== false,
+        isNextDayDeliveryAvailable: product.isNextDayDeliveryAvailable !== false,
+      };
 
-      if (existingProductIndex === -1) {
-        // Product not in cart, add new item
-        const newItem = {
-          productid: product._id,
-          productname: product.name,
-          product_image: product.varients?.[0]?.image?.[0] || '',
-          price: variant.price || 0,
-          offerprice: variant.offerprice || variant.price || 0,
-          qty: 1,
-          total: variant.offerprice || variant.price || 0,
-          variant_id: variant._id,
-          variant_name: variant.name || 'Default',
-          user_id: JSON.parse(user).id,
-          isNextDayDeliveryAvailable: product.isNextDayDeliveryAvailable !== false,
-        };
-        
-        existingCart.push(newItem);
-      } else {
-        // Product exists, update quantity
-        const existingItem = existingCart[existingProductIndex];
-        const newQty = (existingItem.qty || 0) + 1;
-        
-        existingCart[existingProductIndex] = {
-          ...existingItem,
-          qty: newQty,
-          total: (variant.offerprice || variant.price || 0) * newQty
-        };
-      }
-
-      // Update context and local storage
-      setcartdetail(existingCart);
-      await AsyncStorage.setItem('cartdata', JSON.stringify(existingCart));
-      
-      // Update local quantities state
-      setQuantities(prev => ({
-        ...prev,
-        [product._id]: (prev[product._id] || 0) + 1
-      }));
-      
-      console.log('Cart updated successfully');
-      
-      Toast.show({
-        type: 'success',
-        text1: 'Success',
-        text2: 'Added to cart',
-        visibilityTime: 2000,
+      const updatedCart = [...existingCart, newProduct];
+      setcartdetail(updatedCart);
+      await AsyncStorage.setItem('cartdata', JSON.stringify(updatedCart));
+      setToast(t('Successfully added to cart.'));
+      setShowQuantityControls(prev => ({ ...prev, [product._id]: true }));
+    } else {
+      // Update quantity of existing product
+      const updatedCart = existingCart.map(_i => {
+        if (_i?.productid === product._id) {
+          const newQty = _i.qty + 1;
+          return { 
+            ..._i, 
+            qty: newQty,
+            total: _i.offer * newQty 
+          };
+        } else {
+          return _i;
+        }
       });
-      
-    } catch (error) {
-      console.error('Error in handleAddToCart:', {
-        message: error.message,
-        stack: error.stack
-      });
-      
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Failed to add to cart. Please try again.',
-        visibilityTime: 3000,
-      });
+      setcartdetail(updatedCart);
+      await AsyncStorage.setItem('cartdata', JSON.stringify(updatedCart));
+      setToast(t('Successfully added to cart.'));
     }
   };
 
@@ -235,11 +217,20 @@ const Favorites = () => {
     return (
       <View style={styles.productCard}>
         <View style={styles.productRow}>
-          <Image 
-            source={{ uri: image }} 
-            style={styles.productImage}
-            resizeMode="cover"
-          />
+          <TouchableOpacity 
+            onPress={() => {
+              // Navigate to product detail using slug or _id
+              const productSlug = product.slug || product._id;
+              console.log('Navigating to product:', productSlug);
+              navigate('Preview', productSlug);
+            }}
+          >
+            <Image 
+              source={{ uri: image }} 
+              style={styles.productImage}
+              resizeMode="cover"
+            />
+          </TouchableOpacity>
           <View style={styles.productInfo}>
             <View style={styles.headerRow}>
               <Text 
@@ -272,38 +263,76 @@ const Favorites = () => {
               )}
             </View>
             
-            {quantities[item._id] === undefined || quantities[item._id] === 0 ? (
-              <TouchableOpacity
-                onPress={() => handleAddToCart(item)}
-                style={styles.addToCartButton}
-              >
-                <Text style={styles.addToCartText}>Add to Cart</Text>
-              </TouchableOpacity>
-            ) : (
-              <View style={styles.quantityContainer}>
-                <View style={styles.quantityRow}>
+            <View style={styles.cartControlsContainer}>
+              {!showQuantityControls[product._id] ? (
+                <TouchableOpacity 
+                  style={styles.addToCartButton}
+                  onPress={async () => {
+                    await cartdata(item); 
+                  }}
+                >
+                  <Text style={styles.addToCartText}>Add to Cart</Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.quantityControlsWrapper}>
                   <TouchableOpacity
-                    onPress={() => setQuantities(prev => ({ 
-                      ...prev, 
-                      [item._id]: Math.max(0, (prev[item._id] || 1) - 1) 
-                    }))}
                     style={styles.quantityButton}
+                    onPress={async () => {
+                      const existingCart = Array.isArray(cartdetail) ? [...cartdetail] : [];
+                      const existingProductIndex = existingCart.findIndex(
+                        f => f.productid === product._id
+                      );
+
+                      if (existingProductIndex !== -1) {
+                        if (existingCart[existingProductIndex].qty > 1) {
+                          existingCart[existingProductIndex] = {
+                            ...existingCart[existingProductIndex],
+                            qty: existingCart[existingProductIndex].qty - 1
+                          };
+                        } else {
+                          existingCart.splice(existingProductIndex, 1);
+                          setShowQuantityControls(prev => ({ ...prev, [product._id]: false }));
+                        }
+                        setcartdetail(existingCart);
+                        await AsyncStorage.setItem('cartdata', JSON.stringify(existingCart));
+                      }
+                    }}
                   >
                     <Text style={styles.quantityButtonText}>-</Text>
                   </TouchableOpacity>
-                  <Text style={styles.quantityText}>{quantities[item._id] || 0}</Text>
+                  <Text style={styles.quantityText}>
+                    {(() => {
+                      const existingCart = Array.isArray(cartdetail) ? cartdetail : [];
+                      const existingProduct = existingCart.find(
+                        (f) => f.productid === product._id
+                      );
+                      return existingProduct ? existingProduct.qty : 0;
+                    })()}
+                  </Text>
                   <TouchableOpacity
-                    onPress={() => setQuantities(prev => ({ 
-                      ...prev, 
-                      [item._id]: Math.min(10, (prev[item._id] || 1) + 1) 
-                    }))}
                     style={styles.quantityButton}
+                    onPress={async () => {
+                      const existingCart = Array.isArray(cartdetail) ? cartdetail : [];
+                      const existingProduct = existingCart.find(
+                        f => f.productid === product._id
+                      );
+
+                      if (existingProduct) {
+                        const updatedCart = existingCart.map(_i =>
+                          _i.productid === product._id ? { ..._i, qty: _i.qty + 1 } : _i
+                        );
+                        setcartdetail(updatedCart);
+                        await AsyncStorage.setItem('cartdata', JSON.stringify(updatedCart));
+                      } else {
+                        await cartdata(item);
+                      }
+                    }}
                   >
                     <Text style={styles.quantityButtonText}>+</Text>
                   </TouchableOpacity>
                 </View>
-              </View>
-            )}
+              )}
+            </View>
           </View>
         </View>
       </View>
@@ -356,12 +385,7 @@ const Favorites = () => {
   return (
     <SafeAreaView style={styles.safeContainer}>
       <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton}>
-            <Icon name="arrow-left" size={24} color="#374151" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>My Favorites</Text>
-        </View>
+        <DriverHeader item={t('My Favorites')} showback={true} />
         
         <FlatList
           data={favorites}
@@ -409,37 +433,7 @@ const styles = {
     color: 'white',
     fontWeight: '600',
   },
-  header: {
-    backgroundColor: '#FF7000',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 10,
-    paddingBottom: 20,
-    paddingHorizontal: 16,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-  },
-  backButton: {
-    backgroundColor: 'white',
-    width: 30,
-    height: 30,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#fff',
-    textAlign: 'left',
-    flex: 1,
-  },
+
   listContent: {
     paddingVertical: 16,
     paddingBottom: 90,
@@ -511,46 +505,48 @@ const styles = {
     fontSize: 12,
     color: '#dc2626',
   },
-  addToCartButton: {
+  cartControlsContainer: {
     marginTop: 12,
+  },
+  addToCartButton: {
     backgroundColor: '#FF7000',
-    paddingVertical: 6,
+    paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 8,
+    justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'flex-start',
   },
   addToCartText: {
-    color: 'white',
-    fontWeight: '600',
+    color: '#fff',
     fontSize: 14,
+    fontWeight: '600',
   },
-  quantityContainer: {
-    marginTop: 12,
+  quantityControlsWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  quantityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 20,
+    alignSelf: 'flex-start',
   },
   quantityButton: {
-    width: 32,
-    height: 32,
-    backgroundColor: '#e5e7eb',
-    borderRadius: 6,
-    alignItems: 'center',
+    width: 36,
+    height: 36,
+    backgroundColor: '#FF7000',
+    borderRadius: 18,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   quantityButtonText: {
+    color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
   },
   quantityText: {
     marginHorizontal: 16,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
+    color: '#111827',
   },
   emptyContainer: {
     flex: 1,

@@ -151,8 +151,24 @@ export default function CategoriesScreen() {
                   </TouchableOpacity>
                 ))
               ) : (
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 50 }}>
-                  <Text>No subcategories found</Text>
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 50, width: '100%' }}>
+                  <Text style={{ fontSize: 16, color: '#666', marginBottom: 20 }}>No subcategories found</Text>
+                  {selectedCategory !== 'all' && (
+                    <TouchableOpacity
+                      style={styles.viewProductsButton}
+                      onPress={() => {
+                        const selectedCat = categories.find(cat => cat._id === selectedCategory);
+                        if (selectedCat) {
+                          navigation.navigate('SubcategoryProducts', {
+                            item: selectedCat._id,
+                            name: selectedCat.name
+                          });
+                        }
+                      }}
+                    >
+                      <Text style={styles.viewProductsButtonText}>View Products</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               )}
             </View>
@@ -257,5 +273,22 @@ const styles = StyleSheet.create({
     height: 30,
     width: 70,
     overflow: 'hidden',
+  },
+  viewProductsButton: {
+    backgroundColor: '#FF7000',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 6,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  viewProductsButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });

@@ -187,7 +187,17 @@ const AddressListScreen = ({ navigation, route }) => {
           {/* Add New Address Button */}
           <TouchableOpacity
             style={styles.addNewButton}
-            onPress={() => navigation.navigate('AddAddressScreen', { fromAddressList: true })}
+            onPress={() => {
+              if (addresses.length >= 5) {
+                Alert.alert(
+                  'Address Limit Reached',
+                  'You can only create up to 5 addresses. Please delete an old address to create a new one.',
+                  [{ text: 'OK' }]
+                );
+              } else {
+                navigation.navigate('AddAddressScreen', { fromAddressList: true });
+              }
+            }}
             activeOpacity={0.8}
           >
             <View style={styles.addNewContent}>
