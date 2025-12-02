@@ -559,13 +559,38 @@ console.log('Final Prices:', {
             )}
           </View>
   
-          <Text style={styles.sectionTitle}>Description</Text>
-          <Text style={styles.description}>
-            {(product.long_description || product.short_description || 'No description available')
-              .replace(/<[^>]*>/g, '')  
-              .replace(/&nbsp;/g, ' ')  
-            }
-          </Text>
+          <View style={{ marginBottom: 20 }}>
+            <View style={styles.descriptionHeader}>
+              <Text style={styles.sectionTitle}>Description</Text>
+              <TouchableOpacity 
+                style={styles.chatWithSellerLink}
+                onPress={async () => {
+                  const userDetail = await AsyncStorage.getItem('userDetail');
+                  if (!userDetail) {
+                    navigation.navigate('Login');
+                    return;
+                  }
+                  
+                  navigation.navigate('ChatRoom', {
+                    sellerId: product.SellerId,
+                    sellerName: product.sellerName || 'Seller',
+                    sellerImage: product.sellerImage || '',
+                    productId: product._id,
+                    productName: product.name
+                  });
+                }}
+              >
+                <Icon name="comments" size={16} color="#FF7000" style={{ marginRight: 4 }} />
+                <Text style={styles.chatWithSellerLinkText}>Chat with Seller</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.description}>
+              {(product.long_description || product.short_description || 'No description available')
+                .replace(/<[^>]*>/g, '')  
+                .replace(/&nbsp;/g, ' ')  
+              }
+            </Text>
+          </View>
   
           {/* Bulk Order Quotes */}
           {bulkOrders.length > 0 && (
@@ -800,6 +825,23 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 20,
     marginBottom: 10,
+  },
+  descriptionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  chatWithSellerLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  chatWithSellerLinkText: {
+    fontSize: 14,
+    color: '#FF7000',
+    textDecorationLine: 'underline',
+    fontWeight: '500',
   },
   description: {
     color: '#555',
@@ -1395,5 +1437,27 @@ const styles = StyleSheet.create({
   activeDot: {
     backgroundColor: '#FF7000',
     width: 20,
+  },
+  chatWithSellerButton: {
+    flexDirection: 'row',
+    backgroundColor: '#FF7000',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+    marginBottom: 10,
+    shadowColor: '#FF7000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  chatWithSellerText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textDecorationLine: 'underline',
   },
 });

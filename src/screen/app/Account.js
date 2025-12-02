@@ -164,6 +164,15 @@ const Account = () => {
     }
   };
   const logout = async () => {
+    // Disconnect socket before logout
+    try {
+      const { disconnectGlobalSocket } = require('../../utils/socketManager');
+      disconnectGlobalSocket();
+      console.log('✅ Socket disconnected on logout');
+    } catch (error) {
+      console.log('⚠️ No socket to disconnect');
+    }
+    
     await AsyncStorage.removeItem('userDetail');
     setuser({});
     reset('Auth');

@@ -3,6 +3,7 @@
 import {
   FlatList,
   Image,
+  Linking,
   Modal,
   SafeAreaView,
   ScrollView,
@@ -11,6 +12,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Platform,
+  PermissionsAndroid,
+  Alert,
 } from 'react-native';
 import React, { createRef, useContext, useEffect, useState } from 'react';
 import { Currency, FONTS, Constants } from '../../Assets/Helpers/constant';
@@ -24,6 +28,8 @@ import { useTranslation } from 'react-i18next';
 import { goBack } from '../../../navigationRef';
 import CameraGalleryPeacker from '../../Assets/Component/CameraGalleryPeacker';
 import i18n from 'i18next';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import ReactNativeBlobUtil from 'react-native-blob-util';
 
 const Orderview = props => {
   const { t } = useTranslation();
@@ -91,6 +97,137 @@ const Orderview = props => {
         goBack();
       }
     });
+  };
+
+  const handleGetInvoice = async () => {
+    console.log('=== Invoice Download Started ===');
+    console.log('Order view:', orderview);
+    
+    if (!orderview?._id) {
+      console.log('ERROR: Order ID not found');
+      setToast('Order ID not found');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      
+      // Get auth token
+      const userDetail = await AsyncStorage.getItem('userDetail');
+      console.log('User detail retrieved:', userDetail ? 'Yes' : 'No');
+      
+      if (!userDetail) {
+        setToast('Please login to download invoice');
+        setLoading(false);
+        return;
+      }
+      
+      const user = JSON.parse(userDetail);
+      const token = user.token;
+      console.log('Token:', token ? 'Found' : 'Not found');
+      
+      // Create invoice download URL
+      const invoiceUrl = `${Constants.baseUrl}invoice/${orderview._id}`;
+      const fileName = `invoice-${orderview.orderId || orderview._id}.pdf`;
+      
+      console.log('Invoice URL:', invoiceUrl);
+      console.log('File name:', fileName);
+      console.log('Platform:', Platform.OS);
+      
+      // For Android 13+, no storage permission needed with Download Manager
+      console.log('Skipping permission check - using Download Manager');
+      
+      // Download directory
+      const { dirs } = ReactNativeBlobUtil.fs;
+      const downloadDir = Platform.OS === 'ios' ? dirs.DocumentDir : dirs.DownloadDir;
+      const filePath = `${downloadDir}/${fileName}`;
+      
+      console.log('Download directory:', downloadDir);
+      console.log('File path:', filePath);
+      console.log('Starting download...');
+      
+      // Download the PDF - Simple approach without Download Manager
+      console.log('Fetching PDF...');
+      
+      ReactNativeBlobUtil.config({
+        fileCache: true,
+        appendExt: 'pdf',
+      })
+      .fetch('GET', invoiceUrl, {
+        Authorization: `Bearer ${token}`,
+      })
+      .then(async (res) => {
+        console.log('Download success!');
+        console.log('Temp file path:', res.path());
+        
+        // Ensure Downloads folder exists
+        const folderExists = await ReactNativeBlobUtil.fs.isDir(downloadDir);
+        console.log('Download folder exists:', folderExists);
+        
+        if (!folderExists) {
+          console.log('Creating download folder...');
+          await ReactNativeBlobUtil.fs.mkdir(downloadDir);
+        }
+        
+        // Move to Downloads folder
+        const destPath = `${downloadDir}/${fileName}`;
+        console.log('Moving to:', destPath);
+        
+        try {
+          await ReactNativeBlobUtil.fs.mv(res.path(), destPath);
+          console.log('File moved successfully');
+        } catch (mvError) {
+          console.log('Move failed, trying copy instead...');
+          await ReactNativeBlobUtil.fs.cp(res.path(), destPath);
+          await ReactNativeBlobUtil.fs.unlink(res.path());
+          console.log('File copied successfully');
+        }
+        
+        // Scan file for media scanner (Android)
+        if (Platform.OS === 'android') {
+          await ReactNativeBlobUtil.fs.scanFile([{ path: destPath, mime: 'application/pdf' }]);
+          console.log('File scanned');
+        }
+        
+        setLoading(false);
+        Alert.alert(
+          'Success',
+          `Invoice saved to Downloads!\n${fileName}`,
+          [
+            {
+              text: 'Open',
+              onPress: () => {
+                console.log('Opening PDF...');
+                if (Platform.OS === 'ios') {
+                  ReactNativeBlobUtil.ios.openDocument(destPath);
+                } else {
+                  ReactNativeBlobUtil.android.actionViewIntent(destPath, 'application/pdf');
+                }
+              }
+            },
+            { text: 'OK' }
+          ]
+        );
+      })
+      .catch((error) => {
+        console.error('=== Download Error ===');
+        console.error('Error:', error);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        
+        setLoading(false);
+        setToast(`Failed to download: ${error.message || 'Unknown error'}`);
+      });
+      
+    } catch (error) {
+      console.error('=== Invoice Download Exception ===');
+      console.error('Error:', error);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      
+      setToast(`Error: ${error.message || 'Failed to download invoice'}`);
+      setLoading(false);
+    }
   };
 
   const renderOrderItem = ({ item, index }) => (
@@ -262,6 +399,13 @@ const Orderview = props => {
                 <Text style={styles.trackButtonText}>{t('Track Driver')}</Text>
               </TouchableOpacity>
             )}
+            
+            {/* Get Invoice Button */}
+            <TouchableOpacity
+              style={styles.invoiceButton}
+              onPress={handleGetInvoice}>
+              <Text style={styles.invoiceButtonText}>{t('Get Invoice')}</Text>
+            </TouchableOpacity>
           </View>
           
           {/* Return/Refund Section */}
@@ -569,6 +713,32 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   helpButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontFamily: FONTS.SemiBold,
+  },
+  invoiceButton: {
+    backgroundColor: '#10B981',
+    borderRadius: 8,
+    padding: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+  },
+  invoiceButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontFamily: FONTS.SemiBold,
+  },
+  trackButton: {
+    backgroundColor: '#3B82F6',
+    borderRadius: 8,
+    padding: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+  },
+  trackButtonText: {
     color: '#FFFFFF',
     fontSize: 15,
     fontFamily: FONTS.SemiBold,

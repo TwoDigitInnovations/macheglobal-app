@@ -25,6 +25,7 @@ import {
   AccountIcon,
   AccountFilledIcon,
 } from '../../Theme';
+import Icon from 'react-native-vector-icons/FontAwesome';
 import Account from '../screen/app/Account';
 import Constants, { FONTS } from '../Assets/Helpers/constant';
 import Home from '../screen/app/Home';
@@ -44,6 +45,8 @@ const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 import Preview from '../screen/app/Preview';
+import MessagesList from '../screen/app/MessagesList';
+import ChatRoom from '../screen/app/ChatRoom';
 
 const HomeStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -51,6 +54,7 @@ const HomeStack = () => (
     <Stack.Screen name="Products" component={Products} />
     <Stack.Screen name="SubcategoryProducts" component={SubcategoryProducts} />
     <Stack.Screen name="Preview" component={Preview} />
+    <Stack.Screen name="ChatRoom" component={ChatRoom} />
   </Stack.Navigator>
 );
 
@@ -65,9 +69,10 @@ const CategoriesStack = () => (
   </Stack.Navigator>
 );
 
-const OrdersStack = () => (
+const MessagesStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="OrdersTab" component={Myorder} />
+    <Stack.Screen name="MessagesTab" component={MessagesList} />
+    <Stack.Screen name="ChatRoom" component={ChatRoom} />
   </Stack.Navigator>
 );
 
@@ -82,6 +87,7 @@ export const TabNav = () => {
   const [cartdetail, setcartdetail] = useContext(CartContext);
   const [isGuestUser, setIsGuestUser] = React.useState(false);
   const [refreshKey, setRefreshKey] = React.useState(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = React.useState(0);
 
   // Check guest status on mount only
   React.useEffect(() => {
@@ -98,6 +104,36 @@ export const TabNav = () => {
     };
     
     checkGuestStatus();
+  }, []);
+
+  // Fetch unread messages count
+  React.useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const userDetail = await AsyncStorage.getItem('userDetail');
+        if (!userDetail) return;
+        
+        const user = JSON.parse(userDetail);
+        const { GetApi } = require('../Assets/Helpers/Service');
+        const response = await GetApi(`chat/conversations/${user._id}`);
+        
+        if (response && response.status && response.data) {
+          // Count unread messages
+          const unreadCount = response.data.reduce((total, conv) => {
+            return total + (conv.unreadCount || 0);
+          }, 0);
+          setUnreadMessagesCount(unreadCount);
+        }
+      } catch (error) {
+        console.error('Error fetching unread messages:', error);
+      }
+    };
+    
+    fetchUnreadCount();
+    
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
   }, []);
 
 const AccountStack = () => (
@@ -127,13 +163,13 @@ const allTabs = [
       name: 'Categories',
     },
     {
-      iconActive: <OrdersIconFilled color={Constants.saffron} height={33} />,
+      iconActive: <Icon name="comments" size={28} color={Constants.saffron} />,
       iconInActive: (
-        <OrdersIconNone color={Constants.black} height={30} />
+        <Icon name="comments-o" size={28} color={Constants.black} />
       ),
-      component: OrdersStack,
-      routeName: 'Orders',
-      name: 'Orders',
+      component: MessagesStack,
+      routeName: 'Messages',
+      name: 'Messages',
     },
     {
       iconActive: <CartFilledIcon color={Constants.saffron} height={26} />,
@@ -161,6 +197,7 @@ const allTabs = [
     ({ accessibilityState, onPress, onclick, item, index }) => {
       const isSelected = accessibilityState?.selected;
       const isCartTab = item.routeName === 'Cart';
+      const isMessagesTab = item.routeName === 'Messages';
       const cartCount = cartdetail?.length || 0;
 
       return (
@@ -181,6 +218,13 @@ const allTabs = [
                 </Text>
               </View>
             )}
+            {isMessagesTab && unreadMessagesCount > 0 && (
+              <View style={[styles.badge, { backgroundColor: '#FF0000' }]}>
+                <Text style={styles.badgeText}>
+                  {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
+                </Text>
+              </View>
+            )}
           </View>
           <Text
             style={[
@@ -193,7 +237,7 @@ const allTabs = [
       );
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [cartdetail],
+    [cartdetail, unreadMessagesCount],
   );
 
   return (

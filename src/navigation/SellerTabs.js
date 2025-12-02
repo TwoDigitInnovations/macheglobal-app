@@ -9,6 +9,8 @@ import SellerWallet from '../screen/seller/SellerWallet';
 import Account from '../screen/app/Account';
 import TransactionHistory from '../screen/seller/TransactionHistory';
 import OrderDetails from '../screen/seller/OrderDetails';
+import MessagesList from '../screen/app/MessagesList';
+import ChatRoom from '../screen/app/ChatRoom';
 
 const Tab = createBottomTabNavigator();
 
@@ -61,7 +63,50 @@ const WalletStackScreen = () => (
   </WalletStack.Navigator>
 );
 
+// Create a stack navigator for Messages
+const MessagesStack = createStackNavigator();
+
+const MessagesStackScreen = () => (
+  <MessagesStack.Navigator screenOptions={{ headerShown: false }}>
+    <MessagesStack.Screen name="MessagesList" component={MessagesList} />
+    <MessagesStack.Screen name="ChatRoom" component={ChatRoom} />
+  </MessagesStack.Navigator>
+);
+
 const SellerTabs = () => {
+  const [unreadMessagesCount, setUnreadMessagesCount] = React.useState(0);
+
+  // Fetch unread messages count
+  React.useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+        const userDetail = await AsyncStorage.getItem('userDetail');
+        if (!userDetail) return;
+        
+        const user = JSON.parse(userDetail);
+        const { GetApi } = require('../Assets/Helpers/Service');
+        const response = await GetApi(`chat/conversations/${user._id}`);
+        
+        if (response && response.status && response.data) {
+          // Count unread messages
+          const unreadCount = response.data.reduce((total, conv) => {
+            return total + (conv.unreadCount || 0);
+          }, 0);
+          setUnreadMessagesCount(unreadCount);
+        }
+      } catch (error) {
+        console.error('Error fetching unread messages:', error);
+      }
+    };
+    
+    fetchUnreadCount();
+    
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -72,6 +117,8 @@ const SellerTabs = () => {
             iconName = focused ? 'cube' : 'cube-outline';
           } else if (route.name === 'Orders') {
             iconName = focused ? 'document-text' : 'document-text-outline';
+          } else if (route.name === 'Messages') {
+            iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
           } else if (route.name === 'Wallet') {
             iconName = focused ? 'wallet' : 'wallet-outline';
           } else if (route.name === 'Account') {
@@ -94,10 +141,26 @@ const SellerTabs = () => {
           fontSize: 12,
           marginTop: 4,
         },
+        tabBarBadgeStyle: {
+          backgroundColor: '#FF0000',
+          color: '#fff',
+          fontSize: 10,
+          minWidth: 18,
+          height: 18,
+          borderRadius: 9,
+          lineHeight: 18,
+        },
       })}
     >
       <Tab.Screen name="Products" component={SellerProducts} />
       <Tab.Screen name="Orders" component={OrdersStackScreen} />
+      <Tab.Screen 
+        name="Messages" 
+        component={MessagesStackScreen}
+        options={{
+          tabBarBadge: unreadMessagesCount > 0 ? (unreadMessagesCount > 99 ? '99+' : unreadMessagesCount) : undefined,
+        }}
+      />
       <Tab.Screen name="Wallet" component={WalletStackScreen} />
       <Tab.Screen name="Account" component={Account} options={{ headerShown: false }} />
     </Tab.Navigator>
