@@ -17,7 +17,7 @@ import { ApiFormData, GetApi, Post } from '../../Assets/Helpers/Service';
 import CameraGalleryPeacker from '../../Assets/Component/CameraGalleryPeacker';
 import { checkEmail } from '../../Assets/Helpers/InputsNullChecker';
 import { LoadContext, ToastContext, UserContext } from '../../../App';
-import Header from '../../Assets/Component/Header';
+import DriverHeader from '../../Assets/Component/DriverHeader';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { goBack } from '../../../navigationRef';
 import { useTranslation } from 'react-i18next';
@@ -92,11 +92,15 @@ const Profile = props => {
           const currentUser = JSON.parse(userData);
           const updatedUser = {
             ...currentUser,
+            avatar: fileUrl,
+            profile: fileUrl,
             user: {
-              ...(currentUser.user || {}),
-              avatar: fileUrl
+              ...(currentUser.user || currentUser),
+              avatar: fileUrl,
+              profile: fileUrl
             }
           };
+          console.log('Saving updated user with avatar:', updatedUser);
           await AsyncStorage.setItem('userDetail', JSON.stringify(updatedUser));
           setuser(updatedUser);
         }
@@ -195,20 +199,19 @@ const Profile = props => {
     const data = {
       userId: user?.user?._id,
       name: userDetail.username,
+      username: userDetail.username,
       phone: userDetail.number,
       email: userDetail.email,
       // Include avatar URL if available
-      avatar: userDetail.img || user?.user?.avatar || ''
+      avatar: userDetail.img || user?.user?.avatar || '',
+      profile: userDetail.img || user?.user?.avatar || ''
     };
     
     if (otpval.otp) {
       data.otp = otpval.otp;
     }
     
-    // For backward compatibility
-    if (userDetail.img) {
-      data.profile = userDetail.img;
-    }
+    console.log('Submitting profile update with data:', data);
     
     console.log('data==========>', data);
     setLoading(true);
@@ -235,34 +238,35 @@ const Profile = props => {
          
           const updatedUser = {
             ...currentUser,
+            avatar: data.avatar || data.profile || currentUser.avatar || '',
+            profile: data.profile || data.avatar || currentUser.profile || '',
             user: {
-              ...(currentUser.user || {}),
-              ...responseData,
-              
-              name: data.username || currentUser.user?.name || responseData?.name || '',
-             
-              username: data.username || currentUser.user?.username || responseData?.username || '',
-         
-              phone: data.number || currentUser.user?.phone || responseData?.phone || '',
-              number: data.number || currentUser.user?.number || responseData?.number || '',
-              email: data.email || currentUser.user?.email || responseData?.email || '',
-              avatar: responseData?.avatar || responseData?.profile || currentUser.user?.avatar || ''
+              ...(currentUser.user || currentUser),
+              _id: currentUser.user?._id || currentUser._id,
+              name: data.name,
+              username: data.username,
+              phone: data.phone,
+              number: data.phone,
+              email: data.email,
+              avatar: data.avatar || data.profile || '',
+              profile: data.profile || data.avatar || ''
             }
           };
           
-        
+          console.log('Saving updated user to AsyncStorage:', updatedUser);
           await AsyncStorage.setItem('userDetail', JSON.stringify(updatedUser));
     
           setuser(updatedUser);
           
-       
+          // Update local state
           setUserDetail({
-            ...userDetail,
-            username: data.username || userDetail.username,
-            email: data.email || userDetail.email,
-            number: data.number || userDetail.number,
-            img: responseData?.avatar || responseData?.profile || userDetail.img
+            username: data.name,
+            email: data.email,
+            number: data.phone,
+            img: data.avatar
           });
+          
+          console.log('Profile updated successfully in local storage');
           
           if (responseData?.otp) {
             setotpfield(true);
@@ -294,13 +298,26 @@ const Profile = props => {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: Constants.white }]}>
-      <View style={styles.toppart}>
-        <BackIcon color={Constants.white} onPress={() => goBack()} />
-        <Text style={styles.carttxt}>{t('Profile')}</Text>
-        {edit ? <Text style={styles.addbtn} onPress={submit}>{t('Update Profile')}</Text> :
-          <Text style={styles.addbtn} onPress={() => {
-            setEdit(true);
-          }}>{t('Edit Profile')}</Text>}
+      <View style={styles.headerContainer}>
+        <DriverHeader 
+          item={t('Profile')} 
+          showback={true}
+        />
+        {edit ? (
+          <TouchableOpacity 
+            style={styles.editButtonContainer} 
+            onPress={submit}
+          >
+            <Text style={styles.editButton}>{t('Update Profile')}</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity 
+            style={styles.editButtonContainer}
+            onPress={() => setEdit(true)}
+          >
+            <Text style={styles.editButton}>{t('Edit Profile')}</Text>
+          </TouchableOpacity>
+        )}
       </View>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* <Spinner color={'#fff'} visible={loading} /> */}
@@ -568,6 +585,24 @@ const styles = StyleSheet.create({
     marginTop: 5,
     borderWidth: 1,
     borderColor: Constants.white,
+  },
+  headerContainer: {
+    position: 'relative',
+  },
+  editButtonContainer: {
+    position: 'absolute',
+    right: 15,
+    top: 50,
+    zIndex: 10,
+  },
+  editButton: {
+    backgroundColor: Constants.custom_green,
+    color: Constants.white,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 8,
+    fontSize: 14,
+    fontFamily: FONTS.Bold,
   },
   carttxt: {
     color: Constants.white,

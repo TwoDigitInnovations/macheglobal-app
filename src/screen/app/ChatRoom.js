@@ -14,10 +14,10 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import io from 'socket.io-client';
-import Constants from '../../Assets/Helpers/constant';
 import DriverHeader from '../../Assets/Component/DriverHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { setGlobalSocket } from '../../utils/socketManager';
+import { getSocketUrl } from '../../Assets/Helpers/Service';
 
 const ChatRoom = ({ route, navigation }) => {
   const { sellerId, sellerName, sellerImage, productId } = route.params;
@@ -79,19 +79,42 @@ const ChatRoom = ({ route, navigation }) => {
         const user = JSON.parse(userDetail);
         setUserId(user._id);
         
-        // Connect to socket
-        const socketUrl = Constants.baseUrl.replace('/api/', '').replace('/api', '');
+      
+        const socketUrl = getSocketUrl();
+        
+        
+        
         const newSocket = io(socketUrl, {
-          transports: ['websocket'],
-          query: { userId: user._id }
-        });
+      transports: ['websocket'],     
+      forceNew: true,
+      reconnection: true,
+      reconnectionAttempts: 10,
+      timeout: 20000,
+      path: '/socket.io',
+      query: { userId: user._id },
+    });
+
 
         newSocket.on('connect', () => {
+          console.log('✅ [SOCKET] Connected');
           newSocket.emit('joinRoom', {
             userId: user._id,
             sellerId: sellerId,
             productId: productId
           });
+        });
+
+        newSocket.on('connect_error', (error) => {
+          console.error('❌ [SOCKET] Connection error:', error.message);
+          console.error('❌ [SOCKET] Error details:', {
+            type: error.type,
+            description: error.description,
+            context: error.context
+          });
+        });
+
+        newSocket.on('disconnect', (reason) => {
+          console.log('🔌 [SOCKET] Disconnected:', reason);
         });
 
         newSocket.on('previousMessages', (msgs) => {
@@ -100,13 +123,11 @@ const ChatRoom = ({ route, navigation }) => {
 
         newSocket.on('newMessage', (message) => {
           setMessages(prev => {
-            // Check if message already exists
             const exists = prev.some(m => 
               m.senderId === message.senderId && 
               m.message === message.message && 
               Math.abs(new Date(m.timestamp) - new Date(message.timestamp)) < 2000
             );
-            
             return exists ? prev : [...prev, message];
           });
         });
@@ -124,7 +145,6 @@ const ChatRoom = ({ route, navigation }) => {
         });
 
         newSocket.on('userStatus', ({ userId: statusUserId, isOnline: online, lastSeen: seen }) => {
-          // Update status ONLY if it's for the person we're chatting with
           if (statusUserId === sellerId || statusUserId.toString() === sellerId.toString()) {
             setIsOnline(online);
             setLastSeen(seen);
@@ -141,6 +161,12 @@ const ChatRoom = ({ route, navigation }) => {
 
   const sendMessage = () => {
     if (inputMessage.trim() && socket && userId) {
+      if (!socket.connected) {
+        console.error('❌ [SOCKET] Not connected');
+        alert('Connection lost. Please check your internet and try again.');
+        return;
+      }
+
       const messageData = {
         senderId: userId,
         receiverId: sellerId,
@@ -149,10 +175,7 @@ const ChatRoom = ({ route, navigation }) => {
         timestamp: new Date()
       };
 
-      // Optimistic update
       setMessages(prev => [...prev, messageData]);
-      
-      // Send to server
       socket.emit('sendMessage', messageData);
       setInputMessage('');
       socket.emit('stopTyping', { userId, receiverId: sellerId });
@@ -162,7 +185,7 @@ const ChatRoom = ({ route, navigation }) => {
   const handleTyping = (text) => {
     setInputMessage(text);
     
-    if (socket && userId) {
+    if (socket && userId && socket.connected) {
       socket.emit('typing', { userId, receiverId: sellerId });
       
       if (typingTimeoutRef.current) {

@@ -76,19 +76,20 @@ const getExploreProducts = async () => {
   }
 };
   const CountdownTimer = ({ endDate }) => {
-    const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
+    const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   
     useEffect(() => {
       const calculateTimeLeft = () => {
         const difference = new Date(endDate) - new Date();
         if (difference > 0) {
           return {
+            days: Math.floor(difference / (1000 * 60 * 60 * 24)),
             hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
             minutes: Math.floor((difference / 1000 / 60) % 60),
             seconds: Math.floor((difference / 1000) % 60),
           };
         }
-        return { hours: 0, minutes: 0, seconds: 0 };
+        return { days: 0, hours: 0, minutes: 0, seconds: 0 };
       };
   
       const timer = setInterval(() => {
@@ -99,22 +100,11 @@ const getExploreProducts = async () => {
     }, [endDate]);
   
     return (
-      <View style={styles.countdownContainer}>
-        <View style={styles.timeBox}>
-          <Text style={styles.timeNumber}>{String(timeLeft.hours).padStart(2, '0')}</Text>
-          <Text style={styles.timeLabel}>hrs</Text>
-        </View>
-        <Text style={styles.timeSeparator}>:</Text>
-        <View style={styles.timeBox}>
-          <Text style={styles.timeNumber}>{String(timeLeft.minutes).padStart(2, '0')}</Text>
-          <Text style={styles.timeLabel}>min</Text>
-        </View>
-        <Text style={styles.timeSeparator}>:</Text>
-        <View style={styles.timeBox}>
-          <Text style={styles.timeNumber}>{String(timeLeft.seconds).padStart(2, '0')}</Text>
-          <Text style={styles.timeLabel}>sec</Text>
-        </View>
-      </View>
+      <Text style={styles.endsInText}>
+        Ends in: <Text style={styles.endsInTime}>
+          {timeLeft.days}d {timeLeft.hours}h {timeLeft.minutes}m {timeLeft.seconds}s
+        </Text>
+      </Text>
     );
   };
   
@@ -195,9 +185,6 @@ const getExploreProducts = async () => {
                 style={styles.flashImage}
                 resizeMode="cover"
               />
-              <View style={styles.timerBelowImage}>
-                <CountdownTimer endDate={item.endDateTime} />
-              </View>
             </View>
       
             {/* Details */}
@@ -217,6 +204,9 @@ const getExploreProducts = async () => {
                   </Text>
                 )}
               </View>
+              
+              {/* Timer below price */}
+              <CountdownTimer endDate={item.endDateTime} />
             </View>
           </TouchableOpacity>
         );
@@ -642,9 +632,6 @@ const getExploreProducts = async () => {
                 style={styles.flashImage}
                 resizeMode="cover"
               />
-              <View style={styles.timerBelowImage}>
-                <CountdownTimer endDate={item.endDateTime} />
-              </View>
             </View>
       
             {/* Details */}
@@ -664,6 +651,9 @@ const getExploreProducts = async () => {
                   </Text>
                 )}
               </View>
+              
+              {/* Timer below price */}
+              <CountdownTimer endDate={item.endDateTime} />
             </View>
           </TouchableOpacity>
         );
@@ -702,7 +692,7 @@ const getExploreProducts = async () => {
                     <TouchableOpacity
                       key={item._id}
                       style={styles.categoryItem}
-                      onPress={() => navigate('CategorySubCat')}
+                      onPress={() => navigate('CategorySubCat', { selectedCategoryId: item._id })}
                     >
                       <View style={styles.categoryCircle}>
                         <Image
@@ -893,8 +883,7 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   flashSaleCard: {
-    width: 160,             
-    height: 200,
+    width: 164,
     backgroundColor: '#fff',
     borderRadius: 16,
     marginHorizontal: 8,
@@ -941,7 +930,7 @@ const styles = StyleSheet.create({
   },
   flashImageContainer: {
     width: '100%',
-    height: 120,            
+    height: 120,
     backgroundColor: '#f9f9f9',
   },
   flashImage: {
@@ -956,9 +945,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: FONTS.semibold,
     color: '#333',
-    marginBottom: -5,
-    height: 30,
-    lineHeight: 12,
+    marginBottom: 6,
   },
   flashPriceRow: {
     flexDirection: 'row',
@@ -977,40 +964,16 @@ const styles = StyleSheet.create({
     color: '#999',
     textDecorationLine: 'line-through',
   },
-  countdownContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 245, 240, 0.7)', // Added opacity to background
-    borderRadius: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 6,
-    position: 'absolute', // Position absolute to center it
-    bottom: 10, // Position from bottom
-    left: '25%', // Center horizontally
-    right: '25%', // Center horizontally
-    opacity: 10, // Reduced opacity
-  },
-  timeBox: {
-    alignItems: 'center',
-    minWidth: 30,
-  },
-  timeNumber: {
-    fontSize: 14,
-    fontFamily: FONTS.bold,
-    color: Constants.saffron,
-  },
-  timeLabel: {
-    fontSize: 9,
+  endsInText: {
+    fontSize: 12,
     fontFamily: FONTS.medium,
     color: '#666',
-    marginTop: 2,
+    marginTop: 4,
   },
-  timeSeparator: {
-    fontSize: 14,
+  endsInTime: {
+    fontSize: 13,
     fontFamily: FONTS.bold,
-    color: Constants.saffron,
-    marginHorizontal: 4,
+    color: '#FF6B00',
   },
   addToCartBtn: {
     backgroundColor: Constants.saffron,

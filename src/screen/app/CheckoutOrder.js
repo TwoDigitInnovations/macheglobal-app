@@ -18,6 +18,7 @@ import { Post } from '../../Assets/Helpers/Service';
 import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import OrderSuccess from '../../components/OrderSuccess';
+import { ActivityIndicator } from 'react-native-paper';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2; // Two cards with spacing
@@ -36,45 +37,73 @@ const CheckoutOrderScreen = ({ route }) => {
   const scrollViewRef = useRef(null);
 
   useEffect(() => {
-    
-    const getUser = async () => {
+    const initializeCheckout = async () => {
       try {
+        // Get user data
         const userData = await AsyncStorage.getItem('userData');
-        console.log('User data from AsyncStorage:', userData); 
         if (userData) {
           const parsedUser = JSON.parse(userData);
-          console.log('Parsed user data:', parsedUser);
-          setUser(parsedUser.user || parsedUser); 
+          setUser(parsedUser.user || parsedUser);
         }
+
+        console.log('🛒 [CHECKOUT] Cart Context:', cartContext);
+        console.log('🛒 [CHECKOUT] Cart Context Length:', cartContext?.length);
+        
+        // If cart context is empty, try to load from AsyncStorage as backup
+        if (!cartContext || cartContext.length === 0) {
+          console.log('⚠️ [CHECKOUT] Cart context empty, checking AsyncStorage...');
+          const savedCart = await AsyncStorage.getItem('cartdetail');
+          if (savedCart) {
+            const parsedCart = JSON.parse(savedCart);
+            console.log('✅ [CHECKOUT] Found cart in AsyncStorage:', parsedCart.length, 'items');
+            if (parsedCart && parsedCart.length > 0) {
+              // Use saved cart
+              const transformedItems = parsedCart.map((item, index) => ({
+                id: item.productid || `item-${index}`,
+                productId: item.productid,
+                slug: item.slug,
+                name: item.vietnamiesName || item.productname || 'Product Variant Name',
+                price: item.offer || item.price || 0,
+                originalPrice: item.price || 0,
+                image: item.image || 'https://via.placeholder.com/200',
+                qty: item.qty || 1,
+                deliveryBy: item.deliveryBy || '20th, Sep 2025',
+                isFreeShipping: item.isFreeShipping || false,
+                sellerId: item.seller_id
+              }));
+              setCartItems(transformedItems);
+              return;
+            }
+          }
+          console.log('❌ [CHECKOUT] No items found in cart');
+          setCartItems([]);
+          return;
+        }
+
+        // Transform cart context items
+        const transformedItems = cartContext.map((item, index) => ({
+          id: item.productid || `item-${index}`,
+          productId: item.productid,
+          slug: item.slug,
+          name: item.vietnamiesName || item.productname || 'Product Variant Name',
+          price: item.offer || item.price || 0,
+          originalPrice: item.price || 0,
+          image: item.image || 'https://via.placeholder.com/200',
+          qty: item.qty || 1,
+          deliveryBy: item.deliveryBy || '20th, Sep 2025',
+          isFreeShipping: item.isFreeShipping || false,
+          sellerId: item.seller_id
+        }));
+        
+        console.log('✅ [CHECKOUT] Transformed Items:', transformedItems.length, 'items');
+        setCartItems(transformedItems);
       } catch (error) {
-        console.error('Error getting user data:', error);
+        console.error('❌ [CHECKOUT] Error initializing:', error);
+        setCartItems([]);
       }
     };
-    
-    getUser();
-    
-    console.log('Checkout - Cart Context:', cartContext);
-    
-    if (!cartContext || cartContext.length === 0) {
-      console.log('No items in checkout');
-      setCartItems([]);
-      return;
-    }
 
-    const transformedItems = cartContext.map((item, index) => ({
-      id: item.productid || `item-${index}`,
-      name: item.vietnamiesName || item.productname || 'Product Variant Name',
-      price: item.offer || item.price || 0,
-      originalPrice: item.price || 0,
-      image: item.image || 'https://via.placeholder.com/200',
-      qty: item.qty || 1,
-      deliveryBy: item.deliveryBy || '20th, Sep 2025',
-      isFreeShipping: item.isFreeShipping || false,
-      sellerId: item.seller_id
-    }));
-    
-    console.log('Checkout - Transformed Items:', transformedItems);
-    setCartItems(transformedItems);
+    initializeCheckout();
   }, [cartContext]);
 
   
@@ -277,8 +306,13 @@ const CheckoutOrderScreen = ({ route }) => {
       console.log('Order API Response:', response);
       
       if (response.success) {
-        // Clear the cart first
+        // Clear the cart from context
         setCartContext([]);
+        
+        // Clear cart from AsyncStorage as well (using correct key)
+        await AsyncStorage.setItem('cartdata', JSON.stringify([]));
+        
+        console.log('✅ [ORDER] Cart cleared successfully');
         
         // Navigate to success screen with order details
         navigation.replace('OrderSuccess', {
@@ -312,13 +346,21 @@ const CheckoutOrderScreen = ({ route }) => {
           onScroll={handleScroll}
           scrollEventThrottle={16}
           contentContainerStyle={styles.carouselContent}
+          pagingEnabled={false}
+          snapToInterval={CARD_WIDTH + 12}
+          decelerationRate="fast"
         >
           {items.map((item, index) => (
-            <View key={item.id} style={styles.carouselCard}>
+            <TouchableOpacity 
+              key={item.id} 
+              style={styles.carouselCard}
+              onPress={() => navigation.navigate('Preview', item.slug || item.productId)}
+              activeOpacity={0.8}
+            >
               <Image 
                 source={{ uri: item.image }} 
                 style={styles.carouselImage} 
-                resizeMode="contain"
+                resizeMode="cover"
               />
               <View style={styles.carouselInfo}>
                 <Text style={styles.carouselProductName} numberOfLines={2}>
@@ -338,19 +380,19 @@ const CheckoutOrderScreen = ({ route }) => {
                   <Text style={styles.carouselQty}>Qty: {item.qty}</Text>
                 )}
               </View>
-            </View>
+            </TouchableOpacity>
           ))}
         </ScrollView>
         
         {/* Pagination Dots */}
-        {items.length > 2 && (
+        {items.length > 1 && (
           <View style={styles.paginationContainer}>
             {items.map((_, index) => (
               <View
                 key={index}
                 style={[
                   styles.paginationDot,
-                  index === Math.floor(activeSlide / 2) && styles.paginationDotActive
+                  index === activeSlide && styles.paginationDotActive
                 ]}
               />
             ))}
@@ -426,7 +468,7 @@ const CheckoutOrderScreen = ({ route }) => {
               <View key={groupIndex} style={styles.deliveryGroup}>
                 <View style={styles.deliveryDateHeader}>
                   <Text style={styles.deliveryDate}>
-                    Delivery by {group.deliveryDate}
+                    Standard Delivery (3-5 business days)
                   </Text>
                   {group.isFreeShipping && (
                     <Text style={styles.freeShipping}> Free Shipping</Text>
@@ -501,11 +543,22 @@ const CheckoutOrderScreen = ({ route }) => {
         {cartItems.length > 0 && (
           <View style={styles.bottomButtonContainer}>
             <TouchableOpacity 
-              style={styles.placeOrderButton}
+              style={[
+                styles.placeOrderButton,
+                (isLoading || !deliveryAddress || cartItems.length === 0) && styles.placeOrderButtonDisabled
+              ]}
               onPress={handlePlaceOrder}
               disabled={!deliveryAddress || cartItems.length === 0 || isLoading}
+              activeOpacity={0.8}
             >
-              <Text style={styles.placeOrderText}>Place Order</Text>
+              {isLoading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <Text style={styles.placeOrderText}>Placing Your Order...</Text>
+                </View>
+              ) : (
+                <Text style={styles.placeOrderText}>Place Order</Text>
+              )}
             </TouchableOpacity>
           </View>
         )}
@@ -602,7 +655,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     flexDirection: 'row',
     justifyContent: 'center',
-    opacity: 1,
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -610,7 +662,12 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   placeOrderButtonDisabled: {
-    opacity: 0.6,
+    opacity: 0.7,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   placeOrderText: {
     color: '#FFFFFF',
@@ -679,6 +736,7 @@ const styles = StyleSheet.create({
   },
   carouselContainer: {
     width: '100%',
+    marginBottom: 8,
   },
   carouselContent: {
     paddingHorizontal: 16,
@@ -694,15 +752,17 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    marginBottom: 8,
   },
   carouselImage: {
     width: '100%',
-    height: 160,
+    height: 130,
     backgroundColor: '#F0F0F0',
   },
   carouselInfo: {
-    padding: 8,
+    padding: 10,
     backgroundColor: '#FFFFFF',
+    minHeight: 70,
   },
   carouselProductName: {
     fontSize: 12,

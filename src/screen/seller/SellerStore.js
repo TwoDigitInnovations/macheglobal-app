@@ -19,7 +19,7 @@ import {
   ActionSheetAndroid,
   Modal,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
@@ -493,7 +493,7 @@ const SellerStore = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       
       <View style={styles.header}>
@@ -748,7 +748,7 @@ const SellerStore = () => {
         </View>
       </Modal>
     </KeyboardAvoidingView>
-  </SafeAreaView>
+  </View>
   );
 }
 const styles = StyleSheet.create({

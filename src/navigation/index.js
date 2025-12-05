@@ -29,6 +29,8 @@ import Searchpage from '../screen/app/Searchpage';
 import MapAddress from '../screen/app/MapAddress';
 // import Checkout from '../screen/app/Checkout';
 import Notification from '../screen/app/Notification';
+import ChatRoom from '../screen/app/ChatRoom';
+import Favorites from '../screen/app/Favorites';
 import TrackDriver from '../screen/app/TrackDriver';
 import { Employeetab } from './Employee';
 import EmployeeOrderStatus from '../screen/Employee/EmployeeOrderStatus';
@@ -98,6 +100,8 @@ export default function Navigation(props) {
         <Stack.Screen name="Myorder" component={Myorder} />
         <Stack.Screen name="Orderview" component={Orderview} />
         <Stack.Screen name="Searchpage" component={Searchpage} />
+        <Stack.Screen name="ChatRoom" component={ChatRoom} />
+        <Stack.Screen name="Favorites" component={Favorites} />
         <Stack.Screen name="MapAddress" component={MapAddress} />
         <Stack.Screen name="ReviewScreen" component={ReviewScreen} />
         {/* <Stack.Screen name="Checkout" component={Checkout} /> */}

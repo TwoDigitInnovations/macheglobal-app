@@ -40,6 +40,8 @@ const flashDiscount = route.params?.discount || 0;
   const isFocused = useIsFocused();
   const [isInWishlist, setIsInWishlist] = useState(false);
   const [isLoadingFavorite, setIsLoadingFavorite] = useState(false);
+  const [showAllReviews, setShowAllReviews] = useState(false);
+  const [favoritesCount, setFavoritesCount] = useState(0);
   // If route.params is a string, use it as the slug, otherwise try to get slug from params object
   const slug = typeof route.params === 'string' ? route.params : (route.params?.slug || '');
   useEffect(() => {
@@ -72,6 +74,41 @@ const flashDiscount = route.params?.discount || 0;
       setLoading(false);
     }
   }, [slug, isFocused]);
+
+  // Fetch favorites count
+  useEffect(() => {
+    const getFavoritesCount = async () => {
+      try {
+        const user = await AsyncStorage.getItem('userDetail');
+        if (user) {
+          const userDetail = JSON.parse(user);
+          const userId = userDetail.id || userDetail._id;
+          
+          console.log('Fetching favorites count for user:', userId);
+          
+          const response = await GetApi('user/getFavourite', {
+            params: {
+              user_id: userId
+            }
+          });
+          
+          console.log('Favorites count response:', response);
+          
+          if (response?.status && response?.data) {
+            const count = Array.isArray(response.data) ? response.data.length : 0;
+            console.log('Setting favorites count:', count);
+            setFavoritesCount(count);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching favorites count:', error);
+      }
+    };
+    
+    if (isFocused) {
+      getFavoritesCount();
+    }
+  }, [isFocused, isInWishlist]);
 
   const checkIfInWishlist = async () => {
     try {
@@ -348,7 +385,29 @@ console.log('Final Prices:', {
 
   return (
     <SafeAreaView style={styles.container}>
-      <DriverHeader item={product.name || t('Product Details')} showback={true} />
+      {/* Custom Header */}
+      <View style={styles.customHeader}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Icon name="arrow-left" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {product.name || t('Product Details')}
+        </Text>
+        <TouchableOpacity 
+          style={styles.favoriteHeaderButton}
+          onPress={() => navigation.navigate('Favorites')}
+        >
+          <Icon name="heart" size={24} color="#FFFFFF" />
+          {favoritesCount > 0 && (
+            <View style={styles.favoriteBadge}>
+              <Text style={styles.favoriteBadgeText}>{favoritesCount}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
       
       <ScrollView 
         showsVerticalScrollIndicator={false}
@@ -414,9 +473,6 @@ console.log('Final Prices:', {
                   size={28} 
                   color={isInWishlist ? '#FF0000' : '#333'} 
                 />
-                {isLoadingFavorite && (
-                  <ActivityIndicator size="small" color="#000" style={styles.loader} />
-                )}
               </TouchableOpacity>
               
               <View style={styles.quantityContainer}>
@@ -610,9 +666,9 @@ console.log('Final Prices:', {
           {/* Delivery Information */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Delivery Information</Text>
-            <View style={styles.infoRow}>
+            <View style={styles.deliveryInfoRow}>
               <Text style={styles.infoLabel}>Delivery:</Text>
-              <Text style={styles.infoValue}>Standard delivery in 3-5 business days</Text>
+              <Text style={styles.deliveryInfoValue}>Standard delivery in 3-5 business days</Text>
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Return Policy:</Text>
@@ -651,7 +707,7 @@ console.log('Final Prices:', {
   
             {product.reviews?.length > 0 ? (
               <View style={styles.reviewsList}>
-                {product.reviews.slice(0, 2).map((review, index, arr) => {
+                {(showAllReviews ? product.reviews : product.reviews.slice(0, 6)).map((review, index, arr) => {
                   const isLastItem = index === arr.length - 1;
                   return (
                     <View 
@@ -709,15 +765,19 @@ console.log('Final Prices:', {
                           style={styles.reviewGallery}
                           contentContainerStyle={styles.galleryContent}
                         >
-                          {review.images.map((img, imgIndex) => (
-                            <View key={imgIndex} style={styles.imageWrapper}>
-                              <Image 
-                                source={{ uri: img.url }}
-                                style={styles.reviewImage}
-                                resizeMode="cover"
-                              />
-                            </View>
-                          ))}
+                          {review.images.map((img, imgIndex) => {
+                            // Handle both string URLs and object with url property
+                            const imageUrl = typeof img === 'string' ? img : img.url;
+                            return (
+                              <View key={imgIndex} style={styles.imageWrapper}>
+                                <Image 
+                                  source={{ uri: imageUrl }}
+                                  style={styles.reviewImage}
+                                  resizeMode="cover"
+                                />
+                              </View>
+                            );
+                          })}
                         </ScrollView>
                       )}
                     </View>
@@ -734,16 +794,19 @@ console.log('Final Prices:', {
             )}
           </View>
           
-          {product.reviews?.length > 0 && (
+          {product.reviews?.length > 6 && (
             <TouchableOpacity 
               style={styles.viewAllButton}
-              onPress={() => {
-                // Navigate to all reviews screen
-                // navigation.navigate('AllReviews', { productId: product._id });
-              }}
+              onPress={() => setShowAllReviews(!showAllReviews)}
             >
-              <Text style={styles.viewAllText}>View All {product.reviews.length} Reviews</Text>
-              <Text style={styles.viewAllIcon}>›</Text>
+              <Text style={styles.viewAllText}>
+                {showAllReviews 
+                  ? 'Hide Reviews' 
+                  : `See All ${product.reviews.length} Reviews`}
+              </Text>
+              <Text style={styles.viewAllIcon}>
+                {showAllReviews ? '‹' : '›'}
+              </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -763,6 +826,45 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Constants.white,
+  },
+  customHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#FF7000',
+  },
+  backButton: {
+    padding: 4,
+  },
+  headerTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginHorizontal: 12,
+  },
+  favoriteHeaderButton: {
+    padding: 4,
+    position: 'relative',
+  },
+  favoriteBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: '#FF0000',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  favoriteBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: 'bold',
   },
   imageContainer: {
     width: '100%',
@@ -946,18 +1048,6 @@ const styles = StyleSheet.create({
     marginTop: 20,
     fontSize: 18,
     marginBottom: 20,
-  },
-  backButton: {
-    backgroundColor: Constants.pink,
-    padding: 15,
-    borderRadius: 8,
-    width: '80%',
-    alignItems: 'center',
-  },
-  backButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
   },
   scrollContent: {
     paddingBottom: 100,
@@ -1182,17 +1272,32 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: 'row',
     marginBottom: 8,
+    alignItems: 'flex-start',
+  },
+  deliveryInfoRow: {
+    flexDirection: 'row',
+    marginBottom: 8,
+    alignItems: 'flex-start',
+    marginTop:5
   },
   infoLabel: {
-    width: 100,
     fontSize: 14,
+  
     color: Constants.customgrey,
     fontWeight: '500',
+    marginRight: 6,
+    
   },
   infoValue: {
     flex: 1,
     fontSize: 14,
     color: Constants.black,
+  },
+  deliveryInfoValue: {
+    flex: 1,
+    fontSize: 14,
+    color: Constants.black,
+    
   },
 
   /* Enhanced Review Section Styles */

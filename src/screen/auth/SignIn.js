@@ -118,47 +118,40 @@ const LoginScreen = ({ navigation }) => {
                          userStatus === false ? 'pending' : 
                          String(userStatus || 'pending').toLowerCase();
       
-      console.log('Extracted user data:', { userRole, userStatus, responseUserData });
+      console.log('🔍 Extracted user data:', { 
+        userRole, 
+        userStatus, 
+        statusString,
+        fullUserData: responseUserData 
+      });
       
       try {
         // Handle navigation based on user role and status
         if (userRole === 'seller') {
-          console.log('Seller login detected', { userRole, userStatus });
-          
-          // Use the normalized status
-          console.log('Normalized status:', statusString);
+          console.log('🏪 Seller login detected', { userRole, statusString });
           
           if (statusString === 'verified') {
-            console.log('Verified seller, attempting to navigate to SellerTabs');
-            console.log('Navigation object:', navigation);
-            console.log('Available routes:', navigation.getState()?.routes?.map(r => r.name));
-            
-            try {
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'SellerTabs' }],
-              });
-              console.log('Navigation to SellerTabs successful');
-            } catch (navError) {
-              console.error('Error navigating to SellerTabs:', navError);
-              navigation.replace('App');
-            }
+            console.log('✅ Verified seller, navigating to SellerTabs');
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'SellerTabs' }],
+            });
           } else if (statusString === 'pending') {
-            console.log('Pending seller, navigating to SellerStore');
+            console.log('⏳ Pending seller, navigating to SellerStore');
             navigation.reset({
               index: 0,
               routes: [{ name: 'SellerStore' }],
             });
           } else {
-            console.log('Invalid seller status, navigating to App');
+            console.log('⚠️ Unknown seller status, navigating to App');
             navigation.replace('App');
           }
         } else {
-          console.log(`Navigating to App (${userRole || 'default'})`);
+          console.log(`👤 Regular user login (${userRole || 'customer'}), navigating to App`);
           navigation.replace('App');
         }
       } catch (navError) {
-        console.error('Navigation error:', navError);
+        console.error('❌ Navigation error:', navError);
         navigation.replace('App'); 
       }
     } catch (error) {

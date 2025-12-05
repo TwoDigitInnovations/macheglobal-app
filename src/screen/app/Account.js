@@ -9,6 +9,8 @@ import {
   Text,
   TouchableOpacity,
   View,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import React, { useContext, useEffect, useState, useCallback } from 'react';
 import Constants, { FONTS } from '../../Assets/Helpers/constant';
@@ -205,7 +207,15 @@ const Account = () => {
     <SafeAreaView style={styles.container}>
       {/* <Text style={styles.headtxt}>My Account</Text> */}
       <DriverHeader item={t('My Account')} showback={true} />
-      <View>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingBottom: 120,
+            flexGrow: 1,
+          }}>
         <TouchableOpacity
           style={styles.topcard}
           onPress={() => navigate('Profile')}>
@@ -233,12 +243,6 @@ const Account = () => {
             <Text style={styles.protxt2}>{userDetail?.email || ''}</Text>
           </View>
         </TouchableOpacity>
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          style={{
-            marginTop: 10,
-            height: Dimensions.get('window').height - 200,
-          }}>
           <TouchableOpacity
             style={[styles.box, styles.shadowProp]}
             onPress={() => navigate('Myorder')}>
@@ -400,7 +404,7 @@ const Account = () => {
             />
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.box, styles.shadowProp, { marginBottom: 80 }]}
+            style={[styles.box, styles.shadowProp]}
             onPress={() => {
               setModalVisible(true);
             }}>
@@ -418,22 +422,7 @@ const Account = () => {
             />
           </TouchableOpacity>
         </ScrollView>
-        {/* <Language /> */}
-
-        {/* <TouchableOpacity
-            style={styles.btn}
-            onPress={async () => {
-              setModalVisible(true);
-            }}>
-            <Text style={styles.btntxt}>Log Out</Text>
-            <SignoutIcon
-              style={{marginHorizontal: 20}}
-              color={Constants.white}
-              height={20}
-              width={20}
-            />
-          </TouchableOpacity> */}
-      </View>
+      </KeyboardAvoidingView>
 
       <Modal
         animationType="none"

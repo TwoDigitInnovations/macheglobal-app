@@ -49,7 +49,7 @@ const COLORS = {
   danger: '#FF3B30',   
 };
 import { LoadContext, ToastContext } from '../../../App';
-import { Post, ApiFormData, GetApi } from '../../Assets/Helpers/Service';
+import { Post, ApiFormData, GetApi, Delete } from '../../Assets/Helpers/Service';
 import { launchImageLibrary } from 'react-native-image-picker';
 
 const ReviewScreen = () => {
@@ -60,14 +60,58 @@ const ReviewScreen = () => {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useContext(LoadContext);
   const [toast, setToast] = useContext(ToastContext);
+  const [existingReviewId, setExistingReviewId] = useState(null);
 
-  const { orderId, product } = route.params;
+  const { orderId, product, isUpdate } = route.params;
+
+  // Fetch existing review if in update mode
+  React.useEffect(() => {
+    if (isUpdate && product._id) {
+      fetchExistingReview();
+    }
+  }, [isUpdate, product._id]);
+
+  const fetchExistingReview = async () => {
+    try {
+      setLoading(true);
+      const response = await GetApi('reviews/me', {});
+      
+      if (response?.success && response?.data) {
+        // Find review for this product
+        const existingReview = response.data.find(
+          r => (r.product?._id || r.product) === product._id
+        );
+        
+        if (existingReview) {
+          console.log('Found existing review:', existingReview);
+          setRating(existingReview.rating || 5);
+          setReview(existingReview.description || '');
+          setExistingReviewId(existingReview._id);
+          
+          // Load images if available (these are already uploaded to cloudinary)
+          if (existingReview.images && existingReview.images.length > 0) {
+            const reviewImages = existingReview.images.map((url, index) => ({
+              uri: url, // Cloudinary URL for preview
+              url: url, // Cloudinary URL
+              uploaded: true, // Already uploaded
+              name: `review_${index}.jpg`
+            }));
+            setImages(reviewImages);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching existing review:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleImagePick = async () => {
     try {
       const options = {
         mediaType: 'photo',
-        quality: 0.5,
+        quality: 0.7,
         selectionLimit: 5 - images.length,
         includeBase64: false,
       };
@@ -80,20 +124,54 @@ const ReviewScreen = () => {
         console.log('ImagePicker Error: ', result.error);
         Alert.alert('Error', 'Failed to pick image');
       } else if (result.assets && result.assets.length > 0) {
-        const newImages = result.assets.map(asset => ({
-          uri: asset.uri,
-          type: asset.type || 'image/jpeg',
-          name: `review_${Date.now()}.jpg`,
-        }));
-        setImages([...images, ...newImages]);
+        // Upload images immediately after selection
+        setLoading(true);
+        const uploadedImages = [];
+        
+        for (let i = 0; i < result.assets.length; i++) {
+          const asset = result.assets[i];
+          const imageData = {
+            uri: asset.uri,
+            type: asset.type || 'image/jpeg',
+            fileName: asset.fileName || `review_${Date.now()}_${i}.jpg`,
+            name: asset.fileName || `review_${Date.now()}_${i}.jpg`,
+          };
+          
+          console.log(`Uploading image ${i + 1}/${result.assets.length}...`);
+          
+          try {
+            const uploadResponse = await ApiFormData(imageData);
+            console.log('Upload response:', uploadResponse);
+            
+            if (uploadResponse?.status && uploadResponse?.data?.fileUrl) {
+              // Store both the local URI (for preview) and cloudinary URL
+              uploadedImages.push({
+                uri: asset.uri, // For preview
+                url: uploadResponse.data.fileUrl, // Cloudinary URL
+                uploaded: true
+              });
+              console.log(`Image ${i + 1} uploaded successfully`);
+            } else {
+              console.log(`Image ${i + 1} upload failed`);
+              setToast(`Failed to upload image ${i + 1}`);
+            }
+          } catch (uploadError) {
+            console.error(`Error uploading image ${i + 1}:`, uploadError);
+            setToast(`Error uploading image ${i + 1}`);
+          }
+        }
+        
+        setLoading(false);
+        
+        if (uploadedImages.length > 0) {
+          setImages([...images, ...uploadedImages]);
+          setToast(`${uploadedImages.length} image(s) uploaded successfully!`);
+        }
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      setToast({
-        type: 'error',
-        message: 'Error selecting image. Please try again.',
-        visible: true,
-      });
+      setToast('Error selecting image. Please try again.');
+      setLoading(false);
     }
   };
 
@@ -105,63 +183,70 @@ const ReviewScreen = () => {
 
   const handleSubmit = async () => {
     if (!review.trim()) {
-      setToast({
-        type: 'error',
-        message: 'Please write your review',
-        visible: true,
-      });
+      setToast('Please write your review');
       return;
     }
 
     try {
       setLoading(true);
       
-      let imageUrls = [];
-      if (images.length > 0) {
-        const formData = new FormData();
-        images.forEach((image, index) => {
-          formData.append('images', {
-            uri: image.uri,
-            type: 'image/jpeg',
-            name: `review_image_${Date.now()}_${index}.jpg`,
-          });
-        });
-
-        const uploadResponse = await ApiFormData('upload/review-images', formData);
-        if (uploadResponse.success) {
-          imageUrls = uploadResponse.data.imageUrls;
-        } else {
-          throw new Error('Failed to upload images');
+      console.log('=== Review Submission Debug ===');
+      console.log('Is Update Mode:', isUpdate);
+      console.log('Existing Review ID:', existingReviewId);
+      console.log('Order ID:', orderId);
+      console.log('Product:', product);
+      console.log('Product ID:', product._id);
+      console.log('Rating:', rating);
+      console.log('Description:', review);
+      console.log('Images already uploaded:', images.length);
+      
+      // Extract cloudinary URLs from already uploaded images
+      const uploadedImageUrls = images
+        .filter(img => img.uploaded && img.url)
+        .map(img => img.url);
+      
+      console.log('Image URLs to submit:', uploadedImageUrls);
+      
+      // If updating, delete the old review first
+      if (isUpdate && existingReviewId) {
+        console.log('Deleting existing review:', existingReviewId);
+        try {
+          await Delete(`user/deleteReview/${existingReviewId}`, {});
+          console.log('Old review deleted successfully');
+        } catch (deleteError) {
+          console.error('Error deleting old review:', deleteError);
+          // Continue anyway to create new review
         }
       }
-
+      
+      // Create new review (or first-time review)
       const reviewData = {
-        orderId,
+        orderId: orderId,
         productId: product._id,
-        rating,
+        rating: rating,
         description: review,
-        images: imageUrls,
+        images: uploadedImageUrls,
       };
 
+      console.log('Submitting review data:', JSON.stringify(reviewData, null, 2));
       const response = await Post('reviews', reviewData);
       
-      if (response.success) {
-        setToast({
-          type: 'success',
-          message: 'Thank you for your review!',
-          visible: true,
-        });
-        navigation.goBack();
+      console.log('Review response:', JSON.stringify(response, null, 2));
+      
+      if (response?.success === true) {
+        setToast(isUpdate ? 'Review updated successfully!' : 'Thank you for your review!');
+        setTimeout(() => {
+          navigation.goBack();
+        }, 500);
       } else {
-        throw new Error(response.message || 'Failed to submit review');
+        // Show more detailed error
+        const errorMsg = response?.message || response?.error || 'Failed to submit review';
+        console.error('Review submission failed:', errorMsg);
+        setToast(errorMsg);
       }
     } catch (error) {
       console.error('Error submitting review:', error);
-      setToast({
-        type: 'error',
-        message: error.message || 'Failed to submit review. Please try again.',
-        visible: true,
-      });
+      setToast(error.message || 'Failed to submit review. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -177,7 +262,9 @@ const ReviewScreen = () => {
         >
           <Icon name="arrow-back" size={24} color={COLORS.black} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Write a Review</Text>
+        <Text style={styles.headerTitle}>
+          {isUpdate ? 'Update Review' : 'Write a Review'}
+        </Text>
         <View style={{ width: 24 }} /> {/* For alignment */}
       </View>
 
@@ -270,7 +357,9 @@ const ReviewScreen = () => {
           disabled={loading}
         >
           <Text style={styles.submitButtonText}>
-            {loading ? 'Submitting...' : 'Submit Review'}
+            {loading 
+              ? (isUpdate ? 'Updating...' : 'Submitting...') 
+              : (isUpdate ? 'Update Review' : 'Submit Review')}
           </Text>
         </TouchableOpacity>
       </View>

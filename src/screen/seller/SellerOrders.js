@@ -11,7 +11,7 @@ import {
   Alert
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Post } from '../../Assets/Helpers/Service';
 
@@ -203,7 +203,7 @@ export default function SellerOrdersScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>My Orders</Text>
         </View>
@@ -211,12 +211,12 @@ export default function SellerOrdersScreen() {
           <ActivityIndicator size="large" color="#3B82F6" />
           <Text style={styles.loadingText}>Loading orders...</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity 
@@ -251,7 +251,7 @@ export default function SellerOrdersScreen() {
           </View>
         }
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -264,19 +264,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#eaeaea',
   },
   backButton: {
-    padding: 8,
-    marginRight: 8,
+    padding: 4,
+    marginRight: 12,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
+    flex: 1,
   },
   headerRight: {
     width: 40, 

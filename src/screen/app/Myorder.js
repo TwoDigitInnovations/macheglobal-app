@@ -70,6 +70,20 @@ const Myorder = () => {
     review: '',
     images: [],
   });
+  const [reviewedProducts, setReviewedProducts] = useState(new Set());
+
+  // Check if product is already reviewed
+  const checkIfReviewed = async (productId) => {
+    try {
+      const response = await GetApi('reviews/me', {});
+      if (response?.success && response?.data) {
+        const reviewedIds = response.data.map(review => review.product?._id || review.product);
+        setReviewedProducts(new Set(reviewedIds));
+      }
+    } catch (error) {
+      console.error('Error checking reviews:', error);
+    }
+  };
 
   const getorders = (p, isRefreshing = false, text = '', favorite = false) => {
     setLoadingMore(p > 1);
@@ -141,6 +155,7 @@ const Myorder = () => {
     if (IsFocused) {
       getorders(1);
       setalredyfavorite(false);
+      checkIfReviewed();
     }
   }, [IsFocused]);
   const fetchNextPage = () => {
@@ -497,13 +512,17 @@ const Myorder = () => {
                         {(item?.orderStatus !== 'delivered' && item?.orderStatus !== 'completed') && (
                           <TouchableOpacity
                             onPress={() => {
+                              const productId = item.orderItems[0]?.product?._id || item.orderItems[0]?._id;
+                              const isReviewed = reviewedProducts.has(productId);
+                              
                               navigation.navigate('ReviewScreen', {
                                 orderId: item._id,
                                 product: {
-                                  _id: item.orderItems[0]?.product?._id || item.orderItems[0]?._id,
+                                  _id: productId,
                                   name: item.orderItems[0]?.name || item.orderItems[0]?.product?.name,
                                   images: item.orderItems[0]?.image ? [{ url: item.orderItems[0].image }] : []
-                                }
+                                },
+                                isUpdate: isReviewed
                               });
                             }}
                             style={{
@@ -520,7 +539,9 @@ const Myorder = () => {
                               color: '#FFFFFF',
                               fontWeight: '600',
                             }}>
-                              {t('Rate Product')}
+                              {reviewedProducts.has(item.orderItems[0]?.product?._id || item.orderItems[0]?._id) 
+                                ? t('Update Rating') 
+                                : t('Rate Product')}
                             </Text>
                           </TouchableOpacity>
                         )}
@@ -627,13 +648,17 @@ const Myorder = () => {
                             {(item?.orderStatus !== 'delivered' && item?.orderStatus !== 'completed') && (
                               <TouchableOpacity
                                 onPress={() => {
+                                  const productId = prod?.product?._id || prod?._id;
+                                  const isReviewed = reviewedProducts.has(productId);
+                                  
                                   navigation.navigate('ReviewScreen', {
                                     orderId: item._id,
                                     product: {
-                                      _id: prod?.product?._id || prod?._id,
+                                      _id: productId,
                                       name: prod?.name || prod?.product?.name,
                                       images: prod?.image ? [{ url: prod.image }] : []
-                                    }
+                                    },
+                                    isUpdate: isReviewed
                                   });
                                 }}
                                 style={{
@@ -650,7 +675,9 @@ const Myorder = () => {
                                   color: '#FFFFFF',
                                   fontWeight: '600',
                                 }}>
-                                  {t('Rate Product')}
+                                  {reviewedProducts.has(prod?.product?._id || prod?._id)
+                                    ? t('Update Rating')
+                                    : t('Rate Product')}
                                 </Text>
                               </TouchableOpacity>
                             )}

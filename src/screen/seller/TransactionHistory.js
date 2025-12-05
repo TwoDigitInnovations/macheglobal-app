@@ -7,7 +7,6 @@ import {
   TouchableOpacity, 
   ActivityIndicator, 
   RefreshControl,
-  SafeAreaView
 } from 'react-native';
 import { GetApi } from '../../Assets/Helpers/Service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -176,7 +175,7 @@ const TransactionHistory = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
      
 
       <ScrollView 
@@ -202,7 +201,7 @@ const TransactionHistory = ({ navigation }) => {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 

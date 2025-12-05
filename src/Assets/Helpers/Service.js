@@ -464,6 +464,27 @@ const ApiFormData = async (img) => {
 //       } else {
 //         reject('No internet connection');
 
+// Socket.IO URL helper
+export const getSocketUrl = () => {
+  let socketUrl = Constants.baseUrl;
+  
+  // Remove /api/ or /api from the end
+  if (socketUrl.endsWith('/api/')) {
+    socketUrl = socketUrl.slice(0, -5);
+  } else if (socketUrl.endsWith('/api')) {
+    socketUrl = socketUrl.slice(0, -4);
+  }
+
+  // Always use HTTP for socket (your backend is HTTP, not HTTPS)
+  if (!socketUrl.startsWith('http://') && !socketUrl.startsWith('https://')) {
+    socketUrl = 'http://' + socketUrl;
+  }
+
+  console.log('🔗 [SOCKET] Final Socket URL:', socketUrl);
+  return socketUrl;
+};
+
+
 // Order related API functions
 export const createOrder = (orderData) => Post('orders', orderData);
 

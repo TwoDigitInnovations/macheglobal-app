@@ -10,7 +10,7 @@ import {
   Platform,
   SafeAreaView 
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { BackIcon } from '../../../Theme';
 import { CartContext } from '../../../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -22,26 +22,34 @@ export default function CartScreen() {
   const [cartContext = [], setCartContext] = useContext(CartContext) || [[], () => {}];
   const [selectedItems, setSelectedItems] = useState([]);
 
+  // Refresh cart when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      const loadCart = async () => {
+        try {
+          const savedCart = await AsyncStorage.getItem('cartdata');
+          if (savedCart) {
+            const parsedCart = JSON.parse(savedCart);
+            setCartContext(parsedCart);
+          } else {
+            setCartContext([]);
+          }
+        } catch (error) {
+          console.error('Error loading cart:', error);
+          setCartContext([]);
+        }
+      };
+      
+      loadCart();
+    }, [])
+  );
+
   useEffect(() => {
     console.log('Cart Context:', cartContext);
     
     if (!cartContext || !Array.isArray(cartContext) || cartContext.length === 0) {
-      console.log('No items in cart, adding sample data for testing');
-      const sampleItems = [{
-        id: 'test1',
-        productName: 'Red Dress',
-        variants: [{
-          id: 'test1-var',
-          name: 'Red Dress',
-          price: 400,
-          offerPrice: 299,
-          image: 'https://via.placeholder.com/200',
-          qty: 1
-        }],
-        deliveryBy: '$50',
-        freeShipping: ''
-      }];
-      setCartItems(sampleItems);
+      console.log('Cart is empty');
+      setCartItems([]);
       setLoading(false);
       return;
     }
@@ -52,6 +60,8 @@ export default function CartScreen() {
       originalIndex: index,
       variants: [{
         id: item.productid || `variant-${index}`,
+        productId: item.productid,
+        slug: item.slug,
         name: item.vietnamiesName || item.productname || 'Product Variant',
         price: item.price || 0,
         offerPrice: item.offer || item.price || 0,
@@ -76,6 +86,56 @@ export default function CartScreen() {
       }
     });
   }, []);
+
+  const updateQuantity = async (itemIndex, change) => {
+    if (itemIndex === undefined) return;
+
+    const newCart = [...cartContext];
+    const currentQty = newCart[itemIndex].qty || 1;
+    const newQty = currentQty + change;
+
+    // If quantity becomes 0 or less, remove the item
+    if (newQty <= 0) {
+      removeItem(itemIndex);
+      return;
+    }
+
+    // Update quantity
+    newCart[itemIndex].qty = newQty;
+
+    try {
+      // Save to AsyncStorage
+      await AsyncStorage.setItem('cartdata', JSON.stringify(newCart));
+      
+      // Update cart context
+      setCartContext(newCart);
+      
+      console.log(`Updated quantity for item ${itemIndex}: ${newQty}`);
+    } catch (error) {
+      console.error('Error updating quantity:', error);
+      alert('Failed to update quantity. Please try again.');
+    }
+  };
+
+  const removeItem = async (itemIndex) => {
+    if (itemIndex === undefined) return;
+
+    const newCart = [...cartContext];
+    newCart.splice(itemIndex, 1);
+
+    try {
+      // Save to AsyncStorage
+      await AsyncStorage.setItem('cartdata', JSON.stringify(newCart));
+      
+      // Update cart context
+      setCartContext(newCart);
+      
+      console.log('Item removed. New cart length:', newCart.length);
+    } catch (error) {
+      console.error('Error removing item:', error);
+      alert('Failed to remove item. Please try again.');
+    }
+  };
 
   const removeSelectedItems = async () => {
     if (selectedItems.length === 0) {
@@ -172,46 +232,41 @@ export default function CartScreen() {
             showsVerticalScrollIndicator={false}
           >
             {cartItems.length > 0 ? (
-              cartItems.map((item) => (
+              cartItems.map((item, itemIndex) => (
                 <View key={item.id} style={styles.deliverySection}>
-                  <View style={styles.deliveryHeader}>
-                    <Text style={styles.deliveryText}>Delivery by </Text>
-                    <Text style={styles.deliveryPrice}>{item.deliveryBy}</Text>
-                    {item.freeShipping && (
-                      <Text style={styles.freeShipping}> {item.freeShipping}</Text>
-                    )}
-                  </View>
-
-                  <Text style={styles.productName}>{item.productName}</Text>
+                  {itemIndex === 0 && (
+                    <View style={styles.deliveryHeader}>
+                      <Text style={styles.deliveryText}>Estimated Delivery: </Text>
+                      <Text style={styles.deliveryPrice}>3-5 Business Days</Text>
+                    </View>
+                  )}
 
                   {item.variants.map((variant) => (
                     <View key={`${item.id}-${variant.id}`} style={styles.variantCard}>
-                      {/* Checkbox */}
                       <TouchableOpacity 
-                        style={styles.checkboxContainer}
-                        onPress={() => toggleItemSelection(item.id)}
+                        style={styles.productImagePlaceholder}
+                        onPress={() => navigation.navigate('Preview', variant.slug || variant.productId)}
                       >
-                        <View style={[
-                          styles.checkbox,
-                          selectedItems.includes(item.id) && styles.checkboxSelected
-                        ]}>
-                          {selectedItems.includes(item.id) && (
-                            <Text style={styles.checkmark}>✓</Text>
-                          )}
-                        </View>
-                      </TouchableOpacity>
-
-                      <View style={styles.productImagePlaceholder}>
                         <Image 
                           source={{ uri: variant.image }}
                           style={styles.productImage}
                           resizeMode="cover"
                         />
-                      </View>
+                      </TouchableOpacity>
+                      
                       <View style={styles.variantInfo}>
-                        <Text style={styles.variantName} numberOfLines={2}>
-                          {variant.name}
-                        </Text>
+                        <View style={styles.nameAndRemove}>
+                          <Text style={styles.variantName} numberOfLines={2}>
+                            {variant.name}
+                          </Text>
+                          <TouchableOpacity 
+                            style={styles.removeIcon}
+                            onPress={() => removeItem(item.originalIndex)}
+                          >
+                            <Text style={styles.removeIconText}>✕</Text>
+                          </TouchableOpacity>
+                        </View>
+                        
                         <View style={styles.priceContainer}>
                           {variant.offerPrice && variant.offerPrice !== variant.price ? (
                             <>
@@ -222,7 +277,23 @@ export default function CartScreen() {
                             <Text style={styles.variantPrice}>${variant.price}</Text>
                           )}
                         </View>
-                        <Text style={styles.quantityText}>Qty: {variant.qty || 1}</Text>
+                        
+                        {/* Quantity Controls */}
+                        <View style={styles.quantityControls}>
+                          <TouchableOpacity 
+                            style={styles.quantityButton}
+                            onPress={() => updateQuantity(item.originalIndex, -1)}
+                          >
+                            <Text style={styles.quantityButtonText}>−</Text>
+                          </TouchableOpacity>
+                          <Text style={styles.quantityValue}>{variant.qty || 1}</Text>
+                          <TouchableOpacity 
+                            style={styles.quantityButton}
+                            onPress={() => updateQuantity(item.originalIndex, 1)}
+                          >
+                            <Text style={styles.quantityButtonText}>+</Text>
+                          </TouchableOpacity>
+                        </View>
                       </View>
                     </View>
                   ))}
@@ -347,19 +418,19 @@ const styles = StyleSheet.create({
   },
   removeButtonContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 8,
     backgroundColor: '#fff',
   },
   removeButton: {
     backgroundColor: '#FF7000',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
     alignItems: 'center',
   },
   removeButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   contentWrapper: {
@@ -374,7 +445,7 @@ const styles = StyleSheet.create({
     paddingBottom: 180,
   },
   deliverySection: {
-    marginBottom: 24,
+    marginBottom: 8,
     paddingHorizontal: 16,
   },
   deliveryHeader: {
@@ -396,19 +467,19 @@ const styles = StyleSheet.create({
     color: '#FF7000',
     fontWeight: '500',
   },
-  productName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 12,
-  },
+
   variantCard: {
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
+    backgroundColor: '#fff',
+    borderRadius: 12,
     padding: 12,
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
+    alignItems: 'flex-start',
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   checkboxContainer: {
     marginRight: 12,
@@ -448,11 +519,28 @@ const styles = StyleSheet.create({
   variantInfo: {
     flex: 1,
   },
+  nameAndRemove: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
   variantName: {
     fontSize: 16,
     fontWeight: '500',
     color: '#000',
-    marginBottom: 8,
+    flex: 1,
+    marginRight: 8,
+  },
+  removeIcon: {
+    padding: 2,
+    marginLeft: 4,
+  },
+  removeIconText: {
+    color: '#374151',
+    fontSize: 20,
+    fontWeight: '600',
+    lineHeight: 20,
   },
   variantPrice: {
     fontSize: 16,
@@ -463,6 +551,38 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginTop: 4,
+  },
+  quantityControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+    alignSelf: 'flex-start',
+  },
+  quantityButton: {
+    width: 30,
+    height: 30,
+    backgroundColor: '#FF7000',
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  quantityButtonText: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: 'bold',
+    lineHeight: 22,
+  },
+  quantityValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000',
+    marginHorizontal: 20,
+    minWidth: 30,
+    textAlign: 'center',
   },
   checkoutWrapper: {
     backgroundColor: '#fff',

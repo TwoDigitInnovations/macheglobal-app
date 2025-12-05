@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback, useRef,memo  } from 'react';
 import { CartContext, ToastContext } from '../../../App';
 import { 
   View, 
@@ -6,8 +6,6 @@ import {
   FlatList, 
   Image, 
   TouchableOpacity, 
-  Alert,
-  ScrollView,
   ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,6 +17,106 @@ import { navigate } from '../../../navigationRef';
 import DriverHeader from '../../Assets/Component/DriverHeader';
 import { useTranslation } from 'react-i18next';
 
+// Product card ko separate memo component banao
+const ProductCard = memo(({ 
+  item, 
+  quantity, 
+  onAddToCart, 
+  onIncrease, 
+  onDecrease, 
+  onRemoveFavorite 
+}) => {
+  const product = item.product || item;
+  const price = product.varients?.[0]?.selected?.[0]?.offerprice || 0;
+  const originalPrice = product.varients?.[0]?.selected?.[0]?.price || 0;
+  const discount = originalPrice > price 
+    ? Math.round(((originalPrice - price) / originalPrice) * 100) 
+    : 0;
+  const image = product.varients?.[0]?.image?.[0] || 'https://via.placeholder.com/150';
+
+  return (
+    <View style={styles.productCard}>
+      <View style={styles.productRow}>
+        <TouchableOpacity 
+          onPress={() => {
+            const productSlug = product.slug || product._id;
+            navigate('Preview', productSlug);
+          }}
+        >
+          <Image 
+            source={{ uri: image }} 
+            style={styles.productImage}
+            resizeMode="cover"
+          />
+        </TouchableOpacity>
+        <View style={styles.productInfo}>
+          <View style={styles.headerRow}>
+            <Text 
+              style={styles.productName}
+              numberOfLines={2}
+            >
+              {product.name}
+            </Text>
+            <TouchableOpacity 
+              onPress={() => onRemoveFavorite(item._id)}
+              style={styles.favoriteButton}
+            >
+              <Icon name="heart" size={20} color="#ef4444" />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.priceRow}>
+            <Text style={styles.price}>
+              ${Math.round(price)}
+            </Text>
+            {originalPrice > price && (
+              <Text style={styles.originalPrice}>
+                ${Math.round(originalPrice)}
+              </Text>
+            )}
+            {discount > 0 && (
+              <View style={styles.discountBadge}>
+                <Text style={styles.discountText}>{discount}% OFF</Text>
+              </View>
+            )}
+          </View>
+          
+          <View style={styles.cartControlsContainer}>
+            {quantity === 0 ? (
+              <TouchableOpacity 
+                style={styles.addToCartButton}
+                onPress={() => onAddToCart(item)}
+              >
+                <Text style={styles.addToCartText}>Add to Cart</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.quantityControlsWrapper}>
+                <TouchableOpacity
+                  style={styles.quantityButton}
+                  onPress={() => onDecrease(product._id)}
+                >
+                  <Text style={styles.quantityButtonText}>-</Text>
+                </TouchableOpacity>
+                <Text style={styles.quantityText}>{quantity}</Text>
+                <TouchableOpacity
+                  style={styles.quantityButton}
+                  onPress={() => onIncrease(product._id)}
+                >
+                  <Text style={styles.quantityButtonText}>+</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}, (prevProps, nextProps) => {
+  // Custom comparison - sirf quantity change hone pe hi re-render karo
+  return prevProps.quantity === nextProps.quantity && 
+         prevProps.item._id === nextProps.item._id;
+});
+
 const Favorites = ({ navigation }) => {
   const { t } = useTranslation();
   const [favorites, setFavorites] = useState([]);
@@ -26,33 +124,26 @@ const Favorites = ({ navigation }) => {
   const [error, setError] = useState(null);
   const [cartdetail, setcartdetail] = useContext(CartContext);
   const [toast, setToast] = useContext(ToastContext);
-  const [showQuantityControls, setShowQuantityControls] = useState({});
+  
+  // Cart quantities ko separate state mein rakho for quick access
+  const [quantities, setQuantities] = useState({});
+  const isUpdatingRef = useRef(false);
 
   useEffect(() => {
     fetchFavorites();
   }, []);
 
+  // Cart update hone pe quantities update karo without full re-render
   useEffect(() => {
-    if (favorites && cartdetail) {
+    if (!isUpdatingRef.current) {
       const existingCart = Array.isArray(cartdetail) ? cartdetail : [];
-      const newShowQuantityControls = {};
-      
-      favorites.forEach(item => {
-        const product = item.product || item;
-        const existingProduct = existingCart.find(
-          f => f.productid === product._id
-        );
-        
-        if (existingProduct && existingProduct.qty > 0) {
-          newShowQuantityControls[product._id] = true;
-        } else {
-          newShowQuantityControls[product._id] = false;
-        }
+      const newQuantities = {};
+      existingCart.forEach(item => {
+        newQuantities[item.productid] = item.qty;
       });
-      
-      setShowQuantityControls(newShowQuantityControls);
+      setQuantities(newQuantities);
     }
-  }, [favorites, cartdetail]);
+  }, [cartdetail]);
 
   const fetchFavorites = async () => {
     try {
@@ -69,7 +160,7 @@ const Favorites = ({ navigation }) => {
           user_id: JSON.parse(user).id
         }
       });
-      console.log('response', response);
+      
       if (response && response.status) {
         setFavorites(response.data || []);
         setError(null);
@@ -84,13 +175,10 @@ const Favorites = ({ navigation }) => {
     }
   };
 
-  const handleRemoveFavorite = async (favoriteId) => {
+  const handleRemoveFavorite = useCallback(async (favoriteId) => {
     try {
-      console.log('Attempting to remove from favorites...');
-      
       const user = await AsyncStorage.getItem('userDetail');
       if (!user) {
-        console.log('User not logged in');
         Toast.show({
           type: 'error',
           text1: 'Error',
@@ -101,35 +189,20 @@ const Favorites = ({ navigation }) => {
       }
       
       const userId = JSON.parse(user).id;
-      
-      // Find the product ID from favorites array
       const favoriteItem = favorites.find(fav => fav._id === favoriteId);
       const productId = favoriteItem?.product?._id || favoriteItem?.product;
       
-      console.log('Removing favorite for user:', userId, 'product:', productId);
-      
       const response = await Post('user/addremovefavourite', { 
-        product: productId,  // Product ki ID pass karein
+        product: productId,
         user_id: userId
       });
       
-      console.log('Remove from favorites response:', response);
-      
       if (response?.status) {
-        console.log('Successfully removed from favorites');
-        await fetchFavorites();
+        setFavorites(prev => prev.filter(fav => fav._id !== favoriteId));
         Toast.show({
           type: 'success',
           text1: 'Success',
           text2: 'Removed from favorites',
-          visibilityTime: 2000,
-        });
-      } else {
-        console.log('Failed to remove from favorites:', response?.message || 'Unknown error');
-        Toast.show({
-          type: 'error',
-          text1: 'Error',
-          text2: response?.message || 'Failed to remove from favorites',
           visibilityTime: 2000,
         });
       }
@@ -142,24 +215,39 @@ const Favorites = ({ navigation }) => {
         visibilityTime: 2000,
       });
     }
-  };
+  }, [favorites]);
 
-  const cartdata = async (item) => {
-    const product = item.product || item;
-    const existingCart = Array.isArray(cartdetail) ? cartdetail : [];
+  const updateCartSilently = useCallback(async (updatedCart) => {
+    isUpdatingRef.current = true;
     
-    // Get the selected variant or first variant
+    // Pehle quantities update karo (instant UI update)
+    const newQuantities = {};
+    updatedCart.forEach(item => {
+      newQuantities[item.productid] = item.qty;
+    });
+    setQuantities(newQuantities);
+    
+    // Then cart context update karo
+    setcartdetail(updatedCart);
+    await AsyncStorage.setItem('cartdata', JSON.stringify(updatedCart));
+    
+    setTimeout(() => {
+      isUpdatingRef.current = false;
+    }, 100);
+  }, [setcartdetail]);
+
+  const addToCart = useCallback(async (item) => {
+    const product = item.product || item;
+    const existingCart = Array.isArray(cartdetail) ? [...cartdetail] : [];
+    
     const selectedVariant = product.varients?.[0];
     const variantPrice = parseFloat(selectedVariant?.selected?.[0]?.price) || 0;
     const variantOfferPrice = parseFloat(selectedVariant?.selected?.[0]?.offerprice) || variantPrice;
 
-    // Find existing product in cart
-    const existingProduct = existingCart.find(
-      f => f.productid === product._id
-    );
+    const existingProductIndex = existingCart.findIndex(f => f.productid === product._id);
 
-    if (!existingProduct) {
-      // Add new product to cart
+    let updatedCart;
+    if (existingProductIndex === -1) {
       const newProduct = {
         productid: product._id,
         productname: product.name,
@@ -178,168 +266,74 @@ const Favorites = ({ navigation }) => {
         isCurbSidePickupAvailable: product.isCurbSidePickupAvailable !== false,
         isNextDayDeliveryAvailable: product.isNextDayDeliveryAvailable !== false,
       };
-
-      const updatedCart = [...existingCart, newProduct];
-      setcartdetail(updatedCart);
-      await AsyncStorage.setItem('cartdata', JSON.stringify(updatedCart));
-      setToast(t('Successfully added to cart.'));
-      setShowQuantityControls(prev => ({ ...prev, [product._id]: true }));
+      updatedCart = [...existingCart, newProduct];
     } else {
-      // Update quantity of existing product
-      const updatedCart = existingCart.map(_i => {
-        if (_i?.productid === product._id) {
+      updatedCart = existingCart.map((_i, index) => {
+        if (index === existingProductIndex) {
           const newQty = _i.qty + 1;
           return { 
             ..._i, 
             qty: newQty,
             total: _i.offer * newQty 
           };
-        } else {
-          return _i;
         }
+        return _i;
       });
-      setcartdetail(updatedCart);
-      await AsyncStorage.setItem('cartdata', JSON.stringify(updatedCart));
-      setToast(t('Successfully added to cart.'));
     }
-  };
 
-  // Render product item
-  const renderProduct = ({ item }) => {
+    await updateCartSilently(updatedCart);
+    setToast(t('Successfully added to cart.'));
+  }, [cartdetail, updateCartSilently, setToast, t]);
+
+  const increaseQuantity = useCallback(async (productId) => {
+    const existingCart = Array.isArray(cartdetail) ? [...cartdetail] : [];
+    const updatedCart = existingCart.map(_i => {
+      if (_i.productid === productId) {
+        const newQty = _i.qty + 1;
+        return { ..._i, qty: newQty, total: _i.offer * newQty };
+      }
+      return _i;
+    });
+    await updateCartSilently(updatedCart);
+  }, [cartdetail, updateCartSilently]);
+
+  const decreaseQuantity = useCallback(async (productId) => {
+    const existingCart = Array.isArray(cartdetail) ? [...cartdetail] : [];
+    const existingProductIndex = existingCart.findIndex(f => f.productid === productId);
+
+    if (existingProductIndex !== -1) {
+      let updatedCart;
+      if (existingCart[existingProductIndex].qty > 1) {
+        updatedCart = existingCart.map((_i, index) => {
+          if (index === existingProductIndex) {
+            const newQty = _i.qty - 1;
+            return { ..._i, qty: newQty, total: _i.offer * newQty };
+          }
+          return _i;
+        });
+      } else {
+        updatedCart = existingCart.filter((_, index) => index !== existingProductIndex);
+      }
+      await updateCartSilently(updatedCart);
+    }
+  }, [cartdetail, updateCartSilently]);
+
+  const renderProduct = useCallback(({ item }) => {
     const product = item.product || item;
-    const price = product.varients?.[0]?.selected?.[0]?.offerprice || 0;
-    const originalPrice = product.varients?.[0]?.selected?.[0]?.price || 0;
-    const discount = originalPrice > price 
-      ? Math.round(((originalPrice - price) / originalPrice) * 100) 
-      : 0;
-    const image = product.varients?.[0]?.image?.[0] || 'https://via.placeholder.com/150';
-  
+    const quantity = quantities[product._id] || 0;
+    
     return (
-      <View style={styles.productCard}>
-        <View style={styles.productRow}>
-          <TouchableOpacity 
-            onPress={() => {
-              // Navigate to product detail using slug or _id
-              const productSlug = product.slug || product._id;
-              console.log('Navigating to product:', productSlug);
-              navigate('Preview', productSlug);
-            }}
-          >
-            <Image 
-              source={{ uri: image }} 
-              style={styles.productImage}
-              resizeMode="cover"
-            />
-          </TouchableOpacity>
-          <View style={styles.productInfo}>
-            <View style={styles.headerRow}>
-              <Text 
-                style={styles.productName}
-                numberOfLines={2}
-              >
-                {product.name}
-              </Text>
-              <TouchableOpacity 
-                onPress={() => handleRemoveFavorite(item._id)}
-                style={styles.favoriteButton}
-              >
-                <Icon name="heart" size={20} color="#ef4444" />
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.priceRow}>
-              <Text style={styles.price}>
-                ${Math.round(price)}
-              </Text>
-              {originalPrice > price && (
-                <Text style={styles.originalPrice}>
-                  ${Math.round(originalPrice)}
-                </Text>
-              )}
-              {discount > 0 && (
-                <View style={styles.discountBadge}>
-                  <Text style={styles.discountText}>{discount}% OFF</Text>
-                </View>
-              )}
-            </View>
-            
-            <View style={styles.cartControlsContainer}>
-              {!showQuantityControls[product._id] ? (
-                <TouchableOpacity 
-                  style={styles.addToCartButton}
-                  onPress={async () => {
-                    await cartdata(item); 
-                  }}
-                >
-                  <Text style={styles.addToCartText}>Add to Cart</Text>
-                </TouchableOpacity>
-              ) : (
-                <View style={styles.quantityControlsWrapper}>
-                  <TouchableOpacity
-                    style={styles.quantityButton}
-                    onPress={async () => {
-                      const existingCart = Array.isArray(cartdetail) ? [...cartdetail] : [];
-                      const existingProductIndex = existingCart.findIndex(
-                        f => f.productid === product._id
-                      );
-
-                      if (existingProductIndex !== -1) {
-                        if (existingCart[existingProductIndex].qty > 1) {
-                          existingCart[existingProductIndex] = {
-                            ...existingCart[existingProductIndex],
-                            qty: existingCart[existingProductIndex].qty - 1
-                          };
-                        } else {
-                          existingCart.splice(existingProductIndex, 1);
-                          setShowQuantityControls(prev => ({ ...prev, [product._id]: false }));
-                        }
-                        setcartdetail(existingCart);
-                        await AsyncStorage.setItem('cartdata', JSON.stringify(existingCart));
-                      }
-                    }}
-                  >
-                    <Text style={styles.quantityButtonText}>-</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.quantityText}>
-                    {(() => {
-                      const existingCart = Array.isArray(cartdetail) ? cartdetail : [];
-                      const existingProduct = existingCart.find(
-                        (f) => f.productid === product._id
-                      );
-                      return existingProduct ? existingProduct.qty : 0;
-                    })()}
-                  </Text>
-                  <TouchableOpacity
-                    style={styles.quantityButton}
-                    onPress={async () => {
-                      const existingCart = Array.isArray(cartdetail) ? cartdetail : [];
-                      const existingProduct = existingCart.find(
-                        f => f.productid === product._id
-                      );
-
-                      if (existingProduct) {
-                        const updatedCart = existingCart.map(_i =>
-                          _i.productid === product._id ? { ..._i, qty: _i.qty + 1 } : _i
-                        );
-                        setcartdetail(updatedCart);
-                        await AsyncStorage.setItem('cartdata', JSON.stringify(updatedCart));
-                      } else {
-                        await cartdata(item);
-                      }
-                    }}
-                  >
-                    <Text style={styles.quantityButtonText}>+</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          </View>
-        </View>
-      </View>
+      <ProductCard
+        item={item}
+        quantity={quantity}
+        onAddToCart={addToCart}
+        onIncrease={increaseQuantity}
+        onDecrease={decreaseQuantity}
+        onRemoveFavorite={handleRemoveFavorite}
+      />
     );
-  };
+  }, [quantities, addToCart, increaseQuantity, decreaseQuantity, handleRemoveFavorite]);
 
-  // Loading state
   if (loading) {
     return (
       <SafeAreaView style={styles.safeContainer}>
@@ -350,7 +344,6 @@ const Favorites = ({ navigation }) => {
     );
   }
 
-  // Error state
   if (error) {
     return (
       <SafeAreaView style={styles.safeContainer}>
@@ -367,16 +360,13 @@ const Favorites = ({ navigation }) => {
     );
   }
 
-  // Empty state
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyTitle}>No Favorites Yet</Text>
       <Text style={styles.emptyMessage}>
         Start adding products to your favorites list
       </Text>
-      <TouchableOpacity 
-        style={styles.shopButton}
-      >
+      <TouchableOpacity style={styles.shopButton}>
         <Text style={styles.shopButtonText}>Continue Shopping</Text>
       </TouchableOpacity>
     </View>
@@ -393,6 +383,10 @@ const Favorites = ({ navigation }) => {
           keyExtractor={(item) => item._id}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={renderEmpty}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          initialNumToRender={10}
           showsVerticalScrollIndicator={false}
           onRefresh={fetchFavorites}
           refreshing={loading}

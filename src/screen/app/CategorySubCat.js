@@ -4,12 +4,12 @@ import { useNavigation } from '@react-navigation/native';
 import { BackIcon } from '../../../Theme';
 import { GetApi } from '../../Assets/Helpers/Service';
 
-export default function CategoriesScreen() {
+export default function CategoriesScreen({ route }) {
   const navigation = useNavigation();
   const [categories, setCategories] = useState([{ _id: 'all', name: 'All' }]);
   const [subcategories, setSubcategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState(route?.params?.selectedCategoryId || 'all');
 
   
   useEffect(() => {
@@ -30,13 +30,20 @@ export default function CategoriesScreen() {
       if (response.status) {
         setCategories([{ _id: 'all', name: 'All' }, ...response.data]);
         
-        // Keep 'all' as the selected category by default
-        if (response.data.length > 0) {
+        // If a category was passed from Home, use it, otherwise use 'all'
+        const initialCategory = route?.params?.selectedCategoryId || 'all';
+        
+        if (initialCategory === 'all' && response.data.length > 0) {
           // Set subcategories for 'all' category by combining all subcategories
           const allSubcategories = response.data.flatMap(cat => cat.Subcategory || []);
           setSubcategories(allSubcategories);
+        } else if (initialCategory !== 'all') {
+          // Find and set subcategories for the selected category
+          const selectedCat = response.data.find(cat => cat._id === initialCategory);
+          if (selectedCat) {
+            setSubcategories(selectedCat.Subcategory || []);
+          }
         }
-        setSelectedCategory('all');
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -44,11 +51,6 @@ export default function CategoriesScreen() {
       setLoading(false);
     }
   };
-  
-  // Set 'all' as the selected category by default
-  useEffect(() => {
-    setSelectedCategory('all');
-  }, []);
 
   const fetchSubcategories = (categoryId) => {
     if (categoryId === 'all') {

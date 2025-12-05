@@ -9,12 +9,13 @@ import {
   RefreshControl,
   Image,
   Dimensions,
-  StatusBar
+  StatusBar,
+  Modal,
+  Alert
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { GetApi, Delete } from '../../Assets/Helpers/Service';
-import { Alert } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -24,6 +25,8 @@ const SellerProducts = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
 
   const fetchProducts = async (showLoader = true) => {
     try {
@@ -131,34 +134,41 @@ const SellerProducts = () => {
   };
 
   const handleDeleteProduct = (productId) => {
-    Alert.alert(
-      'Delete Product',
-      'Are you sure you want to delete this product?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => deleteProduct(productId),
-        },
-      ],
-      { cancelable: true }
-    );
+    console.log('Delete button clicked for product:', productId);
+    setProductToDelete(productId);
+    setDeleteModalVisible(true);
+  };
+
+  const confirmDelete = () => {
+    if (productToDelete) {
+      console.log('Delete confirmed');
+      deleteProduct(productToDelete);
+      setDeleteModalVisible(false);
+      setProductToDelete(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    console.log('Delete cancelled');
+    setDeleteModalVisible(false);
+    setProductToDelete(null);
   };
 
   const deleteProduct = async (productId) => {
     try {
+      console.log('Starting delete for product:', productId);
       setLoading(true);
-      // Using Delete method and passing ID in URL as per backend route
-      const response = await Delete(`product/deleteProduct/${productId}`, {});
       
-      if (response?.status) {
-        // Remove the deleted product from the list
-        setProducts(products.filter(product => product._id !== productId));
+  
+      const response = await Delete(`product/deleteProduct/${productId}`, {});
+      console.log('Delete response:', response);
+      
+      if (response?.status === true || response?.success === true) {
+       
+        setProducts(prevProducts => prevProducts.filter(product => product._id !== productId));
         Alert.alert('Success', 'Product deleted successfully');
+        // Refresh the list
+        fetchProducts(false);
       } else {
         throw new Error(response?.message || 'Failed to delete product');
       }
@@ -335,6 +345,43 @@ const SellerProducts = () => {
           </View>
         }
       />
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={deleteModalVisible}
+        onRequestClose={cancelDelete}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalIconContainer}>
+              <Icon name="delete-outline" size={48} color="#EF4444" />
+            </View>
+            
+            <Text style={styles.modalTitle}>Delete Product</Text>
+            <Text style={styles.modalMessage}>
+              Are you sure you want to delete this product? This action cannot be undone.
+            </Text>
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={cancelDelete}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.deleteButton]}
+                onPress={confirmDelete}
+              >
+                <Text style={styles.deleteButtonText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -372,20 +419,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
   backButton: {
     padding: 4,
+    marginRight: 12,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#111827',
     flex: 1,
-    textAlign: 'center',
   },
   headerSpacer: {
     width: 32,
@@ -516,6 +563,70 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
     textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    width: width - 60,
+    maxWidth: 400,
+    alignItems: 'center',
+  },
+  modalIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#FEE2E2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  modalMessage: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#F3F4F6',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  deleteButton: {
+    backgroundColor: '#EF4444',
+  },
+  deleteButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });
 

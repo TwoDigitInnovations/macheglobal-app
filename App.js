@@ -124,28 +124,37 @@ const App = () => {
         if (userDetail?.token) {
             setuser(userDetail);
             getProfile();
-            // }
+            
+            // Check user type and role
             if (userDetail.type === 'ADMIN') {
-                // setuser(userDetail);
-                // if (userDetail.status === 'Verified') {
-                //   setInitial('Vendortab');
-                // } else {
-                //   setInitial('VendorForm');
-                // }
                 setInitial('Employeetab');
             } else if (userDetail.type === 'DRIVER') {
-                // setuser(userDetail);
                 if (userDetail.status === 'Verified') {
                     setInitial('Drivertab');
                 } else {
                     setInitial('Driverform');
                 }
             } else {
-                if (initial === '') {
-                    setInitial('App');
+                // Check if user is a seller
+                const userRole = String(userDetail?.role || userDetail?.user?.role || '').toLowerCase();
+                const userStatus = String(userDetail?.status || userDetail?.user?.status || '').toLowerCase();
+                
+                console.log('🔍 Checking seller status:', { userRole, userStatus });
+                
+                if (userRole === 'seller') {
+                    if (userStatus === 'verified') {
+                        console.log('✅ Verified seller - navigating to SellerTabs');
+                        setInitial('SellerTabs');
+                    } else {
+                        console.log('⏳ Pending seller - navigating to SellerStore');
+                        setInitial('SellerStore');
+                    }
+                } else {
+                    // Regular user
+                    if (initial === '') {
+                        setInitial('App');
+                    }
                 }
-
-                // setuser(userDetail);
             }
         } else {
             setTimeout(() => {
@@ -171,10 +180,19 @@ const App = () => {
         GetApi('getProfile', {}).then(
             async res => {
                 setLoading(false);
-                console.log(res);
+                console.log('📥 Profile fetched:', res);
                 if (res.status) {
                     res.data.token = user?.token;
                     setuser(res.data);
+                    
+                    // Check if seller status changed and update route accordingly
+                    const userRole = String(res.data?.role || '').toLowerCase();
+                    const userStatus = String(res.data?.status || '').toLowerCase();
+                    
+                    if (userRole === 'seller' && userStatus === 'verified' && initial !== 'SellerTabs') {
+                        console.log('✅ Seller verified - updating to SellerTabs');
+                        setInitial('SellerTabs');
+                    }
                     // triggerDeviceRegistrationAfterSignIn();
                 }
             },
