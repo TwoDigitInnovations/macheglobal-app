@@ -146,7 +146,7 @@ const CategoryFilter = props => {
             const newProduct = {
                 productid: productdata._id,
                 productname: productdata.name,
-                vietnamiesName: productdata?.vietnamiesName,
+                frenchName: productdata?.frenchName,
                 price: productdata?.price_slot[0]?.other_price,
                 offer: productdata?.price_slot[0]?.our_price,
                 image: productdata.varients[0].image[0],

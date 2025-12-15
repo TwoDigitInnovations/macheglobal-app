@@ -3,10 +3,12 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIn
 import { useNavigation } from '@react-navigation/native';
 import { BackIcon } from '../../../Theme';
 import { GetApi } from '../../Assets/Helpers/Service';
+import { useTranslation } from 'react-i18next';
 
 export default function CategoriesScreen({ route }) {
   const navigation = useNavigation();
-  const [categories, setCategories] = useState([{ _id: 'all', name: 'All' }]);
+  const { t } = useTranslation();
+  const [categories, setCategories] = useState([{ _id: 'all', name: t('All') }]);
   const [subcategories, setSubcategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState(route?.params?.selectedCategoryId || 'all');
@@ -28,7 +30,7 @@ export default function CategoriesScreen({ route }) {
       setLoading(true);
       const response = await GetApi('category/getCategories', {});
       if (response.status) {
-        setCategories([{ _id: 'all', name: 'All' }, ...response.data]);
+        setCategories([{ _id: 'all', name: t('All') }, ...response.data]);
         
         // If a category was passed from Home, use it, otherwise use 'all'
         const initialCategory = route?.params?.selectedCategoryId || 'all';
@@ -88,7 +90,7 @@ export default function CategoriesScreen({ route }) {
         >
           <BackIcon height={20} width={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Categories</Text>
+        <Text style={styles.headerTitle}>{t('Categories')}</Text>
         <View style={{width: 40}} />
       </View>
 
@@ -143,7 +145,7 @@ export default function CategoriesScreen({ route }) {
                         />
                       ) : (
                         <View style={[styles.subcategoryImage, { backgroundColor: '#f0f0f0', justifyContent: 'center', alignItems: 'center' }]}>
-                          <Text style={{ fontSize: 12, color: '#999' }}>No Image</Text>
+                          <Text style={{ fontSize: 12, color: '#999' }}>{t('No Image')}</Text>
                         </View>
                       )}
                     </View>
@@ -154,7 +156,7 @@ export default function CategoriesScreen({ route }) {
                 ))
               ) : (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 50, width: '100%' }}>
-                  <Text style={{ fontSize: 16, color: '#666', marginBottom: 20 }}>No subcategories found</Text>
+                  <Text style={{ fontSize: 16, color: '#666', marginBottom: 20 }}>{t('No subcategories found')}</Text>
                   {selectedCategory !== 'all' && (
                     <TouchableOpacity
                       style={styles.viewProductsButton}
@@ -168,7 +170,7 @@ export default function CategoriesScreen({ route }) {
                         }
                       }}
                     >
-                      <Text style={styles.viewProductsButtonText}>View Products</Text>
+                      <Text style={styles.viewProductsButtonText}>{t('View Products')}</Text>
                     </TouchableOpacity>
                   )}
                 </View>

@@ -113,7 +113,7 @@ const Sale = ({ setIsSale }) => {
       const newProduct = {
         productid: productdata._id,
         productname: productdata.name,
-        vietnamiesName: productdata?.vietnamiesName,
+        frenchName: productdata?.frenchName,
         price: items?.price_slot?.our_price,
         offer: items?.price,
         image: productdata.varients[0].image[0],

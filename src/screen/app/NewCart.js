@@ -14,8 +14,10 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { BackIcon } from '../../../Theme';
 import { CartContext } from '../../../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
 
 export default function CartScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -62,7 +64,7 @@ export default function CartScreen() {
         id: item.productid || `variant-${index}`,
         productId: item.productid,
         slug: item.slug,
-        name: item.vietnamiesName || item.productname || 'Product Variant',
+        name: item.frenchName || item.productname || 'Product Variant',
         price: item.price || 0,
         offerPrice: item.offer || item.price || 0,
         image: item.image || 'https://via.placeholder.com/200',
@@ -113,7 +115,7 @@ export default function CartScreen() {
       console.log(`Updated quantity for item ${itemIndex}: ${newQty}`);
     } catch (error) {
       console.error('Error updating quantity:', error);
-      alert('Failed to update quantity. Please try again.');
+      alert(t('Failed to update quantity. Please try again.'));
     }
   };
 
@@ -133,13 +135,13 @@ export default function CartScreen() {
       console.log('Item removed. New cart length:', newCart.length);
     } catch (error) {
       console.error('Error removing item:', error);
-      alert('Failed to remove item. Please try again.');
+      alert(t('Failed to remove item. Please try again.'));
     }
   };
 
   const removeSelectedItems = async () => {
     if (selectedItems.length === 0) {
-      alert('Please select items to remove');
+      alert(t('Please select items to remove'));
       return;
     }
 
@@ -168,7 +170,7 @@ export default function CartScreen() {
       console.log('Removed items. New cart length:', newCart.length);
     } catch (error) {
       console.error('Error saving cart data:', error);
-      alert('Failed to update cart. Please try again.');
+      alert(t('Failed to update cart. Please try again.'));
     }
   };
 
@@ -206,7 +208,7 @@ export default function CartScreen() {
             <BackIcon width={24} height={24} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>
-            Cart {cartItems.length > 0 ? `(${cartItems.length})` : ''}
+            {t('Cart')} {cartItems.length > 0 ? `(${cartItems.length})` : ''}
           </Text>
         </View>
 
@@ -218,7 +220,7 @@ export default function CartScreen() {
               onPress={removeSelectedItems}
             >
               <Text style={styles.removeButtonText}>
-                Remove ({selectedItems.length}) {selectedItems.length === 1 ? 'Item' : 'Items'}
+                {t('Remove')} ({selectedItems.length}) {selectedItems.length === 1 ? t('Item') : t('Items')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -236,8 +238,8 @@ export default function CartScreen() {
                 <View key={item.id} style={styles.deliverySection}>
                   {itemIndex === 0 && (
                     <View style={styles.deliveryHeader}>
-                      <Text style={styles.deliveryText}>Estimated Delivery: </Text>
-                      <Text style={styles.deliveryPrice}>3-5 Business Days</Text>
+                      <Text style={styles.deliveryText}>{t('Estimated Delivery: ')}</Text>
+                      <Text style={styles.deliveryPrice}>{t('3-5 Business Days')}</Text>
                     </View>
                   )}
 
@@ -301,12 +303,12 @@ export default function CartScreen() {
               ))
             ) : (
               <View style={styles.emptyCartContainer}>
-                <Text style={styles.emptyCartText}>Your cart is empty</Text>
+                <Text style={styles.emptyCartText}>{t('Your cart is empty')}</Text>
                 <TouchableOpacity 
                   style={styles.continueShoppingButton}
                   onPress={() => navigation.navigate('Home')}
                 >
-                  <Text style={styles.continueShoppingText}>Continue Shopping</Text>
+                  <Text style={styles.continueShoppingText}>{t('Continue Shopping')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -317,7 +319,7 @@ export default function CartScreen() {
             <View style={styles.checkoutWrapper}>
               <View style={styles.checkoutContainer}>
                 <View style={styles.totalContainer}>
-                  <Text style={styles.totalLabel}>Total</Text>
+                  <Text style={styles.totalLabel}>{t('Total')}</Text>
                   <Text style={styles.totalAmount}>${totalAmount.toFixed(2)}</Text>
                 </View>
                 <TouchableOpacity 
@@ -327,7 +329,7 @@ export default function CartScreen() {
                     navigation.navigate('CheckoutOrder');
                   }}
                 >
-                  <Text style={styles.checkoutButtonText}>Checkout</Text>
+                  <Text style={styles.checkoutButtonText}>{t('Checkout')}</Text>
                 </TouchableOpacity>
               </View>
             </View>

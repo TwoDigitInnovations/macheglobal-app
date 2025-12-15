@@ -16,8 +16,10 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import CountryPicker from 'react-native-country-picker-modal';
 import { Post, Put, GetApi } from '../../Assets/Helpers/Service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
 
 const AddAddressScreen = ({ route }) => {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [isDefaultAddress, setIsDefaultAddress] = useState(false);
@@ -41,12 +43,42 @@ const AddAddressScreen = ({ route }) => {
     postalCode: '',
   });
 
+  // Country name to code mapping
+  const getCountryCode = (countryName) => {
+    const countryMap = {
+      'Haiti': 'HT',
+      'United States': 'US',
+      'Canada': 'CA',
+      'Mexico': 'MX',
+      'Dominican Republic': 'DO',
+      'Jamaica': 'JM',
+      'Cuba': 'CU',
+      'Puerto Rico': 'PR',
+      'India': 'IN',
+      'United Kingdom': 'GB',
+      'France': 'FR',
+      'Germany': 'DE',
+      'China': 'CN',
+      'Japan': 'JP',
+      'Australia': 'AU',
+      'Brazil': 'BR',
+      // Add more countries as needed
+    };
+    return countryMap[countryName] || 'HT'; // Default to Haiti if not found
+  };
+
   // Populate form if editing
   useEffect(() => {
     if (isEditMode && existingAddress) {
       console.log('Edit mode - Loading existing address:', existingAddress);
+      
+      const savedCountry = existingAddress.country || 'Haiti';
+      const savedCountryCode = getCountryCode(savedCountry);
+      
+      console.log('Setting country:', savedCountry, 'with code:', savedCountryCode);
+      
       setFormData({
-        country: existingAddress.country || 'Haiti',
+        country: savedCountry,
         fullName: existingAddress.name || '',
         phoneNumber: existingAddress.phone || '',
         address: existingAddress.street || '',
@@ -56,6 +88,9 @@ const AddAddressScreen = ({ route }) => {
         city: existingAddress.city || '',
         postalCode: existingAddress.postalCode || '',
       });
+      
+      // Set the correct country code for the flag
+      setCountryCode(savedCountryCode);
       setIsDefaultAddress(existingAddress.isDefault || false);
       
       // Show manual entry if address has details
@@ -70,7 +105,7 @@ const AddAddressScreen = ({ route }) => {
   const handleSaveAddress = async () => {
     if (!formData.fullName || !formData.phoneNumber || !formData.streetAddress || 
         !formData.city || !formData.state || !formData.postalCode) {
-      Alert.alert('Error', 'Please fill in all required fields');
+      Alert.alert(t('Error'), t('Please fill in all required fields'));
       return;
     }
 
@@ -83,9 +118,9 @@ const AddAddressScreen = ({ route }) => {
         if (addressesResponse.success && addressesResponse.data) {
           if (addressesResponse.data.length >= 5) {
             Alert.alert(
-              'Address Limit Reached',
-              'You can only create up to 5 addresses. Please delete an old address to create a new one.',
-              [{ text: 'OK' }]
+              t('Address Limit Reached'),
+              t('You can only create up to 5 addresses. Please delete an old address to create a new one.'),
+              [{ text: t('OK') }]
             );
             setIsLoading(false);
             return;
@@ -147,7 +182,7 @@ const AddAddressScreen = ({ route }) => {
           // If from address list, refresh the list
           navigation.navigate('AddressListScreen', {
             refresh: true,
-            message: isEditMode ? 'Address updated successfully' : 'Address added successfully'
+            message: isEditMode ? t('Address updated successfully') : t('Address added successfully')
           });
         } else {
           // Default navigation
@@ -156,11 +191,11 @@ const AddAddressScreen = ({ route }) => {
           });
         }
       } else {
-        throw new Error(response.message || 'Something went wrong');
+        throw new Error(response.message || t('Something went wrong'));
       }
     } catch (error) {
       console.error('Error saving address:', error);
-      Alert.alert('Error', error.message || 'Failed to save address. Please try again.');
+      Alert.alert(t('Error'), error.message || t('Failed to save address. Please try again.'));
     } finally {
       setIsLoading(false);
     }
@@ -187,7 +222,7 @@ const AddAddressScreen = ({ route }) => {
             <Icon name="arrow-back" size={24} color="#FFFFFF" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>
-            {isEditMode ? 'Edit Address' : 'Add a new address'}
+            {isEditMode ? t('Edit Address') : t('Add a new address')}
           </Text>
         </View>
 
@@ -198,7 +233,7 @@ const AddAddressScreen = ({ route }) => {
         >
           {/* Country / Region */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Country / Region</Text>
+            <Text style={styles.label}>{t('Country / Region')}</Text>
             <TouchableOpacity 
               style={styles.dropdown}
               onPress={() => setCountryPickerVisible(true)}
@@ -225,10 +260,10 @@ const AddAddressScreen = ({ route }) => {
 
           {/* Full Name */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Full Name or company name</Text>
+            <Text style={styles.label}>{t('Full Name or company name')}</Text>
             <TextInput
               style={styles.input}
-              placeholder="Full Name"
+              placeholder={t('Full Name')}
               placeholderTextColor="#CCCCCC"
               value={formData.fullName}
               onChangeText={(text) => setFormData({...formData, fullName: text})}
@@ -237,10 +272,10 @@ const AddAddressScreen = ({ route }) => {
 
           {/* Phone Number */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Phone Number</Text>
+            <Text style={styles.label}>{t('Phone Number')}</Text>
             <TextInput
               style={styles.input}
-              placeholder="Phone Number"
+              placeholder={t('Phone Number')}
               placeholderTextColor="#CCCCCC"
               keyboardType="phone-pad"
               value={formData.phoneNumber}
@@ -250,7 +285,7 @@ const AddAddressScreen = ({ route }) => {
 
           {/* Address */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Address</Text>
+            <Text style={styles.label}>{t('Address')}</Text>
             <TouchableOpacity 
               style={styles.addressInputContainer}
               onPress={() => {
@@ -292,7 +327,7 @@ const AddAddressScreen = ({ route }) => {
                 numberOfLines={2}
                 pointerEvents="none"
               >
-                {formData.address || 'Search by street address, or ZIP code'}
+                {formData.address || t('Search by street address, or ZIP code')}
               </Text>
             </TouchableOpacity>
             
@@ -301,7 +336,7 @@ const AddAddressScreen = ({ route }) => {
               style={styles.manualButton}
               onPress={() => setShowManualEntry(!showManualEntry)}
             >
-              <Text style={styles.manualText}>Enter manually</Text>
+              <Text style={styles.manualText}>{t('Enter manually')}</Text>
               <Icon 
                 name={showManualEntry ? "keyboard-arrow-up" : "keyboard-arrow-right"} 
                 size={18} 
@@ -315,10 +350,10 @@ const AddAddressScreen = ({ route }) => {
             <View style={styles.manualEntrySection}>
               {/* Street Address */}
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Street Address*</Text>
+                <Text style={styles.label}>{t('Street Address*')}</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter street address"
+                  placeholder={t('Enter street address')}
                   placeholderTextColor="#CCCCCC"
                   value={formData.streetAddress}
                   onChangeText={(text) => setFormData({...formData, streetAddress: text})}
@@ -327,10 +362,10 @@ const AddAddressScreen = ({ route }) => {
 
               {/* Building, Apt */}
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Building, Apt (optional)</Text>
+                <Text style={styles.label}>{t('Building, Apt (optional)')}</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Building, Apartment, Suite, etc."
+                  placeholder={t('Building, Apartment, Suite, etc.')}
                   placeholderTextColor="#CCCCCC"
                   value={formData.building}
                   onChangeText={(text) => setFormData({...formData, building: text})}
@@ -339,10 +374,10 @@ const AddAddressScreen = ({ route }) => {
 
               {/* State/Province */}
               <View style={styles.formGroup}>
-                <Text style={styles.label}>State/Province*</Text>
+                <Text style={styles.label}>{t('State/Province*')}</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter state or province"
+                  placeholder={t('Enter state or province')}
                   placeholderTextColor="#CCCCCC"
                   value={formData.state}
                   onChangeText={(text) => setFormData({...formData, state: text})}
@@ -351,10 +386,10 @@ const AddAddressScreen = ({ route }) => {
 
               {/* City */}
               <View style={styles.formGroup}>
-                <Text style={styles.label}>City*</Text>
+                <Text style={styles.label}>{t('City*')}</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter city"
+                  placeholder={t('Enter city')}
                   placeholderTextColor="#CCCCCC"
                   value={formData.city}
                   onChangeText={(text) => setFormData({...formData, city: text})}
@@ -363,17 +398,17 @@ const AddAddressScreen = ({ route }) => {
 
               {/* Postal Code */}
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Postal Code*</Text>
+                <Text style={styles.label}>{t('Postal Code*')}</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter postal code"
+                  placeholder={t('Enter postal code')}
                   placeholderTextColor="#CCCCCC"
                   keyboardType="number-pad"
                   value={formData.postalCode}
                   onChangeText={(text) => setFormData({...formData, postalCode: text})}
                 />
                 <Text style={styles.helperText}>
-                  Provide the exact postal code of your address to ensure delivery to the correct location
+                  {t('Provide the exact postal code of your address to ensure delivery to the correct location')}
                 </Text>
               </View>
             </View>
@@ -390,7 +425,7 @@ const AddAddressScreen = ({ route }) => {
                   <Icon name="check" size={16} color="#000000" />
                 )}
               </View>
-              <Text style={styles.checkboxLabel}>Set as your default address</Text>
+              <Text style={styles.checkboxLabel}>{t('Set as your default address')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -404,7 +439,7 @@ const AddAddressScreen = ({ route }) => {
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
               <Text style={styles.saveButtonText}>
-                {isEditMode ? 'Update Address' : 'Save Address'}
+                {isEditMode ? t('Update Address') : t('Save Address')}
               </Text>
             )}
           </TouchableOpacity>

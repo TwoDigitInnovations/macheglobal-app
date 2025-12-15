@@ -251,7 +251,7 @@ const Favorites = ({ navigation }) => {
       const newProduct = {
         productid: product._id,
         productname: product.name,
-        vietnamiesName: product?.vietnamiesName,
+        frenchName: product?.frenchName,
         price: variantPrice,
         offer: variantOfferPrice,
         image: selectedVariant?.image?.[0] || '',

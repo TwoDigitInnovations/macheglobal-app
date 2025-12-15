@@ -47,6 +47,9 @@ const Stack = createStackNavigator();
 import Preview from '../screen/app/Preview';
 import MessagesList from '../screen/app/MessagesList';
 import ChatRoom from '../screen/app/ChatRoom';
+import ManufacturerProducts from '../screen/app/ManufacturerProducts';
+import Coupons from '../screen/app/Coupons';
+import ManufacturerProductDetail from '../screen/app/ManufacturerProductDetail';
 
 const HomeStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -55,6 +58,8 @@ const HomeStack = () => (
     <Stack.Screen name="SubcategoryProducts" component={SubcategoryProducts} />
     <Stack.Screen name="Preview" component={Preview} />
     <Stack.Screen name="ChatRoom" component={ChatRoom} />
+    <Stack.Screen name="ManufacturerProducts" component={ManufacturerProducts} />
+    <Stack.Screen name="ManufacturerProductDetail" component={ManufacturerProductDetail} />
   </Stack.Navigator>
 );
 
@@ -140,6 +145,7 @@ const AccountStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="AccountTab" component={Account} />
     <Stack.Screen name="Favorites" component={Favorites} />
+    <Stack.Screen name="Coupons" component={Coupons} />
   </Stack.Navigator>
 );
 

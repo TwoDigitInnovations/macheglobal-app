@@ -21,7 +21,7 @@ export const push = (name, params) => {
 export const reset = (name, params) => {
   if (navigationRef.isReady()) {
     navigationRef.dispatch(
-      CommonActions.reset({ index: 1, routes: [{ name, params }] }),
+      CommonActions.reset({ index: 0, routes: [{ name, params }] }),
     );
   }
 };

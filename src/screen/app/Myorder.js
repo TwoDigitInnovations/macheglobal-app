@@ -478,8 +478,8 @@ const Myorder = () => {
                     <View style={{ flex: 1, marginLeft: 12, justifyContent: 'space-between' }}>
                       <View>
                         <Text style={styles.boxtxt} numberOfLines={2}>
-                          {i18n.language === 'vi' 
-                            ? (item.orderItems[0]?.product?.vietnamiesName || item.orderItems[0]?.name) 
+                          {i18n.language === 'fr' 
+                            ? (item.orderItems[0]?.product?.frenchName || item.orderItems[0]?.name) 
                             : (item.orderItems[0]?.name || item.orderItems[0]?.product?.name)}
                         </Text>
                       </View>
@@ -615,8 +615,8 @@ const Myorder = () => {
                         <View style={{ flex: 1, marginLeft: 12, justifyContent: 'space-between' }}>
                           <View>
                             <Text style={styles.boxtxt} numberOfLines={2}>
-                              {i18n.language === 'vi' 
-                                ? (prod?.product?.vietnamiesName || prod?.name) 
+                              {i18n.language === 'fr' 
+                                ? (prod?.product?.frenchName || prod?.name) 
                                 : (prod?.name || prod?.product?.name)}
                             </Text>
                           </View>

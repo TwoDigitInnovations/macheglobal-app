@@ -50,7 +50,7 @@ const ProductCard = ({
       />
       <View style={styles.cardContent}>
         <Text style={styles.proname} numberOfLines={2}>
-          {i18n.language === 'vi' ? (item?.vietnamiesName || item?.name) : item?.name}
+          {i18n.language === 'fr' ? (item?.frenchName || item?.name) : item?.name}
         </Text>
         {!saleVarient?.value && item?.price_slot?.[0]?.value && (
           <Text style={styles.weight}>

@@ -18,7 +18,7 @@ export default function Language() {
 
   const checkLng = async () => {
     const x = await AsyncStorage.getItem('LANG');
-    if (x === 'vi') setSelectLanguage('Vietnames');
+    if (x === 'fr') setSelectLanguage('French');
     else setSelectLanguage('English');
   };
 
@@ -69,16 +69,16 @@ export default function Language() {
           <TouchableOpacity
             style={[
               styles.item,
-              { borderColor: selectLanguage === 'Vietnames' ? Constants.saffron : Constants.black },
+              { borderColor: selectLanguage === 'French' ? Constants.saffron : Constants.black },
             ]}
-            onPress={() => changeLanguage('vi', 'Vietnames')}
+            onPress={() => changeLanguage('fr', 'French')}
           >
-            {selectLanguage === 'Vietnames' ? (
+            {selectLanguage === 'French' ? (
               <RadioonIcon color={Constants.saffron} height={24} width={24} />
             ) : (
               <RadiooffIcon color={Constants.black} height={24} width={24} />
             )}
-            <Text style={styles.itemText}>Vietnamese</Text>
+            <Text style={styles.itemText}>Français</Text>
           </TouchableOpacity>
         </View>
       </ActionSheet>

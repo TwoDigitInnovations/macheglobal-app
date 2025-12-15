@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import Constants from '../../Assets/Helpers/constant';
 import {
   View,
@@ -16,14 +16,38 @@ import {
 import { Post } from '../../Assets/Helpers/Service';
 import { LoadContext, ToastContext } from '../../../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const LoginScreen = ({ navigation }) => {
+  const { t, i18n } = useTranslation();
+  const [currentLanguage, setCurrentLanguage] = useState('en');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
   const [isLoading, setIsLoading] = useContext(LoadContext);
   const [toast, setToast] = useContext(ToastContext);
+
+  // Load saved language on mount
+  useEffect(() => {
+    const loadLanguage = async () => {
+      const savedLang = await AsyncStorage.getItem('LANG');
+      if (savedLang) {
+        i18n.changeLanguage(savedLang);
+        setCurrentLanguage(savedLang);
+      }
+    };
+    loadLanguage();
+  }, []);
+
+  // Toggle language between English and French
+  const toggleLanguage = async () => {
+    const newLang = currentLanguage === 'en' ? 'fr' : 'en';
+    await AsyncStorage.setItem('LANG', newLang);
+    i18n.changeLanguage(newLang);
+    setCurrentLanguage(newLang);
+  };
 
   const handleInputChange = (field, value) => {
     setFormData({
@@ -166,6 +190,17 @@ const LoginScreen = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <View style={styles.content}>
+        {/* Language Toggle Button */}
+        <TouchableOpacity 
+          style={styles.languageButton}
+          onPress={toggleLanguage}
+        >
+          <Icon name="language" size={20} color="#FF7000" />
+          <Text style={styles.languageText}>
+            {currentLanguage === 'en' ? 'English' : 'Français'}
+          </Text>
+        </TouchableOpacity>
+
         {/* Title */}
         <Text style={styles.title}>
           Macheglobal
@@ -177,20 +212,20 @@ const LoginScreen = ({ navigation }) => {
             style={styles.signUpButton}
             onPress={() => navigation.navigate('SignUp')}
           >
-            <Text style={styles.signUpText}>Sign UP</Text>
+            <Text style={styles.signUpText}>{t('Sign up')}</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.loginToggleButton}
             onPress={() => {}} // Optional: Add any login-specific logic here
           >
-            <Text style={styles.loginToggleText}>Login</Text>
+            <Text style={styles.loginToggleText}>{t('Login')}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Email Input */}
         <View style={styles.inputContainer}>
           <TextInput
-            placeholder="Email"
+            placeholder={t('Email')}
             placeholderTextColor="#9ca3af"
             style={styles.input}
             keyboardType="email-address"
@@ -203,7 +238,7 @@ const LoginScreen = ({ navigation }) => {
         {/* Password Input */}
         <View style={styles.inputContainer}>
           <TextInput
-            placeholder="Password"
+            placeholder={t('Password')}
             placeholderTextColor="#9ca3af"
             style={styles.input}
             secureTextEntry={true}
@@ -218,7 +253,7 @@ const LoginScreen = ({ navigation }) => {
           style={styles.forgotPasswordContainer}
           onPress={() => navigation.navigate('ForgotPassword')}
         >
-          <Text style={styles.forgotPasswordText}>Forgot Password ?</Text>
+          <Text style={styles.forgotPasswordText}>{t('Forgot password ?')}</Text>
         </TouchableOpacity>
 
         {/* Login Button */}
@@ -231,7 +266,7 @@ const LoginScreen = ({ navigation }) => {
             <ActivityIndicator color="#FFFFFF" />
           ) : (
             <Text style={styles.loginButtonText}>
-              Login
+              {t('Login')}
             </Text>
           )}
         </TouchableOpacity>
@@ -239,7 +274,7 @@ const LoginScreen = ({ navigation }) => {
         {/* Divider with "Or login using" */}
         <View style={styles.dividerContainer}>
           <View style={styles.dividerLine}></View>
-          <Text style={styles.dividerText}>Or login using</Text>
+          <Text style={styles.dividerText}>{t('Or login using')}</Text>
           <View style={styles.dividerLine}></View>
         </View>
 
@@ -273,14 +308,14 @@ const LoginScreen = ({ navigation }) => {
             navigation.replace('App');
           }}
         >
-          <Text style={styles.skipButtonCenterText}>Skip</Text>
+          <Text style={styles.skipButtonCenterText}>{t('Skip')}</Text>
         </TouchableOpacity>
 
         {/* Don't have an account? Sign up */}
         <View style={styles.signupContainer}>
-          <Text style={styles.signupText}>Don't have an account? </Text>
+          <Text style={styles.signupText}>{t("Don't have an account?")} </Text>
           <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-            <Text style={styles.signupLink}>Sign up</Text>
+            <Text style={styles.signupLink}>{t('Sign up')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -289,6 +324,26 @@ const LoginScreen = ({ navigation }) => {
 }
 
 const styles = StyleSheet.create({
+  languageButton: {
+    position: 'absolute',
+    top: 10,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF5F0',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#FF7000',
+    zIndex: 10,
+  },
+  languageText: {
+    marginLeft: 6,
+    fontSize: 14,
+    color: '#FF7000',
+    fontWeight: '600',
+  },
   container: {
     flex: 1,
     backgroundColor: 'white',

@@ -128,7 +128,7 @@ const Products = props => {
       const newProduct = {
         productid: productdata._id,
         productname: productdata.name,
-        vietnamiesName: productdata?.vietnamiesName,
+        frenchName: productdata?.frenchName,
         price: productdata?.price_slot?.[0]?.other_price || 0,
         offer: productdata?.price_slot?.[0]?.our_price || 0,
         image: productdata.varients?.[0]?.image?.[0] || '',
@@ -160,8 +160,8 @@ const Products = props => {
       ? cartdetail.find(it => it?.productid === item?._id)
       : undefined;
 
-    const displayName = i18n.language === 'vi' 
-      ? (item?.vietnamiesName || item?.name) 
+    const displayName = i18n.language === 'fr' 
+      ? (item?.frenchName || item?.name) 
       : item?.name;
 
     const moq = item?.pieces || 0;

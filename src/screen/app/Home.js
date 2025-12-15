@@ -101,7 +101,7 @@ const getExploreProducts = async () => {
   
     return (
       <Text style={styles.endsInText}>
-        Ends in: <Text style={styles.endsInTime}>
+        {t('Ends in')}: <Text style={styles.endsInTime}>
           {timeLeft.days}d {timeLeft.hours}h {timeLeft.minutes}m {timeLeft.seconds}s
         </Text>
       </Text>
@@ -271,18 +271,30 @@ const getExploreProducts = async () => {
 
   useFocusEffect(
     useCallback(() => {
-      getCategory();
-      getTopSoldProduct();
-      getSetting();
-      console.log('cartdetail', cartdetail);
-
-      AsyncStorage.getItem('cartdata').then(res => {
-        console.log('cartdata', res);
-        if (res) {
-          let data = JSON.parse(res);
-          setcartdetail(data);
+      // Check if user is logged in
+      const checkUserAndLoadData = async () => {
+        const userDetail = await AsyncStorage.getItem('userDetail');
+        if (!userDetail) {
+          // User not logged in, don't load data
+          console.log('No user found in Home screen');
+          return;
         }
-      });
+        
+        getCategory();
+        getTopSoldProduct();
+        getSetting();
+        console.log('cartdetail', cartdetail);
+
+        AsyncStorage.getItem('cartdata').then(res => {
+          console.log('cartdata', res);
+          if (res) {
+            let data = JSON.parse(res);
+            setcartdetail(data);
+          }
+        });
+      };
+      
+      checkUserAndLoadData();
 
       return () => { }; // cleanup if needed
     }, [])
@@ -357,7 +369,7 @@ const getExploreProducts = async () => {
       const newProduct = {
         productid: productdata._id,
         productname: productdata.name,
-        vietnamiesName: productdata?.vietnamiesName,
+        frenchName: productdata?.frenchName,
         price: productdata?.price_slot[0]?.other_price,
         offer: productdata?.price_slot[0]?.our_price,
         image: productdata.varients[0].image[0],
@@ -407,7 +419,7 @@ const getExploreProducts = async () => {
           <TouchableOpacity
             onPress={() => {
               setActiveTab('Products');
-              navigate('Products', { name: 'All Products' });
+              navigate('Products', { name: t('All Products') });
             }}>
             <Text
               style={{
@@ -421,7 +433,22 @@ const getExploreProducts = async () => {
             </Text>
           </TouchableOpacity>
 
-      
+          <TouchableOpacity
+            onPress={() => {
+              setActiveTab('Manufacturer');
+              navigate('ManufacturerProducts');
+            }}>
+            <Text
+              style={{
+                fontSize: 18,
+                fontFamily: FONTS.Bold,
+                color: Constants.white,
+                textDecorationLine: activeTab === 'Manufacturer' ? 'underline' : 'none',
+                textDecorationColor: Constants.white,
+              }}>
+              {t('Manufacturer')}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
       <TouchableOpacity style={{ backgroundColor: Constants.saffron, paddingBottom: 15 }}
@@ -560,8 +587,8 @@ const getExploreProducts = async () => {
          <View style={styles.flashSaleSection}>
   <View style={styles.flashSaleHeader}>
     <View style={styles.flashSaleTitleContainer}>
-      <Text style={styles.flashSaleTitle}>⚡ Flash Sale</Text>
-      <Text style={styles.flashSaleSubtitle}>Limited time offers</Text>
+      <Text style={styles.flashSaleTitle}>⚡ {t('Flash Sale')}</Text>
+      <Text style={styles.flashSaleSubtitle}>{t('Limited time offers')}</Text>
     </View>
   </View>
   
@@ -661,19 +688,19 @@ const getExploreProducts = async () => {
     />
   ) : (
     <View style={styles.noFlashSale}>
-      <Text style={styles.noFlashSaleText}>🔥 No active flash sales</Text>
-      <Text style={styles.noFlashSaleSubtext}>Check back soon for amazing deals!</Text>
+      <Text style={styles.noFlashSaleText}>🔥 {t('No active flash sales')}</Text>
+      <Text style={styles.noFlashSaleSubtext}>{t('Check back soon for amazing deals!')}</Text>
     </View>
   )}
 </View>
             {/* Categories Section */}
             <View style={styles.sectionContainer}>
               <View style={styles.sectionHeader}>
-                <Text style={[styles.sectionTitle, {marginLeft: 4, marginTop: -15}]}>Categories</Text>
+                <Text style={[styles.sectionTitle, {marginLeft: 4, marginTop: -15}]}>{t('Categories')}</Text>
                 <TouchableOpacity
                   style={styles.seeAllButton}
                   onPress={() => navigate('CategorySubCat')}>
-                  <Text style={styles.seeAllText}>See all</Text>
+                  <Text style={styles.seeAllText}>{t('See all')}</Text>
                   <View style={{marginTop: -10}}>
                     <RightarrowIcon
                       height={14}
@@ -711,14 +738,14 @@ const getExploreProducts = async () => {
               </View>
               <View style={styles.sectionContainer}>
   <View style={styles.sectionHeader}>
-    <Text style={styles.sectionTitle}>Local Industries</Text>
+    <Text style={styles.sectionTitle}>{t('Local Industries')}</Text>
     
   </View>
   <TouchableOpacity 
     style={styles.discoverHeading}
     
   >
-    <Text style={styles.discoverHeadingText}>Discover the products and craftsmanship of our regions</Text>
+    <Text style={styles.discoverHeadingText}>{t('Discover the products and craftsmanship of our regions')}</Text>
   </TouchableOpacity>
 
   {/* Local Industries Card */}
@@ -741,13 +768,13 @@ const getExploreProducts = async () => {
 <View style={styles.flashSaleSection}>
   <View style={styles.flashSaleHeader}>
     <View style={styles.flashSaleTitleContainer}>
-      <Text style={styles.flashSaleTitle}>🛍️ Explore Our Products</Text>
-      <Text style={styles.flashSaleSubtitle}>Discover amazing items</Text>
+      <Text style={styles.flashSaleTitle}>🛍️ {t('Explore Our Products')}</Text>
+      <Text style={styles.flashSaleSubtitle}>{t('Discover amazing items')}</Text>
     </View>
     <TouchableOpacity
       style={styles.seeAllButton}
-      onPress={() => navigate('Products', { name: 'All Products' })}>
-      <Text style={styles.seeAllText}>See all</Text>
+      onPress={() => navigate('Products', { name: t('All Products') })}>
+      <Text style={styles.seeAllText}>{t('See all')}</Text>
       <View style={{marginTop: -10}}>
         <RightarrowIcon height={14} width={14} color="#1F2937" />
       </View>
@@ -828,8 +855,8 @@ const getExploreProducts = async () => {
     />
   ) : (
     <View style={styles.noFlashSale}>
-      <Text style={styles.noFlashSaleText}>📦 No products available</Text>
-      <Text style={styles.noFlashSaleSubtext}>Check back soon!</Text>
+      <Text style={styles.noFlashSaleText}>📦 {t('No products available')}</Text>
+      <Text style={styles.noFlashSaleSubtext}>{t('Check back soon for amazing deals!')}</Text>
     </View>
   )}
 </View>

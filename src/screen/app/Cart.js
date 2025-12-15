@@ -785,7 +785,7 @@ const Cart = () => {
                       </Pressable>
                       <View>
                         <Text style={styles.productname}>
-                          {i18n.language === 'vi' ? (item?.vietnamiesName || item?.productname) : item?.productname}
+                          {i18n.language === 'fr' ? (item?.frenchName || item?.productname) : item?.productname}
                           {/* {item?.productname} */}
                         </Text>
                         <View

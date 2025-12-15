@@ -262,12 +262,12 @@ const flashDiscount = route.params?.discount || 0;
   if (notFound) {
     return (
       <SafeAreaView style={[styles.container, styles.centerContent]}>
-        <Text style={styles.errorText}>Product not found</Text>
+        <Text style={styles.errorText}>{t('Product not found')}</Text>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.backButtonText}>Go Back</Text>
+          <Text style={styles.backButtonText}>{t('Go Back')}</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -277,7 +277,7 @@ const flashDiscount = route.params?.discount || 0;
   if (error || !product) {
     return (
       <SafeAreaView style={[styles.container, styles.centerContent]}>
-        <Text style={styles.errorText}>{error || 'Product not found'}</Text>
+        <Text style={styles.errorText}>{error || t('Product not found')}</Text>
       </SafeAreaView>
     );
   }
@@ -325,7 +325,7 @@ console.log('Final Prices:', {
       const newProduct = {
         productid: product._id,
         productname: product.name,
-        vietnamiesName: product?.vietnamiesName,
+        frenchName: product?.frenchName,
         price: isFlashSale ? flashOriginalPrice : variantPrice,
         offer: variantOfferPrice,
         image: selectedVariant?.image?.[0] || '',
@@ -452,7 +452,7 @@ console.log('Final Prices:', {
             </View>
           ) : (
             <View style={styles.noImage}>
-              <Text>No Image Available</Text>
+              <Text>{t('No Image Available')}</Text>
             </View>
           )}
         </View>
@@ -554,7 +554,7 @@ console.log('Final Prices:', {
           {/* Variants */}
           {product.varients?.length > 0 && (
             <>
-              <Text style={styles.sectionTitle}>Available Variants</Text>
+              <Text style={styles.sectionTitle}>{t('Available Variants')}</Text>
               <View style={styles.variantsContainer}>
                 {product.varients.map((variant, index) => {
                   const variantName = variant.selected?.[0]?.attributes?.[0]?.value;
@@ -583,13 +583,13 @@ console.log('Final Prices:', {
                       )}
                       
                       <Text style={styles.variantText}>
-                        {variantName && variantName.trim() !== '' ? variantName : `Variant ${index + 1}`}
+                        {variantName && variantName.trim() !== '' ? variantName : `${t('Variant')} ${index + 1}`}
                       </Text>
                       <Text style={styles.variantPrice}>
                         {Currency} {variant.selected?.[0]?.offerprice || variant.selected?.[0]?.price}
                       </Text>
                       <Text style={styles.variantStock}>
-                        {variant.selected?.[0]?.qty} in stock
+                        {variant.selected?.[0]?.qty} {t('in stock')}
                       </Text>
                     </TouchableOpacity>
                   );
@@ -601,7 +601,7 @@ console.log('Final Prices:', {
           <View style={styles.priceContainer}>
             {isFlashSale && (
               <View style={styles.flashSaleBadge}>
-                <Text style={styles.flashSaleBadgeText}>⚡ FLASH SALE</Text>
+                <Text style={styles.flashSaleBadgeText}>⚡ {t('FLASH SALE')}</Text>
               </View>
             )}
             <Text style={styles.price}>{Currency} {discountedPrice.toFixed(2)}</Text>
@@ -617,7 +617,7 @@ console.log('Final Prices:', {
   
           <View style={{ marginBottom: 20 }}>
             <View style={styles.descriptionHeader}>
-              <Text style={styles.sectionTitle}>Description</Text>
+              <Text style={styles.sectionTitle}>{t('Description')}</Text>
               <TouchableOpacity 
                 style={styles.chatWithSellerLink}
                 onPress={async () => {
@@ -637,11 +637,11 @@ console.log('Final Prices:', {
                 }}
               >
                 <Icon name="comments" size={16} color="#FF7000" style={{ marginRight: 4 }} />
-                <Text style={styles.chatWithSellerLinkText}>Chat with Seller</Text>
+                <Text style={styles.chatWithSellerLinkText}>{t('Chat with Seller')}</Text>
               </TouchableOpacity>
             </View>
             <Text style={styles.description}>
-              {(product.long_description || product.short_description || 'No description available')
+              {(product.long_description || product.short_description || t('No description available'))
                 .replace(/<[^>]*>/g, '')  
                 .replace(/&nbsp;/g, ' ')  
               }
@@ -651,7 +651,7 @@ console.log('Final Prices:', {
           {/* Bulk Order Quotes */}
           {bulkOrders.length > 0 && (
             <View style={styles.bulkOrderContainer}>
-              <Text style={styles.bulkOrderTitle}>Bulk Order Pricing</Text>
+              <Text style={styles.bulkOrderTitle}>{t('Bulk Order Pricing')}</Text>
               <View style={styles.bulkOrderRow}>
                 {bulkOrders.map((order, index) => (
                   <View key={index} style={styles.bulkOrderItem}>
@@ -665,21 +665,21 @@ console.log('Final Prices:', {
   
           {/* Delivery Information */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Delivery Information</Text>
+            <Text style={styles.sectionTitle}>{t('Delivery Information')}</Text>
             <View style={styles.deliveryInfoRow}>
-              <Text style={styles.infoLabel}>Delivery:</Text>
-              <Text style={styles.deliveryInfoValue}>Standard delivery in 3-5 business days</Text>
+              <Text style={styles.infoLabel}>{t('Delivery')}:</Text>
+              <Text style={styles.deliveryInfoValue}>{t('Standard delivery in 3-5 business days')}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Return Policy:</Text>
-              <Text style={styles.infoValue}>30 days return policy</Text>
+              <Text style={styles.infoLabel}>{t('Return Policy')}:</Text>
+              <Text style={styles.infoValue}>{t('30 days return policy')}</Text>
             </View>
           </View>
   
           {/* Reviews Section */}
           <View style={styles.reviewSection}>
             <View style={styles.reviewHeader}>
-              <Text style={styles.reviewSectionTitle}>Customer Reviews</Text>
+              <Text style={styles.reviewSectionTitle}>{t('Customer Reviews')}</Text>
               {product.reviews?.length > 0 && (
                 <View style={styles.ratingSummary}>
                   <Text style={styles.averageRating}>{product.rating?.toFixed(1)}</Text>
@@ -698,7 +698,7 @@ console.log('Final Prices:', {
                       ))}
                     </View>
                     <Text style={styles.reviewCount}>
-                      ({product.reviews?.length} {product.reviews?.length === 1 ? 'Review' : 'Reviews'})
+                      ({product.reviews?.length} {product.reviews?.length === 1 ? t('Review') : t('Reviews')})
                     </Text>
                   </View>
                 </View>
@@ -725,7 +725,7 @@ console.log('Final Prices:', {
                         </View>
                         <View style={styles.reviewerInfo}>
                           <Text style={styles.reviewerName}>
-                            {review.posted_by?.name || 'Anonymous User'}
+                            {review.posted_by?.name || t('Anonymous User')}
                           </Text>
                           <View style={styles.reviewMeta}>
                             <View style={styles.reviewStars}>
@@ -786,9 +786,9 @@ console.log('Final Prices:', {
               </View>
             ) : (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyStateTitle}>No Reviews Yet</Text>
+                <Text style={styles.emptyStateTitle}>{t('No Reviews Yet')}</Text>
                 <Text style={styles.emptyStateText}>
-                  Be the first to share your thoughts about this product!
+                  {t('Be the first to share your thoughts about this product!')}
                 </Text>
               </View>
             )}
@@ -801,8 +801,8 @@ console.log('Final Prices:', {
             >
               <Text style={styles.viewAllText}>
                 {showAllReviews 
-                  ? 'Hide Reviews' 
-                  : `See All ${product.reviews.length} Reviews`}
+                  ? t('Hide Reviews') 
+                  : `${t('See All')} ${product.reviews.length} ${t('Reviews')}`}
               </Text>
               <Text style={styles.viewAllIcon}>
                 {showAllReviews ? '‹' : '›'}

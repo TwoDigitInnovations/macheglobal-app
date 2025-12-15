@@ -37,7 +37,16 @@ const SellerProducts = () => {
       }
       setError(null);
       
-      const response = await GetApi('product/getProduct');
+      // Get seller ID from AsyncStorage
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+      const userDetail = await AsyncStorage.getItem('userDetail');
+      const user = userDetail ? JSON.parse(userDetail) : null;
+      const sellerId = user?.user?._id || user?._id;
+      
+      console.log('Fetching products for seller:', sellerId);
+      
+      // Add SellerId parameter to filter products
+      const response = await GetApi(`product/getProduct?SellerId=${sellerId}&page=1&limit=100`);
       console.log('Products API Response:', response);
       
       if (response?.status && Array.isArray(response?.data)) {

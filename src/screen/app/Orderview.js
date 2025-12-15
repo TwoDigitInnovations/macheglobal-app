@@ -239,7 +239,7 @@ const Orderview = props => {
       />
       <View style={styles.productDetails}>
         <Text style={styles.productName}>
-          {i18n.language === 'vi' ? (item.product?.vietnamiesName || item.name) : item.name}
+          {i18n.language === 'fr' ? (item.product?.frenchName || item.name) : item.name}
         </Text>
         <View style={styles.priceContainer}>
           <Text style={styles.productPrice}>

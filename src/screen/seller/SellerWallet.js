@@ -44,11 +44,13 @@ const SellerWallet = () => {
       setError(null);
       const user = await AsyncStorage.getItem('userDetail');
       const userDetail = JSON.parse(user);
-      const sellerId = userDetail?.id || userDetail?._id;
+      const sellerId = userDetail?.user?._id || userDetail?._id || userDetail?.id;
       
       if (!sellerId) {
         throw new Error('Seller ID not found');
       }
+
+      console.log('Fetching wallet data for seller:', sellerId);
 
       // Fetch wallet balance
       const [walletResponse, transactionsResponse] = await Promise.all([
@@ -71,7 +73,7 @@ const SellerWallet = () => {
               month: 'short', 
               day: 'numeric' 
             }) : 'N/A',
-            type: trans.type?.toLowerCase() || 'credit' // FIXED: Changed from transactionType to type
+            type: trans.type?.toLowerCase() || 'credit'
           }))
         };
         console.log('Formatted transactions:', formattedData.transactions);
@@ -80,6 +82,8 @@ const SellerWallet = () => {
     } catch (err) {
       console.error('Error fetching wallet data:', err);
       setError('Failed to load wallet data. Please try again.');
+    } finally {
+      // Always stop loading, whether success or error
       setLoading(false);
       setRefreshing(false);
     }

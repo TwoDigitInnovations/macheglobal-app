@@ -489,6 +489,8 @@ const styles = StyleSheet.create({
   imageItem: {
     marginRight: 12,
     position: 'relative',
+    paddingTop: 8,
+    paddingRight: 8,
   },
   uploadedImage: {
     width: 80,
@@ -499,10 +501,16 @@ const styles = StyleSheet.create({
   },
   removeImageButton: {
     position: 'absolute',
-    top: -8,
-    right: -8,
+    top: 0,
+    right: 0,
     backgroundColor: COLORS.white,
-    borderRadius: 10,
+    borderRadius: 12,
+    padding: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
   },
   addImageButton: {
     width: 80,

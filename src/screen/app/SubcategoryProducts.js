@@ -144,7 +144,7 @@ const SubcategoryProducts = props => {
         {
           productid: productdata._id,
           name: productdata.name,
-          vietnamiesName: productdata.vietnamiesName,
+          frenchName: productdata.frenchName,
           price: productdata.price_slot?.[0]?.our_price || 0,
           image: productdata.varients?.[0]?.image?.[0] || '',
           qty: 1,
@@ -164,8 +164,8 @@ const SubcategoryProducts = props => {
       ? cartdetail.find(it => it?.productid === item?._id)
       : undefined;
 
-    const displayName = i18n.language === 'vi' 
-      ? (item?.vietnamiesName || item?.name) 
+    const displayName = i18n.language === 'fr' 
+      ? (item?.frenchName || item?.name) 
       : item?.name;
 
     const moq = item?.pieces || 0;

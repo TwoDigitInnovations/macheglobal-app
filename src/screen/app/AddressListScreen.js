@@ -14,8 +14,10 @@ import {
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { GetApi, Delete, Put } from '../../Assets/Helpers/Service';
+import { useTranslation } from 'react-i18next';
 
 const AddressListScreen = ({ navigation, route }) => {
+  const { t } = useTranslation();
   // State variables
   const [addresses, setAddresses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,7 +53,7 @@ const AddressListScreen = ({ navigation, route }) => {
       
       // Show success message if coming from Add/Edit screen
       if (route.params?.message) {
-        Alert.alert('Success', route.params.message);
+        Alert.alert(t('Success'), route.params.message);
         // Clear the message from params
         navigation.setParams({ message: undefined });
       }
@@ -122,7 +124,7 @@ const AddressListScreen = ({ navigation, route }) => {
       }
     } catch (error) {
       console.error('Error setting default address:', error);
-      Alert.alert('Error', error.message || 'Failed to set default address');
+      Alert.alert(t('Error'), error.message || t('Failed to set default address'));
     }
   };
 
@@ -138,7 +140,7 @@ const AddressListScreen = ({ navigation, route }) => {
       }
     } catch (error) {
       console.error('Error deleting address:', error);
-      Alert.alert('Error', error.message || 'Failed to delete address');
+      Alert.alert(t('Error'), error.message || t('Failed to delete address'));
     }
   };
   // Show loading indicator if still loading
@@ -166,7 +168,7 @@ const AddressListScreen = ({ navigation, route }) => {
             </TouchableOpacity>
             <View style={styles.headerTitleContainer}>
               <Icon name="location-on" size={24} color="#FFFFFF" style={styles.headerIcon} />
-              <Text style={styles.headerTitle}>My Address</Text>
+              <Text style={styles.headerTitle}>{t('My Address')}</Text>
             </View>
           </View>
         </View>
@@ -190,9 +192,9 @@ const AddressListScreen = ({ navigation, route }) => {
             onPress={() => {
               if (addresses.length >= 5) {
                 Alert.alert(
-                  'Address Limit Reached',
-                  'You can only create up to 5 addresses. Please delete an old address to create a new one.',
-                  [{ text: 'OK' }]
+                  t('Address Limit Reached'),
+                  t('You can only create up to 5 addresses. Please delete an old address to create a new one.'),
+                  [{ text: t('OK') }]
                 );
               } else {
                 navigation.navigate('AddAddressScreen', { fromAddressList: true });
@@ -205,8 +207,8 @@ const AddressListScreen = ({ navigation, route }) => {
                 <Icon name="add-location" size={26} color="#FF7000" />
               </View>
               <View style={styles.addNewTextContainer}>
-                <Text style={styles.addNewText}>Add New Address</Text>
-                <Text style={styles.addNewSubtext}>Save a delivery location</Text>
+                <Text style={styles.addNewText}>{t('Add New Address')}</Text>
+                <Text style={styles.addNewSubtext}>{t('Save a delivery location')}</Text>
               </View>
               <View style={styles.chevronContainer}>
                 <Icon name="chevron-right" size={24} color="#FF7000" />
@@ -239,7 +241,7 @@ const AddressListScreen = ({ navigation, route }) => {
                 {address.isDefault && (
                   <View style={styles.defaultBadge}>
                     <Icon name="verified" size={14} color="#FFFFFF" style={styles.badgeIcon} />
-                    <Text style={styles.defaultText}>Default</Text>
+                    <Text style={styles.defaultText}>{t('Default')}</Text>
                   </View>
                 )}
 

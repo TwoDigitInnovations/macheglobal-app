@@ -175,8 +175,16 @@ const Account = () => {
       console.log('⚠️ No socket to disconnect');
     }
     
+    // Clear all user data from AsyncStorage
     await AsyncStorage.removeItem('userDetail');
+    await AsyncStorage.removeItem('cartdata');
+    await AsyncStorage.removeItem('isGuestUser');
+    
+    // Clear user context
     setuser({});
+    setcartdetail([]);
+    
+    // Navigate to Auth screen
     reset('Auth');
   };
   const inappbrawser = async () => {
@@ -234,12 +242,12 @@ const Account = () => {
               />
             ) : (
               <View style={styles.profilePlaceholder}>
-                <Text style={{color: '#666'}}>No Image</Text>
+                <Text style={{color: '#666'}}>{t('No Image')}</Text>
               </View>
             )}
           </View>
           <View style={{ marginLeft: 15 }}>
-            <Text style={styles.protxt}>{userDetail?.name || 'User'}</Text>
+            <Text style={styles.protxt}>{userDetail?.name || t('User')}</Text>
             <Text style={styles.protxt2}>{userDetail?.email || ''}</Text>
           </View>
         </TouchableOpacity>
@@ -283,6 +291,22 @@ const Account = () => {
                 <Icon name="heart" size={20} color={Constants.white} />
               </View>
               <Text style={styles.protxt}>{t('My Favorites')}</Text>
+            </View>
+            <RightarrowIcon
+              color={Constants.saffron}
+              height={15}
+              width={15}
+              style={styles.aliself}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.box, styles.shadowProp]}
+            onPress={() => navigate('Coupons')}>
+            <View style={styles.btmboxfirpart}>
+              <View style={styles.iconcov}>
+                <Icon name="ticket" size={20} color={Constants.white} />
+              </View>
+              <Text style={styles.protxt}>{t('Coupons & Credit')}</Text>
             </View>
             <RightarrowIcon
               color={Constants.saffron}

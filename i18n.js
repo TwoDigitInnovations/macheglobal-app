@@ -5,13 +5,13 @@ import * as Localization from 'react-native-localize';
 import en from './locales/en.json';
 // import ar from './locales/ar.json'
 // import ku from './locales/ku.json'
-import vi from './locales/vi.json';
+import fr from './locales/fr.json';
 
 const resources = {
   en: {translation: en},
   // ar: {translation: ar},
   // ku: {translation: ku},
-  vi: {translation: vi},
+  fr: {translation: fr},
 };
 
 const languageDetector = {

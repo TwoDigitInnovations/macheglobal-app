@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   StatusBar,
   Dimensions,
+  TextInput,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -19,11 +20,14 @@ import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import OrderSuccess from '../../components/OrderSuccess';
 import { ActivityIndicator } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
+ const { GetApi } = require('../../Assets/Helpers/Service');
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2; // Two cards with spacing
 
 const CheckoutOrderScreen = ({ route }) => {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const [showSuccess, setShowSuccess] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
@@ -35,6 +39,12 @@ const CheckoutOrderScreen = ({ route }) => {
   const [user, setUser] = useState(null);
   const [activeSlide, setActiveSlide] = useState(0);
   const scrollViewRef = useRef(null);
+  
+  // Coupon states
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [showCouponInput, setShowCouponInput] = useState(false);
 
   useEffect(() => {
     const initializeCheckout = async () => {
@@ -62,7 +72,7 @@ const CheckoutOrderScreen = ({ route }) => {
                 id: item.productid || `item-${index}`,
                 productId: item.productid,
                 slug: item.slug,
-                name: item.vietnamiesName || item.productname || 'Product Variant Name',
+                name: item.frenchName || item.productname || 'Product Variant Name',
                 price: item.offer || item.price || 0,
                 originalPrice: item.price || 0,
                 image: item.image || 'https://via.placeholder.com/200',
@@ -85,7 +95,7 @@ const CheckoutOrderScreen = ({ route }) => {
           id: item.productid || `item-${index}`,
           productId: item.productid,
           slug: item.slug,
-          name: item.vietnamiesName || item.productname || 'Product Variant Name',
+          name: item.frenchName || item.productname || 'Product Variant Name',
           price: item.offer || item.price || 0,
           originalPrice: item.price || 0,
           image: item.image || 'https://via.placeholder.com/200',
@@ -125,11 +135,30 @@ const CheckoutOrderScreen = ({ route }) => {
         return;
       }
       
-      // Finally, try to load from AsyncStorage
+      // Try to load from AsyncStorage
       const lastUsedAddress = await AsyncStorage.getItem('lastUsedAddress');
       if (lastUsedAddress) {
         console.log('Loaded last used address from storage');
         setDeliveryAddress(JSON.parse(lastUsedAddress));
+        return;
+      }
+      
+      // If no saved address, fetch all addresses and select the first one (default or index 0)
+      console.log('No saved address found, fetching addresses from API');
+     
+      const response = await GetApi('addresses');
+      
+      if (response.success && response.data && response.data.length > 0) {
+        // Find default address or use first address
+        const defaultAddress = response.data.find(addr => addr.isDefault);
+        const selectedAddress = defaultAddress || response.data[0];
+        
+        console.log('Auto-selected address:', selectedAddress);
+        setDeliveryAddress(selectedAddress);
+        // Save this as last used address
+        await AsyncStorage.setItem('lastUsedAddress', JSON.stringify(selectedAddress));
+      } else {
+        console.log('No addresses found in API');
       }
     } catch (error) {
       console.warn('Error loading last used address:', error);
@@ -196,6 +225,47 @@ const CheckoutOrderScreen = ({ route }) => {
     }, 0);
   };
 
+  const calculateFinalTotal = () => {
+    const subtotal = calculateTotal();
+    return subtotal - couponDiscount;
+  };
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      Alert.alert(t('Error'), t('Please enter a coupon code'));
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await Post('coupon/validateCoupon', {
+        code: couponCode,
+        orderAmount: calculateTotal(),
+        userId: user?._id,
+        products: cartItems.map(item => item.productId)
+      });
+
+      if (res?.status) {
+        setAppliedCoupon(res.coupon);
+        setCouponDiscount(parseFloat(res.coupon.discountAmount));
+        setShowCouponInput(false);
+        Alert.alert(t('Success'), t('Coupon applied successfully!'));
+      } else {
+        Alert.alert(t('Error'), res?.message || t('Invalid coupon code'));
+      }
+    } catch (err) {
+      Alert.alert(t('Error'), err?.message || t('Failed to apply coupon'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponDiscount(0);
+    setCouponCode('');
+  };
+
   const handleChangeAddress = () => {
     console.log('Change address clicked - navigating to AddressListScreen');
     // Navigate to address list screen and wait for the result
@@ -242,7 +312,7 @@ const CheckoutOrderScreen = ({ route }) => {
 
   const handlePlaceOrder = async () => {
     if (!deliveryAddress) {
-      Alert.alert('Error', 'Please select a delivery address');
+      Alert.alert(t('Error'), t('Please select a delivery address'));
       return;
     }
     
@@ -258,14 +328,14 @@ const CheckoutOrderScreen = ({ route }) => {
     }
 
     if (cartItems.length === 0) {
-      Alert.alert('Error', 'Your cart is empty');
+      Alert.alert(t('Error'), t('Your cart is empty'));
       return;
     }
     
     // Get user ID from the delivery address
     const userId = deliveryAddress.user;
     if (!userId) {
-      Alert.alert('Error', 'Unable to process order. Please try again.');
+      Alert.alert(t('Error'), t('Unable to process order. Please try again.'));
       return;
     }
 
@@ -324,7 +394,7 @@ const CheckoutOrderScreen = ({ route }) => {
       }
     } catch (error) {
       console.error('Order error:', error);
-      Alert.alert('Error', error.message || 'Failed to place order. Please try again.');
+      Alert.alert(t('Error'), error.message || t('Failed to place order. Please try again.'));
     } finally {
       setIsLoading(false);
     }
@@ -360,7 +430,7 @@ const CheckoutOrderScreen = ({ route }) => {
               <Image 
                 source={{ uri: item.image }} 
                 style={styles.carouselImage} 
-                resizeMode="cover"
+                resizeMode="contain"
               />
               <View style={styles.carouselInfo}>
                 <Text style={styles.carouselProductName} numberOfLines={2}>
@@ -414,7 +484,7 @@ const CheckoutOrderScreen = ({ route }) => {
           >
             <Icon name="arrow-back" size={24} color="#FF7000" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Checkout</Text>
+          <Text style={styles.headerTitle}>{t('Checkout')}</Text>
         </View>
         <StatusBar barStyle="light-content" backgroundColor="#FF7000" />
         
@@ -422,13 +492,13 @@ const CheckoutOrderScreen = ({ route }) => {
           {/* Delivery Info */}
           <View style={styles.deliverySection}>
             <View style={styles.deliveryHeader}>
-              <Text style={styles.deliveryLabel}>Delivering to:</Text>
+              <Text style={styles.deliveryLabel}>{t('Delivering to:')}</Text>
               {deliveryAddress && (
                 <TouchableOpacity 
                   onPress={handleChangeAddress}
                   style={styles.changeButton}
                 >
-                  <Text style={styles.changeText}>Change</Text>
+                  <Text style={styles.changeText}>{t('Change')}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -455,7 +525,7 @@ const CheckoutOrderScreen = ({ route }) => {
               >
                 <View style={styles.addAddressContent}>
                   <Icon name="add-location" size={24} color="#FF7000" />
-                  <Text style={styles.addAddressText}>Add Delivery Address</Text>
+                  <Text style={styles.addAddressText}>{t('Add Delivery Address')}</Text>
                 </View>
                 <Icon name="chevron-right" size={28} color="#CCCCCC" />
               </TouchableOpacity>
@@ -468,10 +538,10 @@ const CheckoutOrderScreen = ({ route }) => {
               <View key={groupIndex} style={styles.deliveryGroup}>
                 <View style={styles.deliveryDateHeader}>
                   <Text style={styles.deliveryDate}>
-                    Standard Delivery (3-5 business days)
+                    {t('Standard Delivery (3-5 business days)')}
                   </Text>
                   {group.isFreeShipping && (
-                    <Text style={styles.freeShipping}> Free Shipping</Text>
+                    <Text style={styles.freeShipping}> {t('Free Shipping')}</Text>
                   )}
                 </View>
                 
@@ -480,14 +550,14 @@ const CheckoutOrderScreen = ({ route }) => {
             ))
           ) : (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No items in cart</Text>
+              <Text style={styles.emptyText}>{t('No items in cart')}</Text>
             </View>
           )}
 
           {/* Payment Method */}
           {cartItems.length > 0 && (
             <View style={styles.paymentSection}>
-              <Text style={styles.paymentTitle}>Select Payment Method:</Text>
+              <Text style={styles.paymentTitle}>{t('Select Payment Method:')}</Text>
               
               <TouchableOpacity
                 style={styles.paymentOption}
@@ -499,7 +569,7 @@ const CheckoutOrderScreen = ({ route }) => {
                 <View style={styles.cardIcon}>
                   <Ionicons name="card-outline" size={18} color="#666666" />
                 </View>
-                <Text style={styles.paymentText}>Add a new card</Text>
+                <Text style={styles.paymentText}>{t('Add a new card')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -512,26 +582,81 @@ const CheckoutOrderScreen = ({ route }) => {
                 <View style={styles.walletIcon}>
                   <Ionicons name="wallet-outline" size={20} color="#666666" />
                 </View>
-                <Text style={styles.paymentText}>Wallet</Text>
+                <Text style={styles.paymentText}>{t('Wallet')}</Text>
               </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Coupon Section */}
+          {cartItems.length > 0 && (
+            <View style={styles.couponSection}>
+              <Text style={styles.sectionTitle}>{t('Apply Coupon')}</Text>
+              
+              {appliedCoupon ? (
+                <View style={styles.appliedCouponContainer}>
+                  <View style={styles.appliedCouponLeft}>
+                    <Icon name="check-circle" size={20} color="#4CAF50" />
+                    <View style={styles.appliedCouponInfo}>
+                      <Text style={styles.appliedCouponCode}>{appliedCoupon.code}</Text>
+                      <Text style={styles.appliedCouponSavings}>
+                        {t('You saved')} ${couponDiscount.toFixed(2)}
+                      </Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity onPress={handleRemoveCoupon}>
+                    <Icon name="close" size={20} color="#F44336" />
+                  </TouchableOpacity>
+                </View>
+              ) : showCouponInput ? (
+                <View style={styles.couponInputContainer}>
+                  <TextInput
+                    style={styles.couponInput}
+                    placeholder={t('Enter coupon code')}
+                    placeholderTextColor="#999"
+                    value={couponCode}
+                    onChangeText={setCouponCode}
+                    autoCapitalize="characters"
+                  />
+                  <TouchableOpacity
+                    style={styles.applyButton}
+                    onPress={handleApplyCoupon}
+                    disabled={!couponCode.trim()}>
+                    <Text style={styles.applyButtonText}>{t('Apply')}</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.addCouponButton}
+                  onPress={() => setShowCouponInput(true)}>
+                  <Icon name="local-offer" size={20} color="#FF7000" />
+                  <Text style={styles.addCouponText}>{t('Add Coupon Code')}</Text>
+                  <Icon name="chevron-right" size={20} color="#999" />
+                </TouchableOpacity>
+              )}
             </View>
           )}
 
           {/* Price Summary */}
           {cartItems.length > 0 && (
-            <View style={styles.summarySection}>
+            <View style={[styles.summarySection, {backgroundColor: '#FFFFFF'}]}>
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Subtotal:</Text>
-                <Text style={styles.summaryValue}>${calculateTotal().toFixed(2)}</Text>
+                <Text style={[styles.summaryLabel, {color: '#000000'}]}>{t('Subtotal:')}</Text>
+                <Text style={[styles.summaryValue, {color: '#000000'}]}>${calculateTotal().toFixed(2)}</Text>
               </View>
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Delivery:</Text>
-                <Text style={styles.summaryValueFree}>Free</Text>
+                <Text style={[styles.summaryLabel, {color: '#000000'}]}>{t('Delivery:')}</Text>
+                <Text style={[styles.summaryValueFree, {color: '#FF6B35'}]}>{t('Free')}</Text>
               </View>
+              {couponDiscount > 0 && (
+                <View style={styles.summaryRow}>
+                  <Text style={[styles.summaryLabel, {color: '#4CAF50'}]}>{t('Coupon Discount:')}</Text>
+                  <Text style={[styles.summaryValue, {color: '#4CAF50'}]}>-${couponDiscount.toFixed(2)}</Text>
+                </View>
+              )}
               <View style={styles.divider} />
               <View style={styles.summaryRow}>
-                <Text style={styles.totalLabel}>Total:</Text>
-                <Text style={styles.totalValue}>${calculateTotal().toFixed(2)}</Text>
+                <Text style={styles.totalLabel}>{t('Total:')}</Text>
+                <Text style={styles.totalValue}>${calculateFinalTotal().toFixed(2)}</Text>
               </View>
             </View>
           )}
@@ -554,10 +679,10 @@ const CheckoutOrderScreen = ({ route }) => {
               {isLoading ? (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator size="small" color="#FFFFFF" />
-                  <Text style={styles.placeOrderText}>Placing Your Order...</Text>
+                  <Text style={styles.placeOrderText}>{t('Placing Your Order...')}</Text>
                 </View>
               ) : (
-                <Text style={styles.placeOrderText}>Place Order</Text>
+                <Text style={styles.placeOrderText}>{t('Place Order')}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -866,8 +991,10 @@ const styles = StyleSheet.create({
   summarySection: {
     backgroundColor: '#FFFFFF',
     marginTop: 8,
+    marginHorizontal: 8,
     paddingHorizontal: 16,
     paddingVertical: 16,
+    borderRadius: 8,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -876,12 +1003,13 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 14,
-    color: '#666666',
+    color: '#333333',
+    fontWeight: '500',
   },
   summaryValue: {
     fontSize: 14,
     color: '#000000',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   summaryValueFree: {
     fontSize: 14,
@@ -895,13 +1023,95 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#000000',
   },
   totalValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#000000',
+    color: '#FF7000',
+  },
+  couponSection: {
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    marginTop: 8,
+    borderRadius: 8,
+  },
+  addCouponButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFF5F0',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FFE0CC',
+    borderStyle: 'dashed',
+  },
+  addCouponText: {
+    flex: 1,
+    marginLeft: 10,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#FF7000',
+  },
+  couponInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 5,
+  },
+  couponInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#000',
+    marginRight: 10,
+  },
+  applyButton: {
+    backgroundColor: '#FF7000',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  applyButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  appliedCouponContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#E8F5E9',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+    marginTop:5
+  },
+  appliedCouponLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  appliedCouponInfo: {
+    marginLeft: 10,
+  },
+  appliedCouponCode: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2E7D32',
+  },
+  appliedCouponSavings: {
+    fontSize: 12,
+    color: '#4CAF50',
+    marginTop: 2,
   },
   bottomButtonContainer: {
     backgroundColor: '#FFFFFF',

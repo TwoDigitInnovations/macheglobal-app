@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -18,7 +18,9 @@ import {
 import { Post } from '../../Assets/Helpers/Service';
 import CountryPicker from 'react-native-country-picker-modal';
 import Icon from 'react-native-vector-icons/Feather';
+import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
 
 const SuccessPopup = ({ visible, onClose }) => {
   return (
@@ -49,9 +51,31 @@ const SuccessPopup = ({ visible, onClose }) => {
 };
 
 export default function SignupScreen({ navigation }) {
+  const { t, i18n } = useTranslation();
+  const [currentLanguage, setCurrentLanguage] = useState('en');
   const [userType, setUserType] = useState('user'); // 'user' or 'seller'
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+
+  // Load saved language on mount
+  useEffect(() => {
+    const loadLanguage = async () => {
+      const savedLang = await AsyncStorage.getItem('LANG');
+      if (savedLang) {
+        i18n.changeLanguage(savedLang);
+        setCurrentLanguage(savedLang);
+      }
+    };
+    loadLanguage();
+  }, []);
+
+  // Toggle language
+  const toggleLanguage = async () => {
+    const newLang = currentLanguage === 'en' ? 'fr' : 'en';
+    await AsyncStorage.setItem('LANG', newLang);
+    i18n.changeLanguage(newLang);
+    setCurrentLanguage(newLang);
+  };
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -131,6 +155,17 @@ export default function SignupScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
+        {/* Language Toggle Button */}
+        <TouchableOpacity 
+          style={styles.languageButton}
+          onPress={toggleLanguage}
+        >
+          <MaterialIcon name="language" size={20} color="#FF7000" />
+          <Text style={styles.languageText}>
+            {currentLanguage === 'en' ? 'English' : 'Français'}
+          </Text>
+        </TouchableOpacity>
+
         {/* Title */}
         <Text style={styles.title}>
           Macheglobal
@@ -149,7 +184,7 @@ export default function SignupScreen({ navigation }) {
               styles.userButtonText,
               userType === 'user' ? styles.activeText : styles.inactiveText
             ]}>
-              User
+              {t('User')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -163,7 +198,7 @@ export default function SignupScreen({ navigation }) {
               styles.sellerButtonText,
               userType === 'seller' ? styles.activeText : styles.inactiveText
             ]}>
-              Seller
+              {t('Seller')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -172,7 +207,7 @@ export default function SignupScreen({ navigation }) {
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
-            placeholder="Full Name"
+            placeholder={t('Full Name')}
             placeholderTextColor="#9CA3AF"
             value={formData.name}
             onChangeText={(text) => handleInputChange('name', text)}
@@ -185,7 +220,7 @@ export default function SignupScreen({ navigation }) {
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
-            placeholder="Email Address"
+            placeholder={t('Email')}
             placeholderTextColor="#9CA3AF"
             keyboardType="email-address"
             autoCapitalize="none"
@@ -223,7 +258,7 @@ export default function SignupScreen({ navigation }) {
             </TouchableOpacity>
             <TextInput
               style={styles.phoneInput}
-              placeholder="Phone Number"
+              placeholder={t('Phone Number')}
               placeholderTextColor="#9CA3AF"
               keyboardType="phone-pad"
               value={formData.phone}
@@ -237,7 +272,7 @@ export default function SignupScreen({ navigation }) {
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
-            placeholder="Password"
+            placeholder={t('Password')}
             placeholderTextColor="#9CA3AF"
             secureTextEntry={!showPassword}
             value={formData.password}
@@ -272,7 +307,7 @@ export default function SignupScreen({ navigation }) {
           {isLoading ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.signupButtonText}>Sign Up</Text>
+            <Text style={styles.signupButtonText}>{t('Sign up')}</Text>
           )}
         </TouchableOpacity>
 
@@ -319,9 +354,9 @@ export default function SignupScreen({ navigation }) {
         {/* Bottom Text */}
         <View style={styles.bottomContainer}>
           <View style={styles.bottomTextContainer}>
-            <Text style={styles.bottomText}>Already have an account? </Text>
+            <Text style={styles.bottomText}>{t('Already have an account?')} </Text>
             <TouchableOpacity onPress={() => navigation.navigate('SignIn')}>
-              <Text style={styles.bottomLinkText}>Log in</Text>
+              <Text style={styles.bottomLinkText}>{t('Login')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -339,6 +374,26 @@ export default function SignupScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+  languageButton: {
+    position: 'absolute',
+    top: 10,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF5F0',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#FF7000',
+    zIndex: 10,
+  },
+  languageText: {
+    marginLeft: 6,
+    fontSize: 14,
+    color: '#FF7000',
+    fontWeight: '600',
+  },
   // Modal Styles
   modalContainer: {
     flex: 1,

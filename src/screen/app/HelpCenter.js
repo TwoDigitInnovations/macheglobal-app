@@ -46,14 +46,14 @@ const HelpCenter = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.name.trim()) newErrors.name = 'Name is required';
+    if (!formData.name.trim()) newErrors.name = t('Name is required');
     if (!formData.Email.trim()) {
-      newErrors.Email = 'Email is required';
+      newErrors.Email = t('Email is required');
     } else if (!/\S+@\S+\.\S+/.test(formData.Email)) {
-      newErrors.Email = 'Please enter a valid email';
+      newErrors.Email = t('Please enter a valid email');
     }
-    if (!formData.subject.trim()) newErrors.subject = 'Subject is required';
-    if (!formData.message.trim()) newErrors.message = 'Message is required';
+    if (!formData.subject.trim()) newErrors.subject = t('Subject is required');
+    if (!formData.message.trim()) newErrors.message = t('Message is required');
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -94,11 +94,11 @@ const HelpCenter = () => {
           setShowSuccessModal(false);
         }, 2000);
       } else {
-        Alert.alert('Error', response?.message || 'Something went wrong. Please try again.');
+        Alert.alert(t('Error'), response?.message || t('Something went wrong. Please try again.'));
       }
     } catch (error) {
       console.error('Contact us error:', error);
-      Alert.alert('Error', 'Failed to send message. Please try again.');
+      Alert.alert(t('Error'), t('Failed to send message. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -112,54 +112,54 @@ const HelpCenter = () => {
     >
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <BackIcon height={20} width={20} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Help Center</Text>
-        <View style={{width: 40}} />
+        <View style={styles.headerLeft}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <BackIcon height={20} width={20} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{t('Help Center')}</Text>
+        </View>
       </View>
 
       <ScrollView style={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
-          <Text style={styles.title}>How can we help you?</Text>
+          <Text style={styles.title}>{t('How can we help you?')}</Text>
           <Text style={styles.subtitle}>
-            We're here to help and answer any question you might have. 
-            Fill out the form and we'll be in touch as soon as possible.
+            {t("We're here to help and answer any question you might have. Fill out the form and we'll be in touch as soon as possible.")}
           </Text>
 
           <InputField
-            label="Full Name"
+            label={t('Full Name')}
             value={formData.name}
             onChangeText={(text) => handleInputChange('name', text)}
-            placeholder="Enter your full name"
+            placeholder={t('Enter your full name')}
             error={errors.name}
           />
 
           <InputField
-            label="Email"
+            label={t('Email')}
             value={formData.Email}
             onChangeText={(text) => handleInputChange('Email', text)}
-            placeholder="Enter your email"
+            placeholder={t('Enter your email')}
             error={errors.Email}
             keyboardType="email-address"
           />
 
           <InputField
-            label="Subject"
+            label={t('Subject')}
             value={formData.subject}
             onChangeText={(text) => handleInputChange('subject', text)}
-            placeholder="Enter subject"
+            placeholder={t('Enter subject')}
             error={errors.subject}
           />
 
           <InputField
-            label="Message"
+            label={t('Message')}
             value={formData.message}
             onChangeText={(text) => handleInputChange('message', text)}
-            placeholder="Type your message here..."
+            placeholder={t('Type your message here...')}
             error={errors.message}
             multiline
             numberOfLines={4}
@@ -173,21 +173,21 @@ const HelpCenter = () => {
             {loading ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text style={styles.submitButtonText}>Send Message</Text>
+              <Text style={styles.submitButtonText}>{t('Send Message')}</Text>
             )}
           </TouchableOpacity>
         </View>
 
         <View style={styles.contactInfo}>
-          <Text style={styles.contactTitle}>Contact Information</Text>
+          <Text style={styles.contactTitle}>{t('Contact Information')}</Text>
           <Text style={styles.contactText}>
-            Email: support@macheglobal.com
+            {t('Email')}: support@macheglobal.com
           </Text>
           <Text style={styles.contactText}>
-            Phone: +1 (555) 123-4567
+            {t('Phone')}: +1 (555) 123-4567
           </Text>
           <Text style={styles.contactText}>
-            Address: 123 Market Street, City, Country
+            {t('Address')}: 123 Market Street, City, Country
           </Text>
         </View>
       </ScrollView>
@@ -201,8 +201,8 @@ const HelpCenter = () => {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalText}>Message sent successfully!</Text>
-            <Text style={styles.modalSubtext}>We'll get back to you soon.</Text>
+            <Text style={styles.modalText}>{t('Message sent successfully!')}</Text>
+            <Text style={styles.modalSubtext}>{t("We'll get back to you soon.")}</Text>
           </View>
         </View>
       </Modal>
@@ -219,15 +219,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF7000',
     paddingTop: 50,
     paddingBottom: 18,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   backButton: {
-    padding: 5,
+    padding: 4,
   },
   headerTitle: {
     fontSize: 20,

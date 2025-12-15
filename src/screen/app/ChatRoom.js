@@ -20,7 +20,16 @@ import { setGlobalSocket } from '../../utils/socketManager';
 import { getSocketUrl } from '../../Assets/Helpers/Service';
 
 const ChatRoom = ({ route, navigation }) => {
-  const { sellerId, sellerName, sellerImage, productId } = route.params;
+  const { 
+    sellerId, 
+    sellerName, 
+    sellerImage, 
+    productId,
+    productImage,
+    productName,
+    productPrice,
+    initialMessage 
+  } = route.params;
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [socket, setSocket] = useState(null);
@@ -30,6 +39,7 @@ const ChatRoom = ({ route, navigation }) => {
   const [lastSeen, setLastSeen] = useState(null);
   const flatListRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const [initialMessageSent, setInitialMessageSent] = useState(false);
 
   useEffect(() => {
     // Hide tab bar when this screen is focused
@@ -119,6 +129,26 @@ const ChatRoom = ({ route, navigation }) => {
 
         newSocket.on('previousMessages', (msgs) => {
           setMessages(msgs);
+          
+          // Send initial message with product info if provided
+          if (initialMessage && !initialMessageSent) {
+            setTimeout(() => {
+              const messageData = {
+                senderId: user._id,
+                receiverId: sellerId,
+                message: initialMessage,
+                productId: productId,
+                productImage: productImage,
+                productName: productName,
+                productPrice: productPrice,
+                timestamp: new Date().toISOString(),
+              };
+              
+              setMessages(prev => [...prev, messageData]);
+              newSocket.emit('sendMessage', messageData);
+              setInitialMessageSent(true);
+            }, 500);
+          }
         });
 
         newSocket.on('newMessage', (message) => {
@@ -235,10 +265,37 @@ const ChatRoom = ({ route, navigation }) => {
 
   const renderMessage = ({ item }) => {
     const isSender = item.senderId === userId;
+    const hasProductInfo = item.productImage || item.productName || item.productPrice;
     
     return (
       <View style={[styles.messageContainer, isSender ? styles.senderContainer : styles.receiverContainer]}>
         <View style={[styles.messageBubble, isSender ? styles.senderBubble : styles.receiverBubble]}>
+          {/* Product Info Card */}
+          {hasProductInfo && (
+            <View style={styles.productInfoCard}>
+              {item.productImage && (
+                <Image 
+                  source={{ uri: item.productImage }}
+                  style={styles.productInfoImage}
+                  resizeMode="cover"
+                />
+              )}
+              <View style={styles.productInfoDetails}>
+                {item.productName && (
+                  <Text style={styles.productInfoName} numberOfLines={2}>
+                    {item.productName}
+                  </Text>
+                )}
+                {item.productPrice && (
+                  <Text style={styles.productInfoPrice}>
+                    $ {item.productPrice.toFixed(2)}
+                  </Text>
+                )}
+              </View>
+            </View>
+          )}
+          
+          {/* Message Text */}
           <Text style={[styles.messageText, isSender ? styles.senderText : styles.receiverText]}>
             {item.message}
           </Text>
@@ -430,6 +487,35 @@ const styles = StyleSheet.create({
   },
   receiverTimeText: {
     color: '#666',
+  },
+  productInfoCard: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 8,
+    padding: 8,
+    marginBottom: 8,
+  },
+  productInfoImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 6,
+    backgroundColor: '#f0f0f0',
+  },
+  productInfoDetails: {
+    flex: 1,
+    marginLeft: 10,
+    justifyContent: 'center',
+  },
+  productInfoName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  productInfoPrice: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#fff',
   },
   inputContainer: {
     flexDirection: 'row',
