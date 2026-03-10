@@ -77,7 +77,7 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.macheglobal.app"
+    namespace "com.macheglobal"
 
        packagingOptions {
         // Add these lines to handle 16KB page size issue
@@ -97,7 +97,7 @@ android {
 
      
     defaultConfig {
-        applicationId "com.macheglobal.app"
+        applicationId "com.macheglobal"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 6

@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "matcheglobal.app"
-               BlueprintName = "matcheglobal"
-               ReferencedContainer = "container:matcheglobal.xcodeproj">
+               BuildableName = "Macheglobal.app"
+               BlueprintName = "Macheglobal"
+               ReferencedContainer = "container:Macheglobal.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "matcheglobalTests.xctest"
-               BlueprintName = "matcheglobalTests"
-               ReferencedContainer = "container:matcheglobal.xcodeproj">
+               BuildableName = "MacheglobalTests.xctest"
+               BlueprintName = "MacheglobalTests"
+               ReferencedContainer = "container:Macheglobal.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -55,9 +55,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "matcheglobal.app"
-            BlueprintName = "matcheglobal"
-            ReferencedContainer = "container:matcheglobal.xcodeproj">
+            BuildableName = "Macheglobal.app"
+            BlueprintName = "Macheglobal"
+            ReferencedContainer = "container:Macheglobal.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "matcheglobal.app"
-            BlueprintName = "matcheglobal"
-            ReferencedContainer = "container:matcheglobal.xcodeproj">
+            BuildableName = "Macheglobal.app"
+            BlueprintName = "Macheglobal"
+            ReferencedContainer = "container:Macheglobal.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

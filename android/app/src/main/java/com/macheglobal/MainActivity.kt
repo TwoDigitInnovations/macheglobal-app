@@ -1,4 +1,4 @@
-package com.macheglobal.app
+package com.macheglobal
 
 import android.os.Bundle;
 
