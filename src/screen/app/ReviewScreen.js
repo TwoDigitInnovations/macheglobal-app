@@ -51,8 +51,10 @@ const COLORS = {
 import { LoadContext, ToastContext } from '../../../App';
 import { Post, ApiFormData, GetApi, Delete } from '../../Assets/Helpers/Service';
 import { launchImageLibrary } from 'react-native-image-picker';
+import { useTranslation } from 'react-i18next';
 
 const ReviewScreen = () => {
+  const { t } = useTranslation();
   const route = useRoute();
   const navigation = useNavigation();
   const [rating, setRating] = useState(5);
@@ -122,7 +124,7 @@ const ReviewScreen = () => {
         console.log('User cancelled image picker');
       } else if (result.error) {
         console.log('ImagePicker Error: ', result.error);
-        Alert.alert('Error', 'Failed to pick image');
+        Alert.alert(t('Error'), t('Failed to pick image'));
       } else if (result.assets && result.assets.length > 0) {
         // Upload images immediately after selection
         setLoading(true);
@@ -165,12 +167,12 @@ const ReviewScreen = () => {
         
         if (uploadedImages.length > 0) {
           setImages([...images, ...uploadedImages]);
-          setToast(`${uploadedImages.length} image(s) uploaded successfully!`);
+          setToast(t('images_uploaded_successfully', { count: uploadedImages.length }));
         }
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      setToast('Error selecting image. Please try again.');
+      setToast(t('Error selecting image. Please try again.'));
       setLoading(false);
     }
   };
@@ -183,7 +185,7 @@ const ReviewScreen = () => {
 
   const handleSubmit = async () => {
     if (!review.trim()) {
-      setToast('Please write your review');
+      setToast(t('Please write your review'));
       return;
     }
 
@@ -234,19 +236,19 @@ const ReviewScreen = () => {
       console.log('Review response:', JSON.stringify(response, null, 2));
       
       if (response?.success === true) {
-        setToast(isUpdate ? 'Review updated successfully!' : 'Thank you for your review!');
+        setToast(isUpdate ? t('Review updated successfully!') : t('Thank you for your review!'));
         setTimeout(() => {
           navigation.goBack();
         }, 500);
       } else {
         // Show more detailed error
-        const errorMsg = response?.message || response?.error || 'Failed to submit review';
+        const errorMsg = response?.message || response?.error || t('Failed to submit review');
         console.error('Review submission failed:', errorMsg);
         setToast(errorMsg);
       }
     } catch (error) {
       console.error('Error submitting review:', error);
-      setToast(error.message || 'Failed to submit review. Please try again.');
+      setToast(error.message || t('Failed to submit review. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -263,7 +265,7 @@ const ReviewScreen = () => {
           <Icon name="arrow-back" size={24} color={COLORS.black} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          {isUpdate ? 'Update Review' : 'Write a Review'}
+          {isUpdate ? t('Update Review') : t('Write a Review')}
         </Text>
         <View style={{ width: 24 }} /> {/* For alignment */}
       </View>
@@ -295,16 +297,16 @@ const ReviewScreen = () => {
               ))}
             </View>
             <Text style={styles.ratingText}>
-              {rating.toFixed(1)} {rating === 1 ? 'Star' : 'Stars'}
+              {rating.toFixed(1)} {rating === 1 ? t('Star') : t('Stars')}
             </Text>
           </View>
         </View>
 
         <View style={styles.reviewContainer}>
-          <Text style={styles.sectionTitle}>Your Review</Text>
+          <Text style={styles.sectionTitle}>{t('Your Review')}</Text>
           <TextInput
             style={styles.reviewInput}
-            placeholder="Share your experience about this product..."
+            placeholder={t('Share your experience about this product...')}
             placeholderTextColor={COLORS.gray}
             multiline
             numberOfLines={5}
@@ -314,9 +316,9 @@ const ReviewScreen = () => {
         </View>
 
         <View style={styles.imagesContainer}>
-          <Text style={styles.sectionTitle}>Add Photos (Optional)</Text>
+          <Text style={styles.sectionTitle}>{t('Add Photos (Optional)')}</Text>
           <Text style={styles.subtitle}>
-            {images.length}/5 photos
+            {images.length}/5 {t('photos')}
           </Text>
           
           <ScrollView 
@@ -343,7 +345,7 @@ const ReviewScreen = () => {
                 disabled={loading}
               >
                 <Icon name="camera" size={24} color={COLORS.primary} />
-                <Text style={styles.addImageText}>Add Photo</Text>
+                <Text style={styles.addImageText}>{t('Add Photo')}</Text>
               </TouchableOpacity>
             )}
           </ScrollView>
@@ -358,8 +360,8 @@ const ReviewScreen = () => {
         >
           <Text style={styles.submitButtonText}>
             {loading 
-              ? (isUpdate ? 'Updating...' : 'Submitting...') 
-              : (isUpdate ? 'Update Review' : 'Submit Review')}
+              ? (isUpdate ? t('Updating...') : t('Submitting...')) 
+              : (isUpdate ? t('Update Review') : t('Submit Review'))}
           </Text>
         </TouchableOpacity>
       </View>

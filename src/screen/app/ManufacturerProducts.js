@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Dimensions,
   FlatList,
+  Platform,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -159,6 +160,7 @@ const ManufacturerProducts = ({ route }) => {
         contentContainerStyle={styles.productList}
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
+        showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           !loading && (
             <View style={styles.emptyContainer}>
@@ -232,7 +234,7 @@ const styles = StyleSheet.create({
   productList: {
     paddingHorizontal: 10,
     paddingTop: 15,
-    paddingBottom: 20,
+    paddingBottom: Platform.OS === 'android' ? 88 : 108, // Add bottom padding for tab bar
   },
   row: {
     justifyContent: 'space-between',

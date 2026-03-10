@@ -86,6 +86,17 @@ const Profile = props => {
           img: fileUrl
         }));
         
+        // Update backend immediately
+        const updateData = {
+          userId: user?.user?._id,
+          avatar: fileUrl,
+          profile: fileUrl
+        };
+        
+        console.log('Updating profile with avatar:', updateData);
+        const updateRes = await Post('auth/updateProfile', updateData);
+        console.log('Profile update response:', updateRes);
+        
         // Update context and AsyncStorage
         const userData = await AsyncStorage.getItem('userDetail');
         if (userData) {

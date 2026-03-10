@@ -47,15 +47,49 @@ const DriverHeader = props => {
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
-            onPress={() =>
-              user.type === 'DRIVER'
-                ? navigate('DriverAccount')
-                : user.type === 'SELLER'
-                ? navigate('VendorAccount')
-                : user.type === 'USER'
-                ? navigate('Account')
-                : navigate('Auth')
-            }>
+            onPress={async () => {
+              try {
+                const userDetail = await AsyncStorage.getItem('userDetail');
+                console.log('=== Profile Icon Debug ===');
+                console.log('User from context:', JSON.stringify(user, null, 2));
+                console.log('User from AsyncStorage:', userDetail);
+                
+                if (userDetail) {
+                  const parsedUser = JSON.parse(userDetail);
+                  
+                  // Check multiple possible locations for type field
+                  const userType = user?.type || 
+                                  parsedUser?.type || 
+                                  parsedUser?.user?.type ||
+                                  parsedUser?.data?.type;
+                  
+                  console.log('Detected user type:', userType);
+                  
+                  if (userType === 'DRIVER') {
+                    console.log('→ Navigating to DriverAccount');
+                    navigate('DriverAccount');
+                  } else if (userType === 'SELLER') {
+                    console.log('→ Navigating to VendorAccount');
+                    navigate('VendorAccount');
+                  } else {
+                    // Default: User is logged in, go to Account
+                    console.log('→ Navigating to Account (default for logged in users)');
+                    const parent = navigation?.getParent?.();
+                    if (parent) {
+                      parent.navigate('Account');
+                    } else {
+                      navigate('Account');
+                    }
+                  }
+                } else {
+                  console.log('→ No user data, navigating to Auth');
+                  navigate('Auth');
+                }
+              } catch (error) {
+                console.error('Error in profile navigation:', error);
+                navigate('Auth');
+              }
+            }}>
             <Image
               // source={require('../Images/profile.png')}
               source={

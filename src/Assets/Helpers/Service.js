@@ -134,9 +134,12 @@ const Post = async (url, data, props = {}) => {
             .catch(async err => {
               if (err.response) {
                 console.log(err.response.status);
-                if (err?.response?.status === 401) {
+                // Handle authentication errors (401 Unauthorized, 403 Forbidden)
+                if (err?.response?.status === 401 || err?.response?.status === 403) {
+                  console.log('Authentication error - clearing user data and redirecting to login');
                   await AsyncStorage.removeItem('userDetail');
-                  reset('Auth')
+                  await AsyncStorage.removeItem('cartdata');
+                  reset('Auth');
                 }
                 resolve(err.response.data);
               } else {

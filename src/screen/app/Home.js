@@ -44,6 +44,14 @@ import { useFocusEffect } from '@react-navigation/native';
 
 const { width: windowWidth } = Dimensions.get('window');
 
+// Helper function to convert AVIF to JPG for React Native compatibility
+const convertAvifToJpg = (imageUrl) => {
+  if (imageUrl && imageUrl.includes('.avif')) {
+    return imageUrl.replace('.avif', '.jpg');
+  }
+  return imageUrl;
+};
+
 const Home = () => {
   const { t } = useTranslation();
   const [cartdetail, setcartdetail] = useContext(CartContext);
@@ -75,7 +83,7 @@ const getExploreProducts = async () => {
     console.error('Error fetching explore products:', err);
   }
 };
-  const CountdownTimer = ({ endDate }) => {
+  const CountdownTimer = React.memo(({ endDate }) => {
     const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   
     useEffect(() => {
@@ -92,6 +100,7 @@ const getExploreProducts = async () => {
         return { days: 0, hours: 0, minutes: 0, seconds: 0 };
       };
   
+      setTimeLeft(calculateTimeLeft());
       const timer = setInterval(() => {
         setTimeLeft(calculateTimeLeft());
       }, 1000);
@@ -100,13 +109,17 @@ const getExploreProducts = async () => {
     }, [endDate]);
   
     return (
-      <Text style={styles.endsInText}>
-        {t('Ends in')}: <Text style={styles.endsInTime}>
-          {timeLeft.days}d {timeLeft.hours}h {timeLeft.minutes}m {timeLeft.seconds}s
+      <View style={styles.timerContainer}>
+        <Text style={styles.endsInLabel}>{t('Ends in')}:</Text>
+        <Text style={styles.endsInTime}>
+          {timeLeft.days > 0 && `${timeLeft.days}d `}
+          {String(timeLeft.hours).padStart(2, '0')}:
+          {String(timeLeft.minutes).padStart(2, '0')}:
+          {String(timeLeft.seconds).padStart(2, '0')}
         </Text>
-      </Text>
+      </View>
     );
-  };
+  });
   
   // 2. Flash Sale section ko replace karo (line 547 se 625 tak)
   {/* Flash Sale Section */}
@@ -173,18 +186,22 @@ const getExploreProducts = async () => {
               </View>
             )}
       
-            {/* Product Number */}
-            <View style={styles.productNumber}>
-              <Text style={styles.productNumberText}>#{index + 1}</Text>
-            </View>
-      
             {/* Image */}
             <View style={styles.flashImageContainer}>
-              <Image 
-                source={{ uri: item.variant?.image?.[0] }} 
-                style={styles.flashImage}
-                resizeMode="cover"
-              />
+              <View style={styles.imageBox}>
+                <Image 
+                  source={{ 
+                    uri: convertAvifToJpg(
+                      item.variant?.image?.[0] || 
+                      item.product?.simpleProduct?.images?.[0] || 
+                      item.product?.varients?.[0]?.image?.[0] || 
+                      'https://via.placeholder.com/150'
+                    )
+                  }} 
+                  style={styles.flashImage}
+                  resizeMode="contain"
+                />
+              </View>
             </View>
       
             {/* Details */}
@@ -230,14 +247,24 @@ const getExploreProducts = async () => {
       
       if (response && response.status) {
         if (Array.isArray(response.data) && response.data.length > 0) {
-          // YAHAN BAS DIRECT DATA SET KARO - KUCH TRANSFORM NAHI
-          setFlashSaleProducts(response.data);
+          // Filter out deleted products - only show products where product exists and is not deleted
+          const activeProducts = response.data.filter(item => {
+            // Check if product exists and is not explicitly deleted
+            return item.product && item.product.isDeleted !== true;
+          });
+          
+          setFlashSaleProducts(activeProducts);
           
           // Console check karo
-          console.log('First flash sale item:', {
-            price: response.data[0].price,
-            originalPrice: response.data[0].originalPrice,
-            productName: response.data[0].product?.name
+          console.log('Filtered flash sale products:', {
+            total: response.data.length,
+            active: activeProducts.length,
+            firstItem: activeProducts[0] ? {
+              price: activeProducts[0].price,
+              originalPrice: activeProducts[0].originalPrice,
+              productName: activeProducts[0].product?.name,
+              isDeleted: activeProducts[0].product?.isDeleted
+            } : null
           });
         } else {
           setFlashSaleProducts([]);
@@ -511,8 +538,16 @@ const getExploreProducts = async () => {
                     <TouchableOpacity
                       style={{ width: width, alignItems: 'center' }}
                       onPress={() => {
-                        item.product_id &&
+                        // Check if category exists and navigate to CategorySubCat
+                        if (item.Category && item.Category._id) {
+                          console.log('Navigating to category:', item.Category._id);
+                          navigate('CategorySubCat', { selectedCategoryId: item.Category._id });
+                        } else if (item.product_id) {
+                          // Fallback to product detail if no category
                           navigate('posterDetail', item.product_id);
+                        } else {
+                          console.log('No category or product_id found in carousel item');
+                        }
                       }}>
                       <Image
                         source={{ uri: item.image }}
@@ -648,17 +683,23 @@ const getExploreProducts = async () => {
             )}
       
             {/* Product Number */}
-            <View style={styles.productNumber}>
-              <Text style={styles.productNumberText}>#{index + 1}</Text>
-            </View>
       
             {/* Image */}
             <View style={styles.flashImageContainer}>
-              <Image 
-                source={{ uri: item.variant?.image?.[0] }} 
-                style={styles.flashImage}
-                resizeMode="cover"
-              />
+              <View style={styles.imageBox}>
+                <Image 
+                  source={{ 
+                    uri: convertAvifToJpg(
+                      item.variant?.image?.[0] || 
+                      item.product?.simpleProduct?.images?.[0] || 
+                      item.product?.varients?.[0]?.image?.[0] || 
+                      'https://via.placeholder.com/150'
+                    )
+                  }} 
+                  style={styles.flashImage}
+                  resizeMode="contain"
+                />
+              </View>
             </View>
       
             {/* Details */}
@@ -797,11 +838,28 @@ const getExploreProducts = async () => {
           ? cartdetail.find(it => it?.productid === item?._id)
           : undefined;
         
-        // Price logic - varients se price nikalna
+        // Price logic - multiple sources se price nikalna
         const offerPrice = item?.varients?.[0]?.selected?.[0]?.offerprice || 
-                          item?.price_slot?.[0]?.our_price || 0;
+                          item?.price_slot?.[0]?.our_price || 
+                          item?.simpleProduct?.offerPrice || 0;
         const originalPrice = item?.varients?.[0]?.selected?.[0]?.price || 
-                             item?.price_slot?.[0]?.other_price || 0;
+                             item?.price_slot?.[0]?.other_price ||
+                             item?.simpleProduct?.price || 0;
+        
+        // Image logic - multiple sources se image nikalna
+        const productImage = convertAvifToJpg(
+          item?.varients?.[0]?.image?.[0] || 
+          item?.simpleProduct?.images?.[0] ||
+          item?.variants?.[0]?.images?.[0] ||
+          'https://via.placeholder.com/150'
+        );
+        
+        console.log('Explore Product:', {
+          name: item?.name,
+          image: productImage,
+          offerPrice,
+          originalPrice
+        });
         
         return (
           <TouchableOpacity 
@@ -817,18 +875,15 @@ const getExploreProducts = async () => {
               </View>
             )}
 
-            {/* Product Number */}
-            <View style={styles.productNumber}>
-              <Text style={styles.productNumberText}>#{index + 1}</Text>
-            </View>
-
             {/* Product Image */}
             <View style={styles.flashImageContainer}>
-              <Image 
-                source={{ uri: item.varients?.[0]?.image?.[0] || 'https://via.placeholder.com/150' }} 
-                style={styles.flashImage}
-                resizeMode="cover"
-              />
+              <View style={styles.imageBox}>
+                <Image 
+                  source={{ uri: productImage }} 
+                  style={styles.flashImage}
+                  resizeMode="contain"
+                />
+              </View>
             </View>
 
             {/* Product Details */}
@@ -957,12 +1012,22 @@ const styles = StyleSheet.create({
   },
   flashImageContainer: {
     width: '100%',
-    height: 120,
-    backgroundColor: '#f9f9f9',
+    height: 140,
+    backgroundColor: '#F8F8F8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 10,
+  },
+  imageBox: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   flashImage: {
     width: '100%',
     height: '100%',
+    resizeMode: 'contain',
   },
   flashDetails: {
     padding: 10,
@@ -991,6 +1056,20 @@ const styles = StyleSheet.create({
     color: '#999',
     textDecorationLine: 'line-through',
   },
+  timerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 6,
+    paddingHorizontal: 4,
+    flexWrap: 'nowrap',
+  },
+  endsInLabel: {
+    fontSize: 11,
+    fontFamily: FONTS.medium,
+    color: '#666',
+    marginRight: 4,
+  },
   endsInText: {
     fontSize: 12,
     fontFamily: FONTS.medium,
@@ -998,9 +1077,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   endsInTime: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: FONTS.bold,
     color: '#FF6B00',
+    letterSpacing: 0.5,
   },
   addToCartBtn: {
     backgroundColor: Constants.saffron,

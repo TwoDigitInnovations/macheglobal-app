@@ -53,6 +53,8 @@ import SearchAddressScreen from '../screen/app/SearchAddressScreen';
 import ProductDetails from '../screen/seller/ProductDetails';
 import AddressListScreen from '../screen/app/AddressListScreen';
 import SubcategoryProducts from '../screen/app/SubcategoryProducts';
+import PrivacyPolicy from '../screen/app/PrivacyPolicy';
+import IconePaymentWebView from '../screen/app/IconePaymentWebView';
 
 const Stack = createNativeStackNavigator();
 const AuthStack = createNativeStackNavigator();
@@ -171,6 +173,19 @@ export default function Navigation(props) {
           component={Preview} 
           options={{
             headerShown: false
+          }}
+        />
+        <Stack.Screen 
+          name="PrivacyPolicy" 
+          component={PrivacyPolicy} 
+          options={{ headerShown: false }} 
+        />
+        <Stack.Screen 
+          name="IconePaymentWebView" 
+          component={IconePaymentWebView} 
+          options={{
+            headerShown: false,
+            gestureEnabled: false // Prevent swipe back during payment
           }}
         />
       </Stack.Navigator>

@@ -46,31 +46,22 @@ const ProductDetails = () => {
   const images = useMemo(() => {
     if (!product) return [];
     
-    // Helper to convert AVIF to JPG
-    const convertAvifToJpg = (imageUrl) => {
-      if (imageUrl && imageUrl.includes('.avif')) {
-        return imageUrl.replace('.avif', '.jpg');
-      }
-      return imageUrl;
-    };
-    
-    let productImages = [];
-    
     // For simple products
     if (product.productType === 'simple' && product?.simpleProduct?.images?.length > 0) {
-      productImages = product.simpleProduct.images;
-    }
-    // For variable products - check varients[0].image
-    else if (product?.varients?.[0]?.image?.length > 0) {
-      productImages = product.varients[0].image;
-    }
-    // Alternative structure - variants[0].images
-    else if (product?.variants?.[0]?.images?.length > 0) {
-      productImages = product.variants[0].images;
+      return product.simpleProduct.images;
     }
     
-    // Convert all AVIF images to JPG
-    return productImages.map(convertAvifToJpg);
+    // For variable products - check varients[0].image
+    if (product?.varients?.[0]?.image?.length > 0) {
+      return product.varients[0].image;
+    }
+    
+    // Alternative structure - variants[0].images
+    if (product?.variants?.[0]?.images?.length > 0) {
+      return product.variants[0].images;
+    }
+    
+    return [];
   }, [product]);
 
   useEffect(() => {

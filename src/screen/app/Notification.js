@@ -11,7 +11,7 @@ import {
   Linking
 } from 'react-native';
 import React, { useContext, useEffect, useState } from 'react';
-import { GetApi, PostApi } from '../../Assets/Helpers/Service';
+import { GetApi, Post } from '../../Assets/Helpers/Service';
 import Constants, { FONTS, SIZES } from '../../Assets/Helpers/constant';
 import { NotificationIcon } from '../../../Theme';
 import moment from 'moment';
@@ -53,7 +53,7 @@ const Notification = () => {
       console.error('Error fetching notifications:', error);
       setToast({
         show: true,
-        message: error.response?.data?.message || 'Failed to load notifications',
+        message: error.response?.data?.message || t('Failed to load notifications'),
         type: 'error',
         duration: 3000
       });
@@ -65,7 +65,7 @@ const Notification = () => {
 
   const markAsRead = async (notificationId) => {
     try {
-      await PostApi(`notifications/${notificationId}/read`, {});
+      await Post(`notifications/${notificationId}/read`, {});
       // Update local state to mark as read
       setNotifications(prev => 
         prev.map(n => 
@@ -74,6 +74,16 @@ const Notification = () => {
       );
     } catch (error) {
       console.error('Error marking notification as read:', error);
+    }
+  };
+
+  const handleNotificationPress = (item) => {
+    // Mark notification as read
+    markAsRead(item._id);
+    
+    // If it's an order notification, navigate to order details
+    if (item.type === 'order' && item.order?._id) {
+      navigation.navigate('Orderview', { id: item.order._id });
     }
   };
 
@@ -88,20 +98,20 @@ const Notification = () => {
 
     return (
       <View style={styles.orderContainer}>
-        <Text style={styles.sectionTitle}>Order Details</Text>
+        <Text style={styles.sectionTitle}>{t('Order Details')}</Text>
         <View style={styles.orderInfo}>
           <Text style={styles.orderText}>
-            <Text style={{fontFamily: FONTS.SemiBold}}>Order ID:</Text> {formatOrderId(order.orderId || order._id)}
+            <Text style={{fontFamily: FONTS.SemiBold}}>{t('Order ID:')}</Text> {formatOrderId(order.orderId || order._id)}
           </Text>
           <Text style={styles.orderText}>
-            <Text style={{fontFamily: FONTS.SemiBold}}>Total:</Text> ${order.totalPrice?.toLocaleString('en-IN')}
+            <Text style={{fontFamily: FONTS.SemiBold}}>{t('Total:')}</Text> ${order.totalPrice?.toLocaleString('en-IN')}
           </Text>
           <Text style={[
             styles.orderText,
             {color: order.isDelivered ? 'green' : order.isShipped ? 'orange' : 'blue'}
           ]}>
-            <Text style={{color: Constants.darkGray}}>Status: </Text>
-            {order.isDelivered ? 'Delivered' : order.isShipped ? 'Shipped' : 'Processing'}
+            <Text style={{color: Constants.darkGray}}>{t('Status:')} </Text>
+            {order.isDelivered ? t('Delivered') : order.isShipped ? t('Shipped') : t('Processing')}
           </Text>
         </View>
       </View>
@@ -110,6 +120,26 @@ const Notification = () => {
 
   const renderSuggestedProducts = (products) => {
     if (!products || products.length === 0) return null;
+    
+    // Filter out deleted products (additional safety check)
+    const activeProducts = products.filter(product => {
+      if (!product) return false;
+      
+      // Check if product is deleted
+      if (product.isDeleted === true) return false;
+      
+      // Additional check: if product has no stock and no images, consider it inactive
+      const hasStock = product.simpleProduct?.stock > 0 || 
+                      (product.variants && product.variants.some(v => v.stock > 0));
+      const hasImages = product.simpleProduct?.images?.length > 0 || 
+                       (product.varients && product.varients.length > 0 && 
+                        product.varients[0].image && product.varients[0].image.length > 0);
+      
+      // Only show products that have either stock or images
+      return hasStock || hasImages;
+    });
+    
+    if (activeProducts.length === 0) return null;
     
     // Function to get the first available image from product
     const getProductImage = (product) => {
@@ -148,13 +178,13 @@ const Notification = () => {
 
     return (
       <View style={styles.suggestionsContainer}>
-        <Text style={styles.sectionTitle}>You Might Also Like</Text>
+        <Text style={styles.sectionTitle}>{t('You Might Also Like')}</Text>
         <ScrollView 
           horizontal 
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.productsScrollView}
         >
-          {products.map((product) => (
+          {activeProducts.map((product) => (
             <TouchableOpacity 
               key={product._id} 
               style={styles.productCard}
@@ -188,13 +218,13 @@ const Notification = () => {
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Constants.saffron} />
-          <Text style={styles.loadingText}>Loading your notifications...</Text>
+          <Text style={styles.loadingText}>{t('Loading your notifications...')}</Text>
         </View>
       ) : notifications.length === 0 ? (
         <View style={styles.emptyContainer}>
           <NotificationIcon width={80} height={80} color={Constants.lightGray} />
-          <Text style={styles.emptyTitle}>No Notifications Yet</Text>
-          <Text style={styles.emptySubtitle}>We'll notify you when something new arrives</Text>
+          <Text style={styles.emptyTitle}>{t('No Notifications Yet')}</Text>
+          <Text style={styles.emptySubtitle}>{t("We'll notify you when something new arrives")}</Text>
         </View>
       ) : (
         <FlatList
@@ -208,7 +238,7 @@ const Notification = () => {
                 styles.notificationItem,
                 !item.isRead && styles.unreadNotification
               ]}
-              onPress={() => markAsRead(item._id)}
+              onPress={() => handleNotificationPress(item)}
             >
               <View style={styles.notificationHeader}>
                 <View style={styles.iconContainer}>
@@ -224,16 +254,20 @@ const Notification = () => {
               </View>
               
               {item.order && renderOrderDetails(item.order)}
-              {item.suggestedProducts && item.suggestedProducts.length > 0 && 
+              {/* Temporarily commented out suggested products section */}
+              {/* {item.suggestedProducts && item.suggestedProducts.length > 0 && 
                 renderSuggestedProducts(item.suggestedProducts)
-              }
+              } */}
               
               {item.type === 'order' && (
                 <TouchableOpacity 
                   style={styles.viewOrderButton}
-                  onPress={() => navigation.navigate('Orderview', { id: item.order?._id })}
+                  onPress={(e) => {
+                    e.stopPropagation(); // Prevent parent TouchableOpacity from firing
+                    navigation.navigate('Orderview', { id: item.order?._id });
+                  }}
                 >
-                  <Text style={styles.viewOrderText}>View Order</Text>
+                  <Text style={styles.viewOrderText}>{t('View Order')}</Text>
                 </TouchableOpacity>
               )}
             </TouchableOpacity>

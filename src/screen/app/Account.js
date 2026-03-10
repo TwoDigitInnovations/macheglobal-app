@@ -15,7 +15,7 @@ import {
 import React, { useContext, useEffect, useState, useCallback } from 'react';
 import Constants, { FONTS } from '../../Assets/Helpers/constant';
 import { reset, navigate } from '../../../navigationRef';
-import { LoadContext, ToastContext, UserContext } from '../../../App';
+import { LoadContext, ToastContext, UserContext, CartContext } from '../../../App';
 import { GetApi } from '../../Assets/Helpers/Service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DriverHeader from '../../Assets/Component/DriverHeader';
@@ -41,6 +41,7 @@ const Account = () => {
   const [toast, setToast] = useContext(ToastContext);
   const [loading, setLoading] = useContext(LoadContext);
   const [user, setuser] = useContext(UserContext);
+  const [cartdetail, setcartdetail] = useContext(CartContext);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalVisible2, setModalVisible2] = useState(false);
   // const [user, setuser] = useState();
@@ -166,26 +167,44 @@ const Account = () => {
     }
   };
   const logout = async () => {
-    // Disconnect socket before logout
+    console.log('🔴 Logout initiated');
+    
     try {
-      const { disconnectGlobalSocket } = require('../../utils/socketManager');
-      disconnectGlobalSocket();
-      console.log('✅ Socket disconnected on logout');
+      // Disconnect socket before logout
+      try {
+        const { disconnectGlobalSocket } = require('../../utils/socketManager');
+        disconnectGlobalSocket();
+        console.log('✅ Socket disconnected on logout');
+      } catch (error) {
+        console.log('⚠️ No socket to disconnect');
+      }
+      
+      // Clear user data from AsyncStorage but PRESERVE cart
+      console.log('🗑️ Clearing user data (preserving cart)...');
+      await AsyncStorage.removeItem('userDetail');
+      await AsyncStorage.removeItem('userData');
+      // DON'T remove cartdata - preserve it for next login
+      // await AsyncStorage.removeItem('cartdata'); // REMOVED
+      await AsyncStorage.removeItem('isGuestUser');
+      await AsyncStorage.removeItem('token');
+      console.log('✅ User data cleared (cart preserved)');
+      
+      // Clear user context but DON'T clear cart context
+      console.log('🗑️ Clearing user context...');
+      setuser(null);
+      // DON'T clear cart context - preserve it
+      // setcartdetail([]); // REMOVED
+      console.log('✅ User context cleared (cart preserved)');
+      
+      // Navigate to Auth screen
+      console.log('🔄 Navigating to Auth screen...');
+      reset('Auth');
+      console.log('✅ Logout complete');
     } catch (error) {
-      console.log('⚠️ No socket to disconnect');
+      console.error('❌ Error during logout:', error);
+      // Force navigation even if there's an error
+      reset('Auth');
     }
-    
-    // Clear all user data from AsyncStorage
-    await AsyncStorage.removeItem('userDetail');
-    await AsyncStorage.removeItem('cartdata');
-    await AsyncStorage.removeItem('isGuestUser');
-    
-    // Clear user context
-    setuser({});
-    setcartdetail([]);
-    
-    // Navigate to Auth screen
-    reset('Auth');
   };
   const inappbrawser = async () => {
     try {
@@ -345,12 +364,12 @@ const Account = () => {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.box, styles.shadowProp]}
-            onPress={() => inappbrawser()}>
+            onPress={() => navigate('PrivacyPolicy')}>
             <View style={styles.btmboxfirpart}>
               <View style={styles.iconcov}>
                 <PrivacyIcon height={20} width={20} color={Constants.white} />
               </View>
-              <Text style={styles.protxt}>{t('Return Policy')}</Text>
+              <Text style={styles.protxt}>{t('Privacy Policy')}</Text>
             </View>
             <RightarrowIcon
               color={Constants.saffron}

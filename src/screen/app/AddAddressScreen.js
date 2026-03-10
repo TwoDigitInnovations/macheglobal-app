@@ -17,10 +17,23 @@ import CountryPicker from 'react-native-country-picker-modal';
 import { Post, Put, GetApi } from '../../Assets/Helpers/Service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
+import { requireAuth } from '../../Assets/Helpers/authHelper';
 
 const AddAddressScreen = ({ route }) => {
   const { t } = useTranslation();
   const navigation = useNavigation();
+  
+  // Check authentication on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const isAuthenticated = await requireAuth('AddAddressScreen');
+      if (!isAuthenticated) {
+        // User will be redirected to SignIn
+        return;
+      }
+    };
+    checkAuth();
+  }, []);
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [isDefaultAddress, setIsDefaultAddress] = useState(false);
   const [countryPickerVisible, setCountryPickerVisible] = useState(false);

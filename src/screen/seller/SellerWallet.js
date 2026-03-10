@@ -19,8 +19,10 @@ import { useNavigation } from '@react-navigation/native';
 import { GetApi, Post } from '../../Assets/Helpers/Service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useTranslation } from 'react-i18next';
 
 const SellerWallet = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const [walletData, setWalletData] = useState({
     balance: 0,
@@ -94,6 +96,12 @@ const SellerWallet = () => {
   };
 
   const handleWithdrawSubmit = async () => {
+    // Prevent double submission
+    if (loading) {
+      console.log('Request already in progress, ignoring duplicate click');
+      return;
+    }
+    
     const amount = parseFloat(withdrawAmount);
     
     // Validate amount
@@ -150,10 +158,9 @@ const SellerWallet = () => {
         // Refresh wallet data
         await fetchWalletData();
         
-        // Hide success message after 3 seconds and navigate to transaction history
+        // Hide success message after 3 seconds
         setTimeout(() => {
           setShowSuccess(false);
-          navigation.navigate('TransactionHistory');
         }, 3000);
       } else {
         // Handle API error
@@ -253,7 +260,7 @@ const SellerWallet = () => {
           >
             <Icon name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Wallet</Text>
+          <Text style={styles.headerTitle}>{t('Wallet')}</Text>
         </View>
         <View style={styles.headerRight} />
       </View>
@@ -263,7 +270,7 @@ const SellerWallet = () => {
         <View style={styles.successMessage}>
           <Icon name="check-circle" size={24} color="white" />
           <Text style={styles.successText}>
-            Withdrawal request submitted successfully!
+            {t('Withdrawal request submitted successfully!')}
           </Text>
         </View>
       )}
@@ -272,7 +279,7 @@ const SellerWallet = () => {
       <View style={styles.contentContainer}>
         {/* Balance Card */}
         <View style={styles.balanceCard}>
-        <Text style={styles.balanceLabel}>Available Balance</Text>
+        <Text style={styles.balanceLabel}>{t('Available Balance')}</Text>
         <Text style={styles.balanceAmount}>{formatCurrency(walletData.balance)}</Text>
         
         <View style={styles.actionButtons}>
@@ -280,20 +287,20 @@ const SellerWallet = () => {
             style={[styles.actionButton, styles.withdrawButton]}
             onPress={handleWithdrawPress}
           >
-            <Text style={styles.withdrawButtonText}>Withdraw</Text>
+            <Text style={styles.withdrawButtonText}>{t('Withdraw')}</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.actionButton, styles.historyButton]}
             onPress={() => navigation.navigate('TransactionHistory')}
           >
-            <Text style={styles.historyButtonText}>Transaction History</Text>
+            <Text style={styles.historyButtonText}>{t('Transaction History')}</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Recent Transactions */}
       <View style={styles.transactionsContainer}>
-        <Text style={styles.sectionTitle}>Recent Transactions</Text>
+        <Text style={styles.sectionTitle}>{t('Recent Transactions')}</Text>
         <ScrollView 
           style={styles.transactionsList}
           showsVerticalScrollIndicator={false}
@@ -309,7 +316,7 @@ const SellerWallet = () => {
           {walletData.transactions.length > 0 ? (
             walletData.transactions.map(renderTransaction)
           ) : (
-            <Text style={styles.noTransactions}>No transactions found</Text>
+            <Text style={styles.noTransactions}>{t('No transactions found')}</Text>
           )}
           </ScrollView>
         </View>
@@ -330,7 +337,7 @@ const SellerWallet = () => {
             >
               <View style={styles.modalContent}>
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Withdraw Funds</Text>
+                  <Text style={styles.modalTitle}>{t('Withdraw Funds')}</Text>
                   <TouchableOpacity onPress={handleCloseModal} style={styles.closeButton}>
                     <Text style={styles.closeButtonText}>✕</Text>
                   </TouchableOpacity>
@@ -344,10 +351,10 @@ const SellerWallet = () => {
                 </View>
                 
                 <View style={styles.formGroup}>
-                  <Text style={styles.label}>Amount to Withdraw</Text>
+                  <Text style={styles.label}>{t('Amount to Withdraw')}</Text>
                   <TextInput
                     style={[styles.input, withdrawError ? styles.inputError : null]}
-                    placeholder="Enter amount"
+                    placeholder={t('Enter amount')}
                     keyboardType="decimal-pad"
                     value={withdrawAmount}
                     onChangeText={(text) => {
@@ -362,17 +369,20 @@ const SellerWallet = () => {
                 </View>
                 
                 <TouchableOpacity 
-                  style={styles.submitButton}
+                  style={[
+                    styles.submitButton,
+                    (loading || !withdrawAmount) && styles.submitButtonDisabled
+                  ]}
                   onPress={handleWithdrawSubmit}
-                  disabled={!withdrawAmount}
+                  disabled={loading || !withdrawAmount}
                 >
                   <Text style={styles.submitButtonText}>
-                    Request Withdrawal
+                    {loading ? t('Processing...') : t('Request Withdrawal')}
                   </Text>
                 </TouchableOpacity>
                 
                 <Text style={styles.note}>
-                  Note: Withdrawals may take 1-3 business days to process.
+                  {t('Note: Withdrawals may take 1-3 business days to process.')}
                 </Text>
               </View>
             </KeyboardAvoidingView>
@@ -680,6 +690,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 10,
+  },
+  submitButtonDisabled: {
+    backgroundColor: '#CCC',
+    opacity: 0.6,
   },
   submitButtonText: {
     color: 'white',

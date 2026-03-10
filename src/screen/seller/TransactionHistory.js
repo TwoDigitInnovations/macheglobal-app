@@ -11,8 +11,31 @@ import {
 import { GetApi } from '../../Assets/Helpers/Service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useTranslation } from 'react-i18next';
+import DriverHeader from '../../Assets/Component/DriverHeader';
 
 const TransactionHistory = ({ navigation }) => {
+  const { t } = useTranslation();
+  
+  const translateStatus = (status) => {
+    const statusMap = {
+      'pending': t('Pending'),
+      'approved': t('Approved'),
+      'completed': t('Completed'),
+      'processing': t('Processing'),
+      'failed': t('Failed'),
+      'rejected': t('Rejected')
+    };
+    return statusMap[status?.toLowerCase()] || status;
+  };
+  
+  const translatePaymentMethod = (method) => {
+    const methodMap = {
+      'Bank Transfer': t('Bank Transfer'),
+      'Wallet': t('Wallet')
+    };
+    return methodMap[method] || method;
+  };
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -122,28 +145,28 @@ const TransactionHistory = ({ navigation }) => {
           </View>
           <View>
             <Text style={styles.amount}>${transaction.amount.toFixed(2)}</Text>
-            <Text style={styles.paymentMethod}>{transaction.paymentMethod}</Text>
+            <Text style={styles.paymentMethod}>{translatePaymentMethod(transaction.paymentMethod)}</Text>
           </View>
         </View>
         <Text style={[styles.status, { color: getStatusColor(transaction.status) }]}>
-          {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
+          {translateStatus(transaction.status)}
         </Text>
       </View>
       
       <View style={styles.transactionDetails}>
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Date:</Text>
+          <Text style={styles.detailLabel}>{t('Date')}:</Text>
           <Text style={styles.detailValue}>{transaction.date}</Text>
         </View>
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Transaction ID:</Text>
+          <Text style={styles.detailLabel}>{t('Transaction ID')}:</Text>
           <Text style={styles.detailValue} numberOfLines={1} ellipsizeMode="tail">
             {transaction.transactionId}
           </Text>
         </View>
         {transaction.notes ? (
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Notes:</Text>
+            <Text style={styles.detailLabel}>{t('Notes')}:</Text>
             <Text style={[styles.detailValue, { flex: 1 }]}>{transaction.notes}</Text>
           </View>
         ) : null}
@@ -168,7 +191,7 @@ const TransactionHistory = ({ navigation }) => {
           style={styles.retryButton}
           onPress={fetchWithdrawalHistory}
         >
-          <Text style={styles.retryButtonText}>Try Again</Text>
+          <Text style={styles.retryButtonText}>{t('Try Again')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -176,7 +199,7 @@ const TransactionHistory = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-     
+      <DriverHeader item={t('Withdrawal History')} showback={true} />
 
       <ScrollView 
         style={styles.scrollView}
@@ -196,8 +219,8 @@ const TransactionHistory = ({ navigation }) => {
         ) : (
           <View style={styles.emptyState}>
             <Icon name="account-balance-wallet" size={64} color="#E0E0E0" />
-            <Text style={styles.emptyStateText}>No withdrawal history found</Text>
-            <Text style={styles.emptyStateSubtext}>Your withdrawal history will appear here</Text>
+            <Text style={styles.emptyStateText}>{t('No withdrawal history found')}</Text>
+            <Text style={styles.emptyStateSubtext}>{t('Your withdrawal history will appear here')}</Text>
           </View>
         )}
       </ScrollView>

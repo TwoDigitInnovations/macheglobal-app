@@ -176,7 +176,10 @@ const Account = () => {
       console.log('⚠️ No socket to disconnect');
     }
     
+    // DON'T remove cart data - preserve it for next login
     await AsyncStorage.removeItem('userDetail');
+    await AsyncStorage.removeItem('userData');
+    
     setuser({});
     reset('Auth');
   };
@@ -244,9 +247,15 @@ const Account = () => {
               <Text style={styles.protxt2}>{userDetail?.email || ''}</Text>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity
+          {/* My Orders - Commented out */}
+          {/* <TouchableOpacity
             style={[styles.box, styles.shadowProp]}
-            onPress={() => navigation.navigate('Orders')}>
+            onPress={() => {
+              navigation.navigate('Orders', { 
+                screen: 'SellerOrders',
+                params: { fromAccount: true }
+              });
+            }}>
             <View style={styles.btmboxfirpart}>
               <View style={styles.iconcov}>
                 <OrderIcon height={20} width={20} color={Constants.white} />
@@ -259,7 +268,7 @@ const Account = () => {
               width={15}
               style={styles.aliself}
             />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           {/* <TouchableOpacity style={[styles.box, styles.shadowProp]} onPress={() => navigate('Language')}>
              <View style={styles.btmboxfirpart}>
@@ -291,12 +300,12 @@ const Account = () => {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.box, styles.shadowProp]}
-            onPress={() => inappbrawser()}>
+            onPress={() => navigate('PrivacyPolicy')}>
             <View style={styles.btmboxfirpart}>
               <View style={styles.iconcov}>
                 <PrivacyIcon height={20} width={20} color={Constants.white} />
               </View>
-              <Text style={styles.protxt}>{t('Return Policy')}</Text>
+              <Text style={styles.protxt}>{t('Privacy Policy')}</Text>
             </View>
             <RightarrowIcon
               color={Constants.saffron}

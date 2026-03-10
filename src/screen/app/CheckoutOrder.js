@@ -21,7 +21,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import OrderSuccess from '../../components/OrderSuccess';
 import { ActivityIndicator } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
- const { GetApi } = require('../../Assets/Helpers/Service');
+import { isUserLoggedIn } from '../../Assets/Helpers/authHelper';
+import { reset } from '../../../navigationRef';
+import { syncCartWithLatestData } from '../../Assets/Helpers/cartSyncHelper';
+const { GetApi } = require('../../Assets/Helpers/Service');
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2; // Two cards with spacing
@@ -29,6 +32,67 @@ const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2; // Two cards with spacing
 const CheckoutOrderScreen = ({ route }) => {
   const { t } = useTranslation();
   const navigation = useNavigation();
+  
+  // Check authentication and sync cart on mount
+  useEffect(() => {
+    const checkAuthAndSyncCart = async () => {
+      const loggedIn = await isUserLoggedIn();
+      if (!loggedIn) {
+        Alert.alert(
+          t('Login Required'),
+          t('Please login to proceed with checkout'),
+          [
+            {
+              text: t('Cancel'),
+              style: 'cancel',
+              onPress: () => navigation.goBack()
+            },
+            {
+              text: t('Login'),
+              onPress: () => reset('Auth')
+            }
+          ]
+        );
+        return;
+      }
+      
+      // SYNC DISABLED TEMPORARILY - just proceed with existing cart
+      // TODO: Enable after backend testing
+      /*
+      setIsLoading(true);
+      const { updatedCart, changes } = await syncCartWithLatestData();
+      
+      if (changes.length > 0) {
+        const hasRemovedItems = changes.some(c => 
+          c.type === 'PRODUCT_DELETED' || 
+          c.type === 'VARIANT_DELETED' || 
+          c.type === 'OUT_OF_STOCK'
+        );
+        
+        if (hasRemovedItems) {
+          Alert.alert(
+            t('Cart Updated'),
+            t('Some items were removed or updated. Please review your cart.'),
+            [
+              {
+                text: t('Review Cart'),
+                onPress: () => navigation.goBack()
+              },
+              {
+                text: t('Continue'),
+                onPress: () => setCartContext(updatedCart)
+              }
+            ]
+          );
+        } else {
+          setCartContext(updatedCart);
+        }
+      }
+      setIsLoading(false);
+      */
+    };
+    checkAuthAndSyncCart();
+  }, []);
   const [showSuccess, setShowSuccess] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
   const [selectedPayment, setSelectedPayment] = useState('card');
@@ -45,15 +109,49 @@ const CheckoutOrderScreen = ({ route }) => {
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [showCouponInput, setShowCouponInput] = useState(false);
+  
+  // Credit balance states
+  const [creditBalance, setCreditBalance] = useState(0);
+  const [useCreditBalance, setUseCreditBalance] = useState(false);
+  const [creditUsed, setCreditUsed] = useState(0);
 
   useEffect(() => {
     const initializeCheckout = async () => {
       try {
-        // Get user data
-        const userData = await AsyncStorage.getItem('userData');
-        if (userData) {
-          const parsedUser = JSON.parse(userData);
-          setUser(parsedUser.user || parsedUser);
+        // Get user data from userDetail (more reliable)
+        const userDetailString = await AsyncStorage.getItem('userDetail');
+        if (userDetailString) {
+          const userDetail = JSON.parse(userDetailString);
+          if (userDetail?.user) {
+            setUser(userDetail.user);
+          } else if (userDetail?._id) {
+            setUser(userDetail);
+          }
+        }
+        
+        // Fallback to userData if userDetail not found
+        if (!userDetailString) {
+          const userData = await AsyncStorage.getItem('userData');
+          if (userData) {
+            const parsedUser = JSON.parse(userData);
+            setUser(parsedUser.user || parsedUser);
+          }
+        }
+        
+        // Get credit balance
+        try {
+          const userDetailString = await AsyncStorage.getItem('userDetail');
+          if (userDetailString) {
+            const userDetail = JSON.parse(userDetailString);
+            if (userDetail?.token) {
+              const creditRes = await GetApi('credit/balance', {});
+              if (creditRes?.success) {
+                setCreditBalance(creditRes.data.creditBalance || 0);
+              }
+            }
+          }
+        } catch (err) {
+          console.log('Error fetching credit balance:', err);
         }
 
         console.log('🛒 [CHECKOUT] Cart Context:', cartContext);
@@ -225,9 +323,29 @@ const CheckoutOrderScreen = ({ route }) => {
     }, 0);
   };
 
+  // Calculate credit to use whenever dependencies change
+  useEffect(() => {
+    const subtotal = calculateTotal();
+    let total = subtotal - couponDiscount;
+    
+    if (useCreditBalance && creditBalance > 0) {
+      const creditToUse = Math.min(creditBalance, total);
+      setCreditUsed(creditToUse);
+    } else {
+      setCreditUsed(0);
+    }
+  }, [useCreditBalance, creditBalance, couponDiscount, cartItems]);
+
   const calculateFinalTotal = () => {
     const subtotal = calculateTotal();
-    return subtotal - couponDiscount;
+    let total = subtotal - couponDiscount;
+    
+    // Use already calculated credit
+    if (useCreditBalance && creditUsed > 0) {
+      total = total - creditUsed;
+    }
+    
+    return Math.max(0, total);
   };
 
   const handleApplyCoupon = async () => {
@@ -236,14 +354,23 @@ const CheckoutOrderScreen = ({ route }) => {
       return;
     }
 
+    if (!user || !user._id) {
+      Alert.alert(t('Error'), t('Please login to apply coupon'));
+      return;
+    }
+
     setIsLoading(true);
     try {
+      console.log('Applying coupon with userId:', user._id);
+      
       const res = await Post('coupon/validateCoupon', {
         code: couponCode,
         orderAmount: calculateTotal(),
-        userId: user?._id,
+        userId: user._id,
         products: cartItems.map(item => item.productId)
       });
+
+      console.log('Coupon validation response:', res);
 
       if (res?.status) {
         setAppliedCoupon(res.coupon);
@@ -254,6 +381,7 @@ const CheckoutOrderScreen = ({ route }) => {
         Alert.alert(t('Error'), res?.message || t('Invalid coupon code'));
       }
     } catch (err) {
+      console.error('Coupon apply error:', err);
       Alert.alert(t('Error'), err?.message || t('Failed to apply coupon'));
     } finally {
       setIsLoading(false);
@@ -341,9 +469,26 @@ const CheckoutOrderScreen = ({ route }) => {
 
     try {
       setIsLoading(true);
-     
       
-     
+      // Verify user is logged in
+      const userDetailString = await AsyncStorage.getItem('userDetail');
+      if (!userDetailString) {
+        Alert.alert(t('Error'), t('Please login to place order'));
+        navigation.navigate('Auth');
+        return;
+      }
+      
+      const userDetail = JSON.parse(userDetailString);
+      if (!userDetail?.token) {
+        Alert.alert(t('Error'), t('Please login to place order'));
+        navigation.navigate('Auth');
+        return;
+      }
+      
+      console.log('User authenticated, placing order...');
+      
+      const finalTotal = calculateFinalTotal();
+      
       const orderData = {
         user: deliveryAddress.user,
         orderItems: cartItems.map(item => ({
@@ -353,6 +498,8 @@ const CheckoutOrderScreen = ({ route }) => {
           price: item.price,
           image: item.image,
           seller: item.sellerId || '65f7b2e1a3b3e3b3e3b3e3b3', // Default seller ID if not available
+          selectedAttributes: item.selectedAttributes || null, // Include variant attributes
+          variantIndex: item.variantIndex !== undefined ? item.variantIndex : null, // Include variant index
         })),
         shippingAddress: {
           address: deliveryAddress.street || '',
@@ -363,10 +510,13 @@ const CheckoutOrderScreen = ({ route }) => {
           name: deliveryAddress.name || '',
         },
         paymentMethod: selectedPayment,
+        paymentGateway: 'icone_eht',
         itemsPrice: calculateTotal(),
         taxPrice: 0, // You can calculate tax if needed
         shippingPrice: 0, // Free shipping for now
-        totalPrice: calculateTotal(),
+        totalPrice: finalTotal,
+        creditUsed: useCreditBalance ? creditUsed : 0,
+        couponCode: appliedCoupon ? appliedCoupon.code : null,
       };
 
       
@@ -375,26 +525,84 @@ const CheckoutOrderScreen = ({ route }) => {
       const response = await Post('orders', orderData);
       console.log('Order API Response:', response);
       
+      // Check for authentication errors
+      if (response.error === 'Invalid token' || response.message === 'Invalid token') {
+        Alert.alert(
+          t('Session Expired'),
+          t('Your session has expired. Please login again.'),
+          [
+            {
+              text: t('OK'),
+              onPress: () => {
+                AsyncStorage.removeItem('userDetail');
+                navigation.navigate('Auth');
+              }
+            }
+          ]
+        );
+        return;
+      }
+      
       if (response.success) {
-        // Clear the cart from context
-        setCartContext([]);
+        const orderId = response.data._id;
         
-        // Clear cart from AsyncStorage as well (using correct key)
-        await AsyncStorage.setItem('cartdata', JSON.stringify([]));
         
-        console.log('✅ [ORDER] Cart cleared successfully');
+        console.log('Initializing Icon EHT payment for order:', orderId);
         
-        // Navigate to success screen with order details
-        navigation.replace('OrderSuccess', {
-          orderNumber: response.data._id || 'ORD' + Math.floor(100000 + Math.random() * 900000),
-          totalAmount: response.data.totalPrice || calculateTotal()
+        const paymentResponse = await Post('payment/icone/init', {
+          orderId: orderId,
+          amount: finalTotal,
+          currency: 'htg',
+          items: cartItems.map(item => ({
+            name: item.name,
+            quantity: item.qty,
+            unitPrice: item.price,
+            currency: 'htg',
+            imageUrl: item.image
+          }))
         });
+        
+        console.log('Payment initialization response:', paymentResponse);
+        
+        if (paymentResponse.success && paymentResponse.paymentUrl) {
+          // DON'T clear cart yet - will be cleared on payment success
+          // Cart will be cleared in the payment success handler
+          
+          console.log('✅ [ORDER] Redirecting to payment (cart will be cleared on success)');
+          
+          // Navigate to payment webview
+          navigation.replace('IconePaymentWebView', {
+            paymentUrl: paymentResponse.paymentUrl,
+            orderId: orderId,
+            amount: finalTotal
+          });
+        } else {
+          throw new Error(paymentResponse.message || 'Failed to initialize payment');
+        }
       } else {
         throw new Error(response.message || 'Failed to place order');
       }
     } catch (error) {
       console.error('Order error:', error);
-      Alert.alert(t('Error'), error.message || t('Failed to place order. Please try again.'));
+      
+      // Check if it's an authentication error
+      if (error.message && error.message.includes('Invalid token')) {
+        Alert.alert(
+          t('Session Expired'),
+          t('Your session has expired. Please login again.'),
+          [
+            {
+              text: t('OK'),
+              onPress: () => {
+                AsyncStorage.removeItem('userDetail');
+                navigation.navigate('Auth');
+              }
+            }
+          ]
+        );
+      } else {
+        Alert.alert(t('Error'), error.message || t('Failed to place order. Please try again.'));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -587,6 +795,25 @@ const CheckoutOrderScreen = ({ route }) => {
             </View>
           )}
 
+          {/* Credit Balance Section */}
+          {cartItems.length > 0 && creditBalance > 0 && (
+            <View style={styles.creditSection}>
+              <View style={styles.creditHeader}>
+                <View style={styles.creditInfo}>
+                  <Text style={styles.creditLabel}>{t('Use Credit Balance')}</Text>
+                  <Text style={styles.creditAmount}>
+                    {t('Available')}: ${creditBalance.toFixed(2)}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.creditToggle, useCreditBalance && styles.creditToggleActive]}
+                  onPress={() => setUseCreditBalance(!useCreditBalance)}>
+                  <View style={[styles.creditToggleCircle, useCreditBalance && styles.creditToggleCircleActive]} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
           {/* Coupon Section */}
           {cartItems.length > 0 && (
             <View style={styles.couponSection}>
@@ -640,22 +867,28 @@ const CheckoutOrderScreen = ({ route }) => {
           {cartItems.length > 0 && (
             <View style={[styles.summarySection, {backgroundColor: '#FFFFFF'}]}>
               <View style={styles.summaryRow}>
-                <Text style={[styles.summaryLabel, {color: '#000000'}]}>{t('Subtotal:')}</Text>
+                <Text style={[styles.summaryLabel, {color: '#000000'}]}>{t('Subtotal')}:</Text>
                 <Text style={[styles.summaryValue, {color: '#000000'}]}>${calculateTotal().toFixed(2)}</Text>
               </View>
               <View style={styles.summaryRow}>
-                <Text style={[styles.summaryLabel, {color: '#000000'}]}>{t('Delivery:')}</Text>
+                <Text style={[styles.summaryLabel, {color: '#000000'}]}>{t('Delivery')}:</Text>
                 <Text style={[styles.summaryValueFree, {color: '#FF6B35'}]}>{t('Free')}</Text>
               </View>
               {couponDiscount > 0 && (
                 <View style={styles.summaryRow}>
-                  <Text style={[styles.summaryLabel, {color: '#4CAF50'}]}>{t('Coupon Discount:')}</Text>
+                  <Text style={[styles.summaryLabel, {color: '#4CAF50'}]}>{t('Coupon Discount')}:</Text>
                   <Text style={[styles.summaryValue, {color: '#4CAF50'}]}>-${couponDiscount.toFixed(2)}</Text>
+                </View>
+              )}
+              {useCreditBalance && creditUsed > 0 && (
+                <View style={styles.summaryRow}>
+                  <Text style={[styles.summaryLabel, {color: '#FF7000'}]}>{t('Credit Balance Used')}:</Text>
+                  <Text style={[styles.summaryValue, {color: '#FF7000'}]}>-${creditUsed.toFixed(2)}</Text>
                 </View>
               )}
               <View style={styles.divider} />
               <View style={styles.summaryRow}>
-                <Text style={styles.totalLabel}>{t('Total:')}</Text>
+                <Text style={styles.totalLabel}>{t('Total')}:</Text>
                 <Text style={styles.totalValue}>${calculateFinalTotal().toFixed(2)}</Text>
               </View>
             </View>
@@ -1047,6 +1280,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#FFE0CC',
     borderStyle: 'dashed',
+    marginTop:5
   },
   addCouponText: {
     flex: 1,
@@ -1139,6 +1373,58 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: '#666666',
+  },
+  creditSection: {
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    marginTop: 8,
+    borderRadius: 8,
+  },
+  creditHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  creditInfo: {
+    flex: 1,
+  },
+  creditLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 4,
+  },
+  creditAmount: {
+    fontSize: 13,
+    color: '#FF7000',
+    fontWeight: '500',
+  },
+  creditToggle: {
+    width: 50,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#E0E0E0',
+    padding: 2,
+    justifyContent: 'center',
+  },
+  creditToggleActive: {
+    backgroundColor: '#FF7000',
+  },
+  creditToggleCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    alignSelf: 'flex-start',
+  },
+  creditToggleCircleActive: {
+    alignSelf: 'flex-end',
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 8,
   },
 });
 

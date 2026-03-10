@@ -155,7 +155,7 @@ const Categories = ({ navigation }) => {
         style={styles.btn2}>
           <DiscountIcon />
         <Text style={styles.btntxt2}>
-        Get 10% Off on adding items worth ₹999 to cart! 
+        Get 10% Off on adding items worth $999 to cart! 
         </Text>
       </LinearGradient> */}
       </ScrollView>

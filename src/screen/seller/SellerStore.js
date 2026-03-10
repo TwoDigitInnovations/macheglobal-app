@@ -26,6 +26,7 @@ import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import { Post, GetApi } from '../../Assets/Helpers/Service';
 import { useToast } from 'react-native-toast-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
 
 const { width, height } = Dimensions.get('window');
 
@@ -64,6 +65,7 @@ const InputField = memo(({
 });
 
 const SellerStore = () => {
+  const { t } = useTranslation();
   const toast = useToast();
   const [toastContext, setToastContext] = useState(null);
   const navigation = useNavigation();
@@ -498,12 +500,43 @@ const SellerStore = () => {
       
       <View style={styles.header}>
         <TouchableOpacity 
-          onPress={() => navigation.navigate('App')}
+          onPress={() => {
+            Alert.alert(
+              t('Logout Required'),
+              t('To access the user app, you need to logout from your seller account and login with a user account.'),
+              [
+                {
+                  text: t('Cancel'),
+                  style: 'cancel'
+                },
+                {
+                  text: t('Logout'),
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      // Clear user data
+                      await AsyncStorage.removeItem('userDetail');
+                      await AsyncStorage.removeItem('userData');
+                      
+                      // Navigate to login screen
+                      navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'Auth' }],
+                      });
+                    } catch (error) {
+                      console.error('Error logging out:', error);
+                      toast.show('Failed to logout. Please try again.', { type: 'danger' });
+                    }
+                  }
+                }
+              ]
+            );
+          }}
           style={styles.backButton}
         >
           <Icon name="arrow-left" size={24} color="#1F2937" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Create Your Store</Text>
+        <Text style={styles.headerTitle}>{t('Create Your Store')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -531,7 +564,7 @@ const SellerStore = () => {
     ) : (
       <View style={styles.logoPlaceholder}>
         <Icon name="camera" size={32} color="#9CA3AF" />
-        <Text style={styles.uploadText}>Upload Store Logo</Text>
+        <Text style={styles.uploadText}>{t('Upload Store Logo')}</Text>
       </View>
     )}
   </TouchableOpacity>
@@ -539,7 +572,7 @@ const SellerStore = () => {
 </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Store Information</Text>
+            <Text style={styles.sectionTitle}>{t('Store Information')}</Text>
             
             <InputField
               label="Store Name*"
@@ -585,7 +618,7 @@ const SellerStore = () => {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Store Address</Text>
+            <Text style={styles.sectionTitle}>{t('Store Address')}</Text>
             
             <InputField
               label="Address*"
@@ -647,9 +680,9 @@ const SellerStore = () => {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Documents</Text>
+            <Text style={styles.sectionTitle}>{t('Documents')}</Text>
             <Text style={styles.sectionSubtitle}>
-              Upload required documents (Business registration, ID proof, etc.)
+              {t('Upload required documents (Business registration, ID proof, etc.)')}
             </Text>
             
             <TouchableOpacity 
@@ -658,7 +691,7 @@ const SellerStore = () => {
               activeOpacity={0.7}
             >
               <Icon name="upload" size={20} color="#F97316" style={{ marginRight: 8 }} />
-              <Text style={styles.uploadButtonText}>Upload Documents</Text>
+              <Text style={styles.uploadButtonText}>{t('Upload Documents')}</Text>
             </TouchableOpacity>
             
             {documents.length > 0 && (
@@ -691,7 +724,7 @@ const SellerStore = () => {
             {isLoading ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
-              <Text style={styles.submitButtonText}>Create Store</Text>
+              <Text style={styles.submitButtonText}>{t('Create Store')}</Text>
             )}
           </TouchableOpacity>
           
@@ -708,7 +741,7 @@ const SellerStore = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Success!</Text>
+              <Text style={styles.modalTitle}>{t('Success!')}</Text>
               <TouchableOpacity 
                 style={styles.closeButton}
                 onPress={() => setShowSuccessModal(false)}
@@ -723,12 +756,11 @@ const SellerStore = () => {
               </View>
               
               <Text style={styles.modalMessage}>
-                Your store has been created successfully!
+                {t('Your store has been created successfully!')}
               </Text>
               
               <Text style={styles.modalSubMessage}>
-                Your account is under verification. Please wait for 2-3 working days for your account to be verified.
-                You will be able to access your dashboard after verification.
+                {t('Your account is under verification. Please wait for 2-3 working days for your account to be verified. You will be able to access your dashboard after verification.')}
               </Text>
               
               {/* <TouchableOpacity 
