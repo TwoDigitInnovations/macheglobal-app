@@ -89,22 +89,22 @@ const Myorder = () => {
     setLoadingMore(p > 1);
     let url;
     let queryParams = `page=${p}&limit=10`;
-    
+
     if (text) {
       queryParams += `&search=${encodeURIComponent(text)}`;
     }
     if (favorite) {
       queryParams += '&filter=favorite';
     }
-    
+
     url = `orders/myorders?${queryParams}`;
-    
+
     console.log('Fetching orders from:', url);
-    
+
     GetApi(url, {})
       .then(response => {
         console.log('API Response:', JSON.stringify(response, null, 2));
-        
+
         // If response is an array, handle as direct array response
         if (Array.isArray(response)) {
           console.log('Received array response, setting as orders');
@@ -113,17 +113,17 @@ const Myorder = () => {
           setHasMore(false);
           return;
         }
-        
+
         // Handle paginated response
         const ordersData = response.data || [];
         const totalPages = response.totalPages || 1;
-        
+
         console.log('Orders data:', ordersData);
         console.log(`Current page: ${p}, Total pages: ${totalPages}`);
-        
+
         setHasMore(p < totalPages);
         setPage(p);
-        
+
         if (p === 1 || isRefreshing) {
           setorderlist(ordersData);
           setCurrentData(ordersData);
@@ -150,7 +150,7 @@ const Myorder = () => {
         setLoading(false);
       });
   };
-  
+
   useEffect(() => {
     if (IsFocused) {
       getorders(1);
@@ -360,9 +360,9 @@ const Myorder = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <DriverHeader item={t('My Order')} showback={true} />
-      
+
       <View style={{ paddingHorizontal: 16, flex: 1 }}>
         <FlatList
           data={orderlist}
@@ -386,11 +386,11 @@ const Myorder = () => {
           keyExtractor={(item, index) => item._id + index.toString()}
           ListEmptyComponent={() => (
             <View style={styles.emptyStateContainer}>
-              <View style={{ 
-                backgroundColor: '#FFF7ED', 
-                padding: 24, 
+              <View style={{
+                backgroundColor: '#FFF7ED',
+                padding: 24,
                 borderRadius: 100,
-                marginBottom: 8 
+                marginBottom: 8
               }}>
                 <OrderIcon height={48} width={48} color="#FF7000" />
               </View>
@@ -409,7 +409,7 @@ const Myorder = () => {
               style={[styles.card, { marginBottom: orderlist.length === index + 1 ? 20 : 0 }]}
               activeOpacity={0.7}
               onPress={() => navigate('Orderview', { id: item?._id })}>
-              
+
               {/* Header Section */}
               <View style={{
                 flexDirection: 'row',
@@ -428,7 +428,7 @@ const Myorder = () => {
                         {moment(item?.createdAt).format('MMM D, YYYY h:mm A')}
                       </Text>
                     </View>
-                    
+
                     {/* Delivery Address */}
                     {item?.shippingAddress && (
                       <View style={styles.addressContainer}>
@@ -440,7 +440,7 @@ const Myorder = () => {
                         </Text>
                       </View>
                     )}
-                    
+
                     <View style={styles.deliveryTypeContainer}>
                       <Text style={[styles.txt2, { fontSize: 12 }]}>
                         {item?.isOrderPickup
@@ -460,7 +460,7 @@ const Myorder = () => {
                   </View>
                 </View>
               </View>
-  
+
               {/* Products Section with Dropdown */}
               <View style={{ marginVertical: 8 }}>
                 {/* First Product - Always Visible */}
@@ -478,12 +478,12 @@ const Myorder = () => {
                     <View style={{ flex: 1, marginLeft: 12, justifyContent: 'space-between' }}>
                       <View>
                         <Text style={styles.boxtxt} numberOfLines={2}>
-                          {i18n.language === 'fr' 
-                            ? (item.orderItems[0]?.product?.frenchName || item.orderItems[0]?.name) 
+                          {i18n.language === 'fr'
+                            ? (item.orderItems[0]?.product?.frenchName || item.orderItems[0]?.name)
                             : (item.orderItems[0]?.name || item.orderItems[0]?.product?.name)}
                         </Text>
                       </View>
-                      
+
                       {/* Price and Rate Button Row */}
                       <View style={{
                         flexDirection: 'row',
@@ -507,14 +507,14 @@ const Myorder = () => {
                             {Currency} {Number(item.orderItems[0]?.price ?? 0).toFixed(2)}
                           </Text>
                         </View>
-                        
-                       
+
+
                         {(item?.orderStatus !== 'delivered' && item?.orderStatus !== 'completed') && (
                           <TouchableOpacity
                             onPress={() => {
                               const productId = item.orderItems[0]?.product?._id || item.orderItems[0]?._id;
                               const isReviewed = reviewedProducts.has(productId);
-                              
+
                               navigation.navigate('ReviewScreen', {
                                 orderId: item._id,
                                 product: {
@@ -534,13 +534,13 @@ const Myorder = () => {
                               alignItems: 'center',
                               justifyContent: 'center',
                             }}>
-                            <Text style={{ 
+                            <Text style={{
                               fontSize: 12,
                               color: '#FFFFFF',
                               fontWeight: '600',
                             }}>
-                              {reviewedProducts.has(item.orderItems[0]?.product?._id || item.orderItems[0]?._id) 
-                                ? t('Update Rating') 
+                              {reviewedProducts.has(item.orderItems[0]?.product?._id || item.orderItems[0]?._id)
+                                ? t('Update Rating')
                                 : t('Rate Product')}
                             </Text>
                           </TouchableOpacity>
@@ -549,7 +549,7 @@ const Myorder = () => {
                     </View>
                   </View>
                 )}
-  
+
                 {/* Show More Products Dropdown */}
                 {item?.orderItems?.length > 1 && (
                   <View>
@@ -587,8 +587,8 @@ const Myorder = () => {
                         fontFamily: FONTS.Bold,
                         marginRight: 8,
                       }}>
-                        {item.showAllProducts 
-                          ? t('Hide Products') 
+                        {item.showAllProducts
+                          ? t('Hide Products')
                           : `${t('View')} ${item.orderItems.length - 1} ${t('More Products')}`}
                       </Text>
                       <Text style={{
@@ -599,7 +599,7 @@ const Myorder = () => {
                         ▼
                       </Text>
                     </TouchableOpacity>
-  
+
                     {/* Additional Products */}
                     {item.showAllProducts && item.orderItems.slice(1).map((prod, prodIndex) => (
                       <View key={prodIndex + 1} style={[styles.productContainer, { marginTop: 8 }]}>
@@ -615,12 +615,12 @@ const Myorder = () => {
                         <View style={{ flex: 1, marginLeft: 12, justifyContent: 'space-between' }}>
                           <View>
                             <Text style={styles.boxtxt} numberOfLines={2}>
-                              {i18n.language === 'fr' 
-                                ? (prod?.product?.frenchName || prod?.name) 
+                              {i18n.language === 'fr'
+                                ? (prod?.product?.frenchName || prod?.name)
                                 : (prod?.name || prod?.product?.name)}
                             </Text>
                           </View>
-  
+
                           <View style={{
                             flexDirection: 'row',
                             justifyContent: 'space-between',
@@ -643,14 +643,14 @@ const Myorder = () => {
                                 {Currency} {Number(prod?.price ?? 0).toFixed(2)}
                               </Text>
                             </View>
-  
+
                             {/* Rate Product Button for additional products */}
                             {(item?.orderStatus !== 'delivered' && item?.orderStatus !== 'completed') && (
                               <TouchableOpacity
                                 onPress={() => {
                                   const productId = prod?.product?._id || prod?._id;
                                   const isReviewed = reviewedProducts.has(productId);
-                                  
+
                                   navigation.navigate('ReviewScreen', {
                                     orderId: item._id,
                                     product: {
@@ -670,7 +670,7 @@ const Myorder = () => {
                                   alignItems: 'center',
                                   justifyContent: 'center',
                                 }}>
-                                <Text style={{ 
+                                <Text style={{
                                   fontSize: 12,
                                   color: '#FFFFFF',
                                   fontWeight: '600',
@@ -688,10 +688,10 @@ const Myorder = () => {
                   </View>
                 )}
               </View>
-  
+
               {/* Footer Section */}
               <View style={styles.divider} />
-              
+
               <View style={{
                 flexDirection: 'row',
                 justifyContent: 'space-between',
@@ -714,7 +714,7 @@ const Myorder = () => {
                     </Text>
                   </View>
                 </View>
-  
+
                 {/* Action Buttons Container */}
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end' }}>
                   {/* Payment Status Badge */}
@@ -725,7 +725,7 @@ const Myorder = () => {
                       </Text>
                     </View>
                   )}
-  
+
                   {/* Secret Code Display */}
                   {item?.SecretCode && (
                     <View style={styles.infoCard}>
@@ -734,7 +734,7 @@ const Myorder = () => {
                       </Text>
                     </View>
                   )}
-  
+
                   {/* Delivery Expected */}
                   {item?.isShipmentDelivery && !item?.isDelivered && (
                     <View style={[styles.infoCard, { minWidth: 200 }]}>
@@ -753,7 +753,7 @@ const Myorder = () => {
                       )}
                     </View>
                   )}
-  
+
                   {/* Cancel Order Button */}
                   {(() => {
                     const createdTime = new Date(item.createdAt);
@@ -761,18 +761,18 @@ const Myorder = () => {
                     const diffInMinutes = (now - createdTime) / (1000 * 60);
                     return !item?.isPaid && !item?.isDelivered && diffInMinutes <= 15;
                   })() && (
-                    <Pressable
-                      onPress={() => cancelOrder(item._id)}
-                      style={({ pressed }) => [
-                        styles.cancelButton,
-                        { opacity: pressed ? 0.85 : 1 }
-                      ]}>
-                      <Text style={styles.actionButtonText}>
-                        {t('Cancel Order')}
-                      </Text>
-                    </Pressable>
-                  )}
-  
+                      <Pressable
+                        onPress={() => cancelOrder(item._id)}
+                        style={({ pressed }) => [
+                          styles.cancelButton,
+                          { opacity: pressed ? 0.85 : 1 }
+                        ]}>
+                        <Text style={styles.actionButtonText}>
+                          {t('Cancel Order')}
+                        </Text>
+                      </Pressable>
+                    )}
+
                   {/* I'm Here Buttons */}
                   {!item?.isDelivered &&
                     (item?.isDriveUp || item?.isOrderPickup) &&
@@ -796,7 +796,7 @@ const Myorder = () => {
                             </Text>
                           </Pressable>
                         )}
-  
+
                         {item?.isOrderPickup && (
                           <Pressable
                             onPress={() => getSecrectCode(item?._id)}
@@ -811,7 +811,7 @@ const Myorder = () => {
                         )}
                       </View>
                     )}
-  
+
                   {/* Return Order Button */}
                   {item?.isDelivered &&
                     item?.deliveredAt &&
@@ -841,7 +841,7 @@ const Myorder = () => {
             </TouchableOpacity>
           )}
         />
-        
+
         {/* Modal for Parking Information */}
         <Modal
           animationType="fade"
@@ -857,9 +857,9 @@ const Myorder = () => {
                 <Text style={[styles.txt, { textAlign: 'center' }]}>
                   {t('Parking Information')}
                 </Text>
-                
+
                 <View style={styles.divider} />
-                
+
                 <Text style={styles.label}>{t('Car Brand')}</Text>
                 <TextInput
                   style={styles.input}
@@ -868,7 +868,7 @@ const Myorder = () => {
                   value={modalText?.carBrand}
                   onChangeText={carBrand => setModalText({ ...modalText, carBrand })}
                 />
-                
+
                 <Text style={styles.label}>{t('Car Color')}</Text>
                 <TextInput
                   style={styles.input}
@@ -877,7 +877,7 @@ const Myorder = () => {
                   value={modalText?.carColor}
                   onChangeText={carColor => setModalText({ ...modalText, carColor })}
                 />
-                
+
                 <Text style={styles.label}>{t('Parking Pickup Spot')}</Text>
                 <Dropdown
                   style={styles.input}
@@ -901,7 +901,7 @@ const Myorder = () => {
                     </Text>
                   )}
                 />
-  
+
                 <View style={styles.cancelAndLogoutButtonWrapStyle}>
                   <TouchableOpacity
                     activeOpacity={0.8}
@@ -924,7 +924,7 @@ const Myorder = () => {
             </View>
           </View>
         </Modal>
-  
+
         {/* Return Order Confirmation Modal */}
         <Modal
           animationType="fade"
@@ -945,14 +945,14 @@ const Myorder = () => {
                 }}>
                   <Text style={{ fontSize: 32 }}>⚠️</Text>
                 </View>
-                
+
                 <Text style={[styles.txt, { textAlign: 'center', marginBottom: 8 }]}>
                   {t('Are you sure?')}
                 </Text>
                 <Text style={[styles.label, { textAlign: 'center', color: '#6B7280', fontWeight: '400' }]}>
                   {t('Do you really want to Return your order?')}
                 </Text>
-  
+
                 <View style={styles.cancelAndLogoutButtonWrapStyle}>
                   <TouchableOpacity
                     activeOpacity={0.8}
@@ -974,7 +974,7 @@ const Myorder = () => {
             </View>
           </View>
         </Modal>
-  
+
         {/* Review/Rating Modal */}
         <Modal
           animationType="fade"
@@ -1020,7 +1020,7 @@ const Myorder = () => {
                     <Text style={{ fontSize: 18, color: '#6B7280' }}>✕</Text>
                   </TouchableOpacity>
                 </View>
-  
+
                 {/* Product Name Badge */}
                 <View style={{
                   backgroundColor: '#FFF7ED',
@@ -1031,15 +1031,15 @@ const Myorder = () => {
                   borderLeftWidth: 4,
                   borderLeftColor: '#FF7000',
                 }}>
-                  <Text style={[styles.label, { 
-                    textAlign: 'center', 
+                  <Text style={[styles.label, {
+                    textAlign: 'center',
                     color: '#FF7000',
                     fontSize: 16,
                   }]}>
                     {modalData?.productName}
                   </Text>
                 </View>
-  
+
                 {/* Review Input Section */}
                 <View style={{ marginBottom: 16 }}>
                   <Text style={[styles.label, {
@@ -1050,8 +1050,8 @@ const Myorder = () => {
                     {t('Write your review')}
                   </Text>
                   <TextInput
-                    style={[styles.input, { 
-                      height: 120, 
+                    style={[styles.input, {
+                      height: 120,
                       textAlignVertical: 'top',
                       paddingTop: 12,
                       fontSize: 14,
@@ -1065,7 +1065,7 @@ const Myorder = () => {
                     numberOfLines={5}
                   />
                 </View>
-  
+
                 {/* Image Upload Section */}
                 <View style={{ marginBottom: 20 }}>
                   <View style={{
@@ -1091,7 +1091,7 @@ const Myorder = () => {
                       </Text>
                     </View>
                   </View>
-                  
+
                   <View style={{
                     backgroundColor: '#F9FAFB',
                     borderRadius: 12,
@@ -1106,7 +1106,7 @@ const Myorder = () => {
                         if (!images || images.length === 0) {
                           return;
                         }
-  
+
                         if (ratingData.images.length + images.length > 6) {
                           Toast.show({
                             type: 'error',
@@ -1114,13 +1114,13 @@ const Myorder = () => {
                           })
                           return;
                         }
-  
+
                         for (let i = 0; i < images.length; i++) {
                           const image = images[i];
-  
+
                           try {
                             setLoading(true);
-  
+
                             const compressedImage = await ImageCompressor.compress(
                               image.uri || image,
                               {
@@ -1130,15 +1130,15 @@ const Myorder = () => {
                                 quality: 0.7,
                               },
                             );
-  
+
                             const imageForUpload = {
                               uri: compressedImage,
                               type: image.type || 'image/jpeg',
                               fileName: image.fileName || 'compressed_image.jpg',
                             };
-  
+
                             const result = await ApiFormData(imageForUpload);
-  
+
                             if (result && result.status && result.data && result.data.file) {
                               setRatingData(prevData => ({
                                 ...prevData,
@@ -1169,60 +1169,60 @@ const Myorder = () => {
                       }}
                     />
                   </View>
-                  <Text style={[styles.txt2, { 
-                    fontSize: 12, 
+                  <Text style={[styles.txt2, {
+                    fontSize: 12,
                     marginTop: 8,
                     textAlign: 'center',
                   }]}>
                     {t('Add up to 6 photos to help others')}
                   </Text>
                 </View>
-  
+
                 {/* Action Buttons */}
                 <View style={styles.cancelAndLogoutButtonWrapStyle}>
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => {
-                    setRatingModal(false);
-                    setModalData({
-                      productId: null,
-                      orderId: null,
-                      productName: '',
-                      productImage: '',
-                    });
-                    setId(null);
-                    setRatingData({ review: '', images: [] });
-                  }}
-                  style={styles.logOutButtonStyle2}>
-                  <Text style={styles.modalText2}>{t('Cancel')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => {
-                    if (ratingData.review.trim() !== '') {
-                      rating(
-                        modalData.productId,
-                        ratingData.review,
-                        ratingData.images,
-                      );
-                    } else {
-                      Toast.show({
-                        type: 'error',
-                        text1: t("Please write a review before submitting"),
-                      })
-                    }
-                  }}
-                  style={styles.logOutButtonStyle}>
-                  <Text style={styles.modalText}>{t('Submit Review')}</Text>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      setRatingModal(false);
+                      setModalData({
+                        productId: null,
+                        orderId: null,
+                        productName: '',
+                        productImage: '',
+                      });
+                      setId(null);
+                      setRatingData({ review: '', images: [] });
+                    }}
+                    style={styles.logOutButtonStyle2}>
+                    <Text style={styles.modalText2}>{t('Cancel')}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      if (ratingData.review.trim() !== '') {
+                        rating(
+                          modalData.productId,
+                          ratingData.review,
+                          ratingData.images,
+                        );
+                      } else {
+                        Toast.show({
+                          type: 'error',
+                          text1: t("Please write a review before submitting"),
+                        })
+                      }
+                    }}
+                    style={styles.logOutButtonStyle}>
+                    <Text style={styles.modalText}>{t('Submit Review')}</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      </View>
     </View>
-  </SafeAreaView>
-);
+  );
 };
 
 export default Myorder;
@@ -1254,7 +1254,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignSelf: 'flex-start',
   },
-  
+
   // Modern gradient header background
   toppart: {
     padding: 20,
@@ -1270,7 +1270,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
-  
+
   logoimg: {
     height: 44,
     width: 44,
@@ -1278,7 +1278,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#FF7000',
   },
-  
+
   // Enhanced search container
   inpcov: {
     borderWidth: 0,
@@ -1297,7 +1297,7 @@ const styles = StyleSheet.create({
     elevation: 4,
     height: 52,
   },
-  
+
   input: {
     borderWidth: 1,
     borderColor: '#E5E7EB',
@@ -1314,7 +1314,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     backgroundColor: '#FFFFFF',
   },
-  
+
   ordertxt: {
     color: Constants.black,
     fontSize: 22,
@@ -1322,7 +1322,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     letterSpacing: 0.3,
   },
-  
+
   // Premium card design
   card: {
     backgroundColor: '#FFFFFF',
@@ -1338,7 +1338,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#F3F4F6',
   },
-  
+
   // Modern order icon container with gradient effect
   ordiccov: {
     height: 48,
@@ -1353,7 +1353,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 6,
   },
-  
+
   // Enhanced typography
   txt1: {
     color: '#1F2937',
@@ -1362,7 +1362,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
     marginVertical: 2,
   },
-  
+
   txt2: {
     color: '#6B7280',
     fontSize: 13,
@@ -1370,21 +1370,21 @@ const styles = StyleSheet.create({
     marginTop: 2,
     letterSpacing: 0.1,
   },
-  
+
   txt3: {
     color: '#374151',
     fontSize: 15,
     fontFamily: FONTS.Bold,
     letterSpacing: 0.2,
   },
-  
+
   txt4: {
     color: '#1F2937',
     fontSize: 13,
     fontFamily: FONTS.Medium,
     letterSpacing: 0.1,
   },
-  
+
   txt: {
     color: '#1F2937',
     fontSize: 22,
@@ -1392,7 +1392,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.Bold,
     letterSpacing: 0.3,
   },
-  
+
   label: {
     color: '#374151',
     fontSize: 15,
@@ -1401,7 +1401,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     letterSpacing: 0.2,
   },
-  
+
   // Modern status badges with glassmorphism
   delevered: {
     color: Constants.white,
@@ -1416,7 +1416,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     fontWeight: '700',
   },
-  
+
   // Enhanced product display
   cartimg: {
     width: 72,
@@ -1426,7 +1426,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
-  
+
   boxtxt: {
     color: '#1F2937',
     fontSize: 15,
@@ -1434,35 +1434,35 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
     lineHeight: 20,
   },
-  
+
   boxtxt2: {
     color: '#6B7280',
     fontSize: 13,
     fontFamily: FONTS.Medium,
     letterSpacing: 0.1,
   },
-  
+
   boxtxt3: {
     color: '#FF7000',
     fontSize: 16,
     fontFamily: FONTS.Bold,
     letterSpacing: 0.2,
   },
-  
+
   qty: {
     fontSize: 13,
     color: '#9CA3AF',
     fontFamily: FONTS.Medium,
     letterSpacing: 0.1,
   },
-  
+
   favfiltxt: {
     color: '#FF7000',
     fontSize: 15,
     fontFamily: FONTS.Bold,
     letterSpacing: 0.3,
   },
-  
+
   favfilcov: {
     borderWidth: 2,
     borderColor: '#FF7000',
@@ -1483,7 +1483,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 3,
   },
-  
+
   // Premium modal design
   centeredView: {
     flex: 1,
@@ -1492,7 +1492,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
     backdropFilter: 'blur(8px)',
   },
-  
+
   modalView: {
     width: '90%',
     maxWidth: 420,
@@ -1506,7 +1506,7 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 12,
   },
-  
+
   // Modern button styles
   cancelAndLogoutButtonWrapStyle: {
     flexDirection: 'row',
@@ -1516,7 +1516,7 @@ const styles = StyleSheet.create({
     gap: 12,
     width: '100%',
   },
-  
+
   logOutButtonStyle: {
     flex: 1,
     backgroundColor: '#FF7000',
@@ -1530,7 +1530,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 6,
   },
-  
+
   logOutButtonStyle2: {
     flex: 1,
     backgroundColor: '#FFFFFF',
@@ -1541,7 +1541,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  
+
   modalText: {
     color: '#FFFFFF',
     textAlign: 'center',
@@ -1550,7 +1550,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     fontWeight: '700',
   },
-  
+
   modalText2: {
     color: '#FF7000',
     textAlign: 'center',
@@ -1559,14 +1559,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     fontWeight: '700',
   },
-  
+
   // Additional utility styles for enhanced UI
   divider: {
     height: 1,
     backgroundColor: '#E5E7EB',
     marginVertical: 12,
   },
-  
+
   badge: {
     backgroundColor: '#FFF7ED',
     borderRadius: 8,
@@ -1574,14 +1574,14 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     marginLeft: 8,
   },
-  
+
   badgeText: {
     color: '#FF7000',
     fontSize: 11,
     fontFamily: FONTS.Bold,
     letterSpacing: 0.5,
   },
-  
+
   infoCard: {
     backgroundColor: '#FFF7ED',
     borderRadius: 12,
@@ -1590,7 +1590,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: '#FF7000',
   },
-  
+
   actionButton: {
     backgroundColor: '#FF7000',
     paddingVertical: 10,
@@ -1602,7 +1602,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
-  
+
   actionButtonText: {
     color: 'white',
     fontSize: 14,
@@ -1610,7 +1610,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.Bold,
     letterSpacing: 0.3,
   },
-  
+
   cancelButton: {
     backgroundColor: '#EF4444',
     paddingVertical: 10,
@@ -1622,7 +1622,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
-  
+
   secondaryButton: {
     backgroundColor: '#F59E0B',
     paddingVertical: 10,
@@ -1634,13 +1634,13 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
-  
+
   emptyStateContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 60,
   },
-  
+
   emptyStateText: {
     color: '#6B7280',
     fontSize: 18,
@@ -1648,7 +1648,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     letterSpacing: 0.2,
   },
-  
+
   productContainer: {
     flexDirection: 'row',
     marginBottom: 12,
@@ -1658,14 +1658,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
-  
+
   statusPill: {
     alignSelf: 'flex-start',
     paddingVertical: 4,
     paddingHorizontal: 12,
     borderRadius: 16,
   },
-  
+
   headerGradient: {
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,

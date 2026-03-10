@@ -761,7 +761,7 @@ const Cart = () => {
 
   return (
     <>
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <View style={styles.toppart}>
           {/* <BackIcon color={Constants.white}/> */}
           <Text style={styles.carttxt}>
@@ -2282,7 +2282,7 @@ const Cart = () => {
           }}
         />
 
-      </SafeAreaView>
+      </View>
       <DateTimePickerModal
         isVisible={openDatePicker}
 

@@ -55,19 +55,19 @@ const SubcategoryProducts = props => {
         setProductlist([]);
       }
 
-     
-      const url = `product/getProduct?page=${p}&limit=100`; 
-      
-      
+
+      const url = `product/getProduct?page=${p}&limit=100`;
+
+
       const res = await GetApi(url, {});
-     
+
 
       if (res?.status) {
-      
+
         let products = Array.isArray(res.data) ? res.data : [];
         console.log('Total products from API:', products.length);
         console.log('Filtering by subcategoryId:', subcategoryId);
-        
+
         if (subcategoryId) {
           products = products.filter(product => {
             // Check if subcategoryId matches subcategory field
@@ -75,32 +75,32 @@ const SubcategoryProducts = props => {
               console.log('Match found - subcategory:', product.name);
               return true;
             }
-            
+
             // Check if subcategoryId matches category field (for products without subcategory)
             if (product.category === subcategoryId || product.category?._id === subcategoryId) {
               console.log('Match found - category:', product.name);
               return true;
             }
-            
+
             // Check if subcategoryId is in category's Subcategory array
             if (product.category?.Subcategory?.some(sub => sub._id === subcategoryId)) {
               console.log('Match found - category subcategory:', product.name);
               return true;
             }
-            
+
             return false;
           });
           console.log('Filtered products count:', products.length);
         }
-        
-        
-        
+
+
+
         if (p === 1) {
           setProductlist(products);
         } else {
           setProductlist(prev => [...prev, ...products]);
         }
-        
+
         // Update pagination
         setPagination({
           totalPages: Math.ceil(products.length / limit),
@@ -164,8 +164,8 @@ const SubcategoryProducts = props => {
       ? cartdetail.find(it => it?.productid === item?._id)
       : undefined;
 
-    const displayName = i18n.language === 'fr' 
-      ? (item?.frenchName || item?.name) 
+    const displayName = i18n.language === 'fr'
+      ? (item?.frenchName || item?.name)
       : item?.name;
 
     const moq = item?.pieces || 0;
@@ -235,7 +235,7 @@ const SubcategoryProducts = props => {
         style={styles.backButton}
         activeOpacity={0.7}
       >
-        <BackIcon width={24} height={24} color="#000" />
+        <BackIcon width={20} height={20} color="#fff" />
       </TouchableOpacity>
       <Text style={styles.headerTitle} numberOfLines={1}>
         {subcategoryName ? t(subcategoryName) : t('Products')}
@@ -259,13 +259,13 @@ const SubcategoryProducts = props => {
 
   if (productlist.length === 0 && !loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <View style={styles.container}>
+        {/* <StatusBar barStyle="dark-content" backgroundColor="#fff" /> */}
         {renderHeader()}
         <View style={styles.centerContent}>
           <Text style={styles.noProductsText}>{t('No products found')}</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 15,
     paddingVertical: 12,
-    backgroundColor: '#fff',
+    backgroundColor: Constants.saffron,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontFamily: 'Roboto-Bold',
-    color: '#000',
+    color: '#FFF',
     marginLeft: 8,
   },
   headerRight: {

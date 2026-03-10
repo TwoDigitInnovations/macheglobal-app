@@ -63,7 +63,7 @@ const ManufacturerProducts = ({ route }) => {
       }
 
       let url = `product/getManufacturerProducts?page=${pageNum}&limit=10`;
-      
+
       if (category && category !== 'all') {
         // Get category name from categories array
         const selectedCat = categories.find(cat => cat._id === category);
@@ -74,7 +74,7 @@ const ManufacturerProducts = ({ route }) => {
 
       console.log('Fetching manufacturer products:', url);
       const res = await GetApi(url, {});
-      
+
       if (pageNum === 1) {
         setLoading(false);
       } else {
@@ -85,7 +85,7 @@ const ManufacturerProducts = ({ route }) => {
 
       if (res?.status) {
         const newProducts = res.data || [];
-        
+
         if (pageNum === 1) {
           setProducts(newProducts);
         } else {
@@ -127,11 +127,11 @@ const ManufacturerProducts = ({ route }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => goBack()} style={styles.backButton}>
-          <BackIcon height={24} width={24} color={Constants.white} />
+          <BackIcon height={20} width={20} color={Constants.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('Manufacturer Products')}</Text>
         <View style={{ width: 24 }} />
@@ -174,7 +174,7 @@ const ManufacturerProducts = ({ route }) => {
           )
         }
       />
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -189,7 +189,8 @@ const styles = StyleSheet.create({
     backgroundColor: Constants.saffron,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    // justifyContent: 'space-between',
+    gap: 10,
     paddingHorizontal: 15,
     paddingVertical: 15,
   },

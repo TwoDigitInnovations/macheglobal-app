@@ -63,7 +63,7 @@ const CategoryFilter = props => {
         GetApi(`category/getCategories`, {}).then(
             async res => {
 
-                console.log("categorylist",res);
+                console.log("categorylist", res);
                 if (res.status) {
                     let newCat = res.data.map(f => { return { ...f, label: f.name, value: f._id } })
                     setcategorylist([{ label: 'All Categories', value: 'All' }, ...newCat]);
@@ -194,7 +194,7 @@ const CategoryFilter = props => {
         }
     };
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={styles.container}>
             <DriverHeader item={t('Category')} showback={true} showCart={true} />
             <View>
                 {/* <Text style={styles.headtxt}>{catname}</Text> */}
@@ -273,7 +273,7 @@ const CategoryFilter = props => {
                     </View>
                 )}
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 };
 

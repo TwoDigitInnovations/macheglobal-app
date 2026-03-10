@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  FlatList, 
-  TouchableOpacity, 
-  ActivityIndicator, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  ActivityIndicator,
   RefreshControl,
   Image,
   Dimensions,
@@ -16,6 +16,7 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { GetApi, Delete } from '../../Assets/Helpers/Service';
+import Constants from '../../Assets/Helpers/constant';
 
 const { width } = Dimensions.get('window');
 
@@ -36,19 +37,19 @@ const SellerProducts = () => {
         setRefreshing(true);
       }
       setError(null);
-      
+
       // Get seller ID from AsyncStorage
       const AsyncStorage = require('@react-native-async-storage/async-storage').default;
       const userDetail = await AsyncStorage.getItem('userDetail');
       const user = userDetail ? JSON.parse(userDetail) : null;
       const sellerId = user?.user?._id || user?._id;
-      
+
       console.log('Fetching products for seller:', sellerId);
-      
+
       // Add SellerId parameter to filter products
       const response = await GetApi(`product/getProduct?SellerId=${sellerId}&page=1&limit=100`);
       console.log('Products API Response:', response);
-      
+
       if (response?.status && Array.isArray(response?.data)) {
         setProducts(response.data);
       } else {
@@ -74,24 +75,24 @@ const SellerProducts = () => {
   };
 
   const getProductImage = (item) => {
-  
+
     if (item?.varients && Array.isArray(item.varients) && item.varients.length > 0) {
       const variant = item.varients[0];
-     
+
       if (variant?.images && Array.isArray(variant.images) && variant.images.length > 0) {
-        
-        return typeof variant.images[0] === 'string' 
-          ? variant.images[0] 
+
+        return typeof variant.images[0] === 'string'
+          ? variant.images[0]
           : variant.images[0]?.url;
       }
-      
+
       if (variant?.image) {
-        return Array.isArray(variant.image) 
+        return Array.isArray(variant.image)
           ? variant.image[0]?.url || variant.image[0]
           : variant.image;
       }
     }
- 
+
     if (item?.category?.image?.url) {
       return item.category.image.url;
     }
@@ -109,7 +110,7 @@ const SellerProducts = () => {
           offerPrice: parseFloat(selected.offerprice || selected.price) || 0
         };
       }
-      
+
       // Fallback to direct properties in case the structure is different
       if (item?.price !== undefined) {
         return {
@@ -117,7 +118,7 @@ const SellerProducts = () => {
           offerPrice: parseFloat(item.offerprice || item.price) || 0
         };
       }
-      
+
       // Last resort, check pieces as price (some APIs use this)
       if (item?.pieces !== undefined) {
         const price = parseFloat(item.pieces) || 0;
@@ -126,7 +127,7 @@ const SellerProducts = () => {
           offerPrice: price
         };
       }
-      
+
       return { originalPrice: 0, offerPrice: 0 };
     } catch (error) {
       console.error('Error getting product price:', error, item);
@@ -167,13 +168,13 @@ const SellerProducts = () => {
     try {
       console.log('Starting delete for product:', productId);
       setLoading(true);
-      
-  
+
+
       const response = await Delete(`product/deleteProduct/${productId}`, {});
       console.log('Delete response:', response);
-      
+
       if (response?.status === true || response?.success === true) {
-       
+
         setProducts(prevProducts => prevProducts.filter(product => product._id !== productId));
         Alert.alert('Success', 'Product deleted successfully');
         // Refresh the list
@@ -196,7 +197,7 @@ const SellerProducts = () => {
     const hasDiscount = originalPrice > offerPrice;
 
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.productCard}
         onPress={() => navigateToProductDetails(item)}
       >
@@ -204,8 +205,8 @@ const SellerProducts = () => {
           {/* Product Image */}
           <View style={styles.imageWrapper}>
             {imageUrl ? (
-              <Image 
-                source={{ uri: imageUrl }} 
+              <Image
+                source={{ uri: imageUrl }}
                 style={styles.productImage}
                 resizeMode="cover"
               />
@@ -248,7 +249,7 @@ const SellerProducts = () => {
             {/* <TouchableOpacity style={styles.iconButton}>
               <Icon name="edit" size={18} color="#3B82F6" />
             </TouchableOpacity> */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.iconButton}
               onPress={() => handleDeleteProduct(item._id)}
             >
@@ -265,7 +266,7 @@ const SellerProducts = () => {
       <View style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
         <View style={styles.header}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
@@ -286,7 +287,7 @@ const SellerProducts = () => {
       <View style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
         <View style={styles.header}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
@@ -298,7 +299,7 @@ const SellerProducts = () => {
         <View style={styles.centerContainer}>
           <Icon name="error-outline" size={48} color="#EF4444" />
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.retryButton}
             onPress={() => fetchProducts()}
           >
@@ -311,16 +312,16 @@ const SellerProducts = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      
+      {/* <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" /> */}
+
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        {/* <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
           <Icon name="arrow-back" size={24} color="#111827" />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
         <Text style={styles.headerTitle}>My Products</Text>
         {/* <TouchableOpacity 
           style={styles.addButton}
@@ -329,7 +330,7 @@ const SellerProducts = () => {
           <Text style={styles.addButtonText}>+ Add Product</Text>
         </TouchableOpacity> */}
       </View>
-      
+
       <FlatList
         data={products}
         renderItem={renderItem}
@@ -367,21 +368,21 @@ const SellerProducts = () => {
             <View style={styles.modalIconContainer}>
               <Icon name="delete-outline" size={48} color="#EF4444" />
             </View>
-            
+
             <Text style={styles.modalTitle}>Delete Product</Text>
             <Text style={styles.modalMessage}>
               Are you sure you want to delete this product? This action cannot be undone.
             </Text>
-            
+
             <View style={styles.modalButtons}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={cancelDelete}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={[styles.modalButton, styles.deleteButton]}
                 onPress={confirmDelete}
               >
@@ -429,7 +430,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Constants.saffron,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
@@ -440,7 +441,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#111827',
+    color: '#fff',
     flex: 1,
   },
   headerSpacer: {

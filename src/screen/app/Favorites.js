@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useContext, useCallback, useRef,memo  } from 'react';
+import React, { useState, useEffect, useContext, useCallback, useRef, memo } from 'react';
 import { CartContext, ToastContext } from '../../../App';
-import { 
-  View, 
-  Text, 
-  FlatList, 
-  Image, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  FlatList,
+  Image,
+  TouchableOpacity,
   ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,53 +18,53 @@ import DriverHeader from '../../Assets/Component/DriverHeader';
 import { useTranslation } from 'react-i18next';
 
 // Product card ko separate memo component banao
-const ProductCard = memo(({ 
-  item, 
-  quantity, 
-  onAddToCart, 
-  onIncrease, 
-  onDecrease, 
-  onRemoveFavorite 
+const ProductCard = memo(({
+  item,
+  quantity,
+  onAddToCart,
+  onIncrease,
+  onDecrease,
+  onRemoveFavorite
 }) => {
   const product = item.product || item;
   const price = product.varients?.[0]?.selected?.[0]?.offerprice || 0;
   const originalPrice = product.varients?.[0]?.selected?.[0]?.price || 0;
-  const discount = originalPrice > price 
-    ? Math.round(((originalPrice - price) / originalPrice) * 100) 
+  const discount = originalPrice > price
+    ? Math.round(((originalPrice - price) / originalPrice) * 100)
     : 0;
   const image = product.varients?.[0]?.image?.[0] || 'https://via.placeholder.com/150';
 
   return (
     <View style={styles.productCard}>
       <View style={styles.productRow}>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => {
             const productSlug = product.slug || product._id;
             navigate('Preview', productSlug);
           }}
         >
-          <Image 
-            source={{ uri: image }} 
+          <Image
+            source={{ uri: image }}
             style={styles.productImage}
             resizeMode="cover"
           />
         </TouchableOpacity>
         <View style={styles.productInfo}>
           <View style={styles.headerRow}>
-            <Text 
+            <Text
               style={styles.productName}
               numberOfLines={2}
             >
               {product.name}
             </Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => onRemoveFavorite(item._id)}
               style={styles.favoriteButton}
             >
               <Icon name="heart" size={20} color="#ef4444" />
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.priceRow}>
             <Text style={styles.price}>
               ${Math.round(price)}
@@ -80,10 +80,10 @@ const ProductCard = memo(({
               </View>
             )}
           </View>
-          
+
           <View style={styles.cartControlsContainer}>
             {quantity === 0 ? (
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.addToCartButton}
                 onPress={() => onAddToCart(item)}
               >
@@ -113,8 +113,8 @@ const ProductCard = memo(({
   );
 }, (prevProps, nextProps) => {
   // Custom comparison - sirf quantity change hone pe hi re-render karo
-  return prevProps.quantity === nextProps.quantity && 
-         prevProps.item._id === nextProps.item._id;
+  return prevProps.quantity === nextProps.quantity &&
+    prevProps.item._id === nextProps.item._id;
 });
 
 const Favorites = ({ navigation }) => {
@@ -124,7 +124,7 @@ const Favorites = ({ navigation }) => {
   const [error, setError] = useState(null);
   const [cartdetail, setcartdetail] = useContext(CartContext);
   const [toast, setToast] = useContext(ToastContext);
-  
+
   // Cart quantities ko separate state mein rakho for quick access
   const [quantities, setQuantities] = useState({});
   const isUpdatingRef = useRef(false);
@@ -154,13 +154,13 @@ const Favorites = ({ navigation }) => {
         setLoading(false);
         return;
       }
-      
+
       const response = await GetApi('user/getFavourite', {
         params: {
           user_id: JSON.parse(user).id
         }
       });
-      
+
       if (response && response.status) {
         setFavorites(response.data || []);
         setError(null);
@@ -187,16 +187,16 @@ const Favorites = ({ navigation }) => {
         });
         return;
       }
-      
+
       const userId = JSON.parse(user).id;
       const favoriteItem = favorites.find(fav => fav._id === favoriteId);
       const productId = favoriteItem?.product?._id || favoriteItem?.product;
-      
-      const response = await Post('user/addremovefavourite', { 
+
+      const response = await Post('user/addremovefavourite', {
         product: productId,
         user_id: userId
       });
-      
+
       if (response?.status) {
         setFavorites(prev => prev.filter(fav => fav._id !== favoriteId));
         Toast.show({
@@ -219,18 +219,18 @@ const Favorites = ({ navigation }) => {
 
   const updateCartSilently = useCallback(async (updatedCart) => {
     isUpdatingRef.current = true;
-    
+
     // Pehle quantities update karo (instant UI update)
     const newQuantities = {};
     updatedCart.forEach(item => {
       newQuantities[item.productid] = item.qty;
     });
     setQuantities(newQuantities);
-    
+
     // Then cart context update karo
     setcartdetail(updatedCart);
     await AsyncStorage.setItem('cartdata', JSON.stringify(updatedCart));
-    
+
     setTimeout(() => {
       isUpdatingRef.current = false;
     }, 100);
@@ -239,7 +239,7 @@ const Favorites = ({ navigation }) => {
   const addToCart = useCallback(async (item) => {
     const product = item.product || item;
     const existingCart = Array.isArray(cartdetail) ? [...cartdetail] : [];
-    
+
     const selectedVariant = product.varients?.[0];
     const variantPrice = parseFloat(selectedVariant?.selected?.[0]?.price) || 0;
     const variantOfferPrice = parseFloat(selectedVariant?.selected?.[0]?.offerprice) || variantPrice;
@@ -271,10 +271,10 @@ const Favorites = ({ navigation }) => {
       updatedCart = existingCart.map((_i, index) => {
         if (index === existingProductIndex) {
           const newQty = _i.qty + 1;
-          return { 
-            ..._i, 
+          return {
+            ..._i,
             qty: newQty,
-            total: _i.offer * newQty 
+            total: _i.offer * newQty
           };
         }
         return _i;
@@ -321,7 +321,7 @@ const Favorites = ({ navigation }) => {
   const renderProduct = useCallback(({ item }) => {
     const product = item.product || item;
     const quantity = quantities[product._id] || 0;
-    
+
     return (
       <ProductCard
         item={item}
@@ -349,7 +349,7 @@ const Favorites = ({ navigation }) => {
       <SafeAreaView style={styles.safeContainer}>
         <View style={[styles.container, styles.centerContent]}>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.retryButton}
             onPress={fetchFavorites}
           >
@@ -373,26 +373,26 @@ const Favorites = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView style={styles.safeContainer}>
-      <View style={styles.container}>
-        <DriverHeader item={t('My Favorites')} showback={true} />
-        
-        <FlatList
-          data={favorites}
-          renderItem={renderProduct}
-          keyExtractor={(item) => item._id}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={renderEmpty}
-          removeClippedSubviews={true}
-          maxToRenderPerBatch={10}
-          windowSize={5}
-          initialNumToRender={10}
-          showsVerticalScrollIndicator={false}
-          onRefresh={fetchFavorites}
-          refreshing={loading}
-        />
-      </View>
-    </SafeAreaView>
+    // <SafeAreaView style={styles.safeContainer}>
+    <View style={styles.container}>
+      <DriverHeader item={t('My Favorites')} showback={true} />
+
+      <FlatList
+        data={favorites}
+        renderItem={renderProduct}
+        keyExtractor={(item) => item._id}
+        contentContainerStyle={styles.listContent}
+        ListEmptyComponent={renderEmpty}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        initialNumToRender={10}
+        showsVerticalScrollIndicator={false}
+        onRefresh={fetchFavorites}
+        refreshing={loading}
+      />
+    </View>
+    // </SafeAreaView>
   );
 };
 

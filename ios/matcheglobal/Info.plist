@@ -51,15 +51,15 @@
 		</dict>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>Bách Hoá Houston Will use Camera to click and upload the documents for verification.</string>
+	<string>Macheglobal Will use Camera to click and upload the documents for verification.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Bách Hoá Houston Will use Location to show nearby drivers </string>
+	<string>Macheglobal Will use Location to show nearby drivers </string>
 	<key>NSLocationAlwaysUsageDescription</key>
-	<string>Bách Hoá Houston Will use Location to show nearby drivers </string>
+	<string>Macheglobal Will use Location to show nearby drivers </string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Bách Hoá Houston Will use Location to show nearby drivers.</string>
+	<string>Macheglobal Will use Location to show nearby drivers.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Bách Hoá Houston Will use Photo Library to upload the documents for verification.</string>
+	<string>Macheglobal Will use Photo Library to upload the documents for verification.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UIAppFonts</key>

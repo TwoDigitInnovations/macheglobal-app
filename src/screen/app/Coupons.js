@@ -33,7 +33,7 @@ const Coupons = () => {
     try {
       setLoading(true);
       const res = await GetApi(`coupon/getUserCoupons?status=${activeTab}`, {});
-      console.log("cop====",res)
+      console.log("cop====", res)
       setLoading(false);
       if (res?.status) {
         setCoupons(res.data);
@@ -156,11 +156,11 @@ const Coupons = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => goBack()} style={styles.backButton}>
-          <BackIcon height={24} width={24} color={Constants.white} />
+          <BackIcon height={20} width={20} color={Constants.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('Coupons & Credit')}</Text>
         <View style={{ width: 24 }} />
@@ -223,7 +223,7 @@ const Coupons = () => {
           }
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -238,7 +238,8 @@ const styles = StyleSheet.create({
     backgroundColor: Constants.saffron,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    // justifyContent: 'space-between',
+    gap: 19,
     paddingHorizontal: 15,
     paddingVertical: 15,
   },

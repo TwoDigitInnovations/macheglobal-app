@@ -54,7 +54,7 @@ const HelpCenter = () => {
     }
     if (!formData.subject.trim()) newErrors.subject = t('Subject is required');
     if (!formData.message.trim()) newErrors.message = t('Message is required');
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -65,7 +65,7 @@ const HelpCenter = () => {
       ...prev,
       [name]: text
     }));
-    
+
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -80,7 +80,7 @@ const HelpCenter = () => {
     try {
       setLoading(true);
       const response = await Post('user/contactUs', formData);
-      
+
       if (response && response.status) {
         setShowSuccessModal(true);
         setFormData({
@@ -105,7 +105,7 @@ const HelpCenter = () => {
   };
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
@@ -113,7 +113,7 @@ const HelpCenter = () => {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
@@ -165,7 +165,7 @@ const HelpCenter = () => {
             numberOfLines={4}
           />
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.submitButton}
             onPress={handleSubmit}
             disabled={loading}
@@ -217,13 +217,13 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#FF7000',
-    paddingTop: 50,
+    paddingTop: 10,
     paddingBottom: 18,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    // borderBottomLeftRadius: 20,
+    // borderBottomRightRadius: 20,
   },
   headerLeft: {
     flexDirection: 'row',

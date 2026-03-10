@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  Image, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Image,
+  TouchableOpacity,
   Dimensions,
   ActivityIndicator,
   SafeAreaView,
@@ -16,6 +16,7 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { GetApi } from '../../Assets/Helpers/Service';
+import DriverHeader from '../../Assets/Component/DriverHeader';
 
 // Define colors directly since the colors helper is not available
 const COLORS = {
@@ -37,12 +38,12 @@ const ProductDetails = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { productId } = route.params;
-  
+
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const pan = React.useRef(new Animated.ValueXY()).current;
-  
+
   const images = useMemo(() => {
     return product?.varients?.[0]?.image || [];
   }, [product]);
@@ -56,7 +57,7 @@ const ProductDetails = () => {
     pan.setValue({ x: 0, y: 0 });
     setCurrentImageIndex(0);
   }, [images.length]);
-  
+
   const panResponder = React.useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -70,19 +71,19 @@ const ProductDetails = () => {
       onPanResponderRelease: (_, gestureState) => {
         const { dx } = gestureState;
         const SWIPE_THRESHOLD = 50;
-        
+
         if (Math.abs(dx) > SWIPE_THRESHOLD) {
           // Calculate new index based on swipe direction
-          const newIndex = dx > 0 
+          const newIndex = dx > 0
             ? Math.max(0, currentImageIndex - 1) // Swipe right
             : Math.min(images.length - 1, currentImageIndex + 1); // Swipe left
-          
+
           // Only update if index changed
           if (newIndex !== currentImageIndex) {
             setCurrentImageIndex(newIndex);
           }
         }
-        
+
         // Always animate back to center
         Animated.spring(pan, {
           toValue: { x: 0, y: 0 },
@@ -116,55 +117,55 @@ const ProductDetails = () => {
   };
 
 
- const renderImages = () => {
-  if (!images.length) {
+  const renderImages = () => {
+    if (!images.length) {
+      return (
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: 'https://via.placeholder.com/300' }}
+            style={styles.productImage}
+            resizeMode="cover"
+          />
+        </View>
+      );
+    }
+
     return (
       <View style={styles.imageContainer}>
-        <Image 
-          source={{ uri: 'https://via.placeholder.com/300' }} 
-          style={styles.productImage} 
-          resizeMode="cover"
-        />
+        <Animated.View
+          style={[
+            styles.imageWrapper,
+            {
+              transform: [{ translateX: pan.x }]
+            }
+          ]}
+          {...panResponder.panHandlers}
+        >
+          <Image
+            key={currentImageIndex}  // YE ADD KARO - IMPORTANT!
+            source={{ uri: images[currentImageIndex] }}
+            style={styles.productImage}
+            resizeMode="contain"
+          />
+        </Animated.View>
+
+        {images.length > 1 && (
+          <View style={styles.imagePagination}>
+            {images.map((_, index) => (
+              <TouchableOpacity
+                key={index}
+                onPress={() => setCurrentImageIndex(index)}
+                style={[
+                  styles.paginationDot,
+                  index === currentImageIndex && styles.activeDot
+                ]}
+              />
+            ))}
+          </View>
+        )}
       </View>
     );
-  }
-
-  return (
-    <View style={styles.imageContainer}>
-      <Animated.View 
-        style={[
-          styles.imageWrapper,
-          {
-            transform: [{ translateX: pan.x }]
-          }
-        ]}
-        {...panResponder.panHandlers}
-      >
-        <Image 
-          key={currentImageIndex}  // YE ADD KARO - IMPORTANT!
-          source={{ uri: images[currentImageIndex] }} 
-          style={styles.productImage} 
-          resizeMode="contain"
-        />
-      </Animated.View>
-      
-      {images.length > 1 && (
-        <View style={styles.imagePagination}>
-          {images.map((_, index) => (
-            <TouchableOpacity 
-              key={index} 
-              onPress={() => setCurrentImageIndex(index)}
-              style={[
-                styles.paginationDot, 
-                index === currentImageIndex && styles.activeDot
-              ]} 
-            />
-          ))}
-        </View>
-      )}
-    </View>
-  );
-};
+  };
 
   if (loading) {
     return (
@@ -181,12 +182,12 @@ const ProductDetails = () => {
       </View>
     );
   }
-  
+
   // Extract product details
-  const { 
-    name, 
-    categoryName, 
-    subCategoryName, 
+  const {
+    name,
+    categoryName,
+    subCategoryName,
     price,
     pieces,
     sold_pieces,
@@ -196,21 +197,15 @@ const ProductDetails = () => {
     updatedAt,
     varients = []
   } = product;
-  
+
   const variant = varients[0] || {};
   const selectedVariant = variant.selected?.[0] || {};
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Icon name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Product Details</Text>
-        <TouchableOpacity style={styles.shareButton}>
-          <Icon name="more-vert" size={24} color="#000" />
-        </TouchableOpacity>
-      </View> */}
+    <View style={styles.container}>
+
+
+      <DriverHeader item={'Product Details'} showback={true} />
 
       <ScrollView style={styles.content}>
         {renderImages()}
@@ -286,7 +281,7 @@ const ProductDetails = () => {
               {selectedVariant.mrp && (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>MRP:</Text>
-                  <Text style={[styles.detailValue, {textDecorationLine: 'line-through'}]}>
+                  <Text style={[styles.detailValue, { textDecorationLine: 'line-through' }]}>
                     ${selectedVariant.mrp}
                   </Text>
                 </View>
@@ -294,7 +289,7 @@ const ProductDetails = () => {
               {selectedVariant.color && (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Color:</Text>
-                  <View style={[styles.colorBox, {backgroundColor: selectedVariant.color}]} />
+                  <View style={[styles.colorBox, { backgroundColor: selectedVariant.color }]} />
                   <Text style={styles.detailValue}>{selectedVariant.color}</Text>
                 </View>
               )}
@@ -306,7 +301,7 @@ const ProductDetails = () => {
               )}
             </View>
           )}
-          
+
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Product Information</Text>
             <View style={styles.detailRow}>
@@ -324,7 +319,7 @@ const ProductDetails = () => {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -338,7 +333,8 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    // justifyContent: 'space-between',
+    gap: 10,
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',

@@ -12,8 +12,8 @@ import { navigate } from '../../../navigationRef';
 
 const ManufacturerProductCard = ({ item }) => {
   const imageUrl = item?.varients?.[0]?.image?.[0] || '';
-  const price = item?.varients?.[0]?.selected?.[0]?.offerprice || 
-                item?.varients?.[0]?.selected?.[0]?.price || 0;
+  const price = item?.varients?.[0]?.selected?.[0]?.offerprice ||
+    item?.varients?.[0]?.selected?.[0]?.price || 0;
 
   return (
     <TouchableOpacity
@@ -31,7 +31,7 @@ const ManufacturerProductCard = ({ item }) => {
           {item?.name}
         </Text>
         <Text style={styles.productPrice}>
-          {Currency} {price.toFixed(2)}
+          {Currency} {Number(price)?.toFixed(2)}
         </Text>
       </View>
     </TouchableOpacity>

@@ -2,8 +2,9 @@
  * @format
  */
 import 'react-native-gesture-handler';
-import { AppRegistry } from 'react-native';
+import { AppRegistry, Platform } from 'react-native';
 import App from './App';
 import { name as appName } from './app.json';
-
-AppRegistry.registerComponent(appName, () => App);
+console.log(appName)
+const appname = Platform.OS === 'android' ? appName : 'matcheglobal'
+AppRegistry.registerComponent(appname, () => App);

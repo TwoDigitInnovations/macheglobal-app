@@ -15,19 +15,20 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { GetApi } from '../../Assets/Helpers/Service';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { format, parseISO } from 'date-fns';
+import DriverHeader from '../../Assets/Component/DriverHeader';
 
 const OrderDetails = () => {
   console.log('OrderDetails component rendered');
   const route = useRoute();
   const navigation = useNavigation();
-  
+
   // Log the route params to see what we're receiving
   console.log('Route params:', route.params);
-  
+
   const [order, setOrder] = useState(route.params?.orderData || null);
   const [loading, setLoading] = useState(!route.params?.orderData);
   const orderId = route.params?.orderId;
-  
+
   console.log('Initial state - order:', order ? 'exists' : 'null', 'loading:', loading);
 
   const fetchOrderDetails = async () => {
@@ -35,14 +36,14 @@ const OrderDetails = () => {
       setLoading(true);
       console.log('Fetching order details for orderId:', orderId);
       const response = await GetApi(`orders/details/${orderId}`);
-      
+
       // Log the complete response in a readable format
       console.log('=== Order Details API Response ===');
       console.log('Status:', response?.status);
       console.log('Data:', response?.data);
       console.log('Full Response Object:', JSON.stringify(response, null, 2));
       console.log('=================================');
-      
+
       if (response?.status === true && response.data) {
         console.log('Order data received, updating state...');
         setOrder(response.data);
@@ -151,15 +152,15 @@ const OrderDetails = () => {
     paymentMethod: order.paymentMethod || 'N/A',
     shippingAddress: order.shippingAddress || {},
     total: order.amount || order.totalPrice || 0,
-    subTotal: order.amount || order.totalPrice || 0, 
-    shipping: 0, 
-    tax: 0 
+    subTotal: order.amount || order.totalPrice || 0,
+    shipping: 0,
+    tax: 0
   };
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      {/* <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={() => navigation.goBack()}
@@ -168,8 +169,10 @@ const OrderDetails = () => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Order Details</Text>
         <View style={{ width: 32 }} />
-      </View>
-      
+      </View> */}
+
+      <DriverHeader item={'Order Details'} showback={true} />
+
       <ScrollView>
         {/* Order Status */}
         <View style={styles.statusContainer}>
@@ -199,7 +202,7 @@ const OrderDetails = () => {
               <Text style={styles.addressText}>
                 {orderDetails.shippingAddress.country || ''}
               </Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.contactButton}
                 onPress={() => handleCallCustomer(orderDetails.shippingAddress.phone)}
               >
@@ -217,10 +220,10 @@ const OrderDetails = () => {
           <Text style={styles.sectionTitle}>Order Items ({orderDetails.items.length})</Text>
           {orderDetails.items.map((item, index) => {
             // Get the image URL - check multiple possible locations
-            const imageUrl = item.image || 
-                           item.product?.image || 
-                           (item.product?.images && item.product.images[0]);
-            
+            const imageUrl = item.image ||
+              item.product?.image ||
+              (item.product?.images && item.product.images[0]);
+
             // Debug log
             console.log('Order Item Details:', {
               itemId: item.id || item._id,
@@ -228,7 +231,7 @@ const OrderDetails = () => {
               imageUrl,
               item: JSON.stringify(item, null, 2)
             });
-            
+
             // Construct the full image URL
             let imageSource = null;
             if (imageUrl) {
@@ -245,14 +248,14 @@ const OrderDetails = () => {
                 imageSource = { uri: imageUrl.url };
               }
             }
-            
+
             return (
               <View key={item.id || index} style={styles.orderItem}>
                 <View style={styles.itemImageContainer}>
                   {imageSource ? (
-                    <Image 
+                    <Image
                       source={imageSource}
-                      style={styles.itemImage} 
+                      style={styles.itemImage}
                       resizeMode="cover"
                       onError={(error) => {
                         console.log('Image load error:', {
@@ -315,15 +318,15 @@ const OrderDetails = () => {
             <View style={styles.paymentRow}>
               <Text style={styles.paymentLabel}>Payment Method:</Text>
               <Text style={styles.paymentValue}>
-                {orderDetails.paymentMethod === 'wallet' ? 'Wallet' : 
-                 orderDetails.paymentMethod === 'cod' ? 'Cash on Delivery' : 
-                 orderDetails.paymentMethod}
+                {orderDetails.paymentMethod === 'wallet' ? 'Wallet' :
+                  orderDetails.paymentMethod === 'cod' ? 'Cash on Delivery' :
+                    orderDetails.paymentMethod}
               </Text>
             </View>
             <View style={styles.paymentRow}>
               <Text style={styles.paymentLabel}>Payment Status:</Text>
-              <View style={[styles.paymentStatus, 
-                { backgroundColor: orderDetails.paymentStatus === 'paid' ? '#D1FAE5' : '#FEE2E2' }]}>
+              <View style={[styles.paymentStatus,
+              { backgroundColor: orderDetails.paymentStatus === 'paid' ? '#D1FAE5' : '#FEE2E2' }]}>
                 <Text style={[
                   styles.paymentStatusText,
                   { color: orderDetails.paymentStatus === 'paid' ? '#065F46' : '#B91C1C' }
@@ -335,7 +338,7 @@ const OrderDetails = () => {
           </View>
         </View>
 
-      
+
       </ScrollView>
     </SafeAreaView>
   );

@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  TouchableOpacity, 
-  RefreshControl, 
-  ActivityIndicator, 
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
   FlatList,
   StyleSheet,
   Alert
@@ -14,6 +14,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Post } from '../../Assets/Helpers/Service';
+import DriverHeader from '../../Assets/Component/DriverHeader';
 
 
 export default function SellerOrdersScreen() {
@@ -22,17 +23,17 @@ export default function SellerOrdersScreen() {
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState([]);
 
-  
+
   const fetchOrders = async (showLoader = true) => {
     try {
       if (showLoader) {
         setLoading(true);
       }
-      
+
       const response = await Post('product/getOrderBySeller', {});
-      
+
       console.log('Orders API Response:', response);
-      
+
       if (response?.status === true && Array.isArray(response?.data)) {
         // Map the API response to match our UI structure
         const formattedOrders = response.data.map(order => ({
@@ -55,7 +56,7 @@ export default function SellerOrdersScreen() {
           paymentMethod: order.paymentMethod,
           shippingAddress: order.shippingAddress
         }));
-        
+
         setOrders(formattedOrders);
       } else {
         console.log('No orders found or invalid response format');
@@ -92,21 +93,21 @@ export default function SellerOrdersScreen() {
     console.log('=== Order Pressed ===');
     console.log('Order ID:', order.id || order._id);
     console.log('Order Data:', JSON.stringify(order, null, 2));
-    
+
     // Navigate to order details with order data
     console.log('Navigating to OrderDetails...');
-    navigation.navigate('OrderDetails', { 
-      orderId: order.id || order._id, 
-      orderData: order 
+    navigation.navigate('OrderDetails', {
+      orderId: order.id || order._id,
+      orderData: order
     });
-    
+
     console.log('Navigation called');
   };
 
   const getStatusColor = (status) => {
     const normalizedStatus = status?.toLowerCase();
-    
-    switch(normalizedStatus) {
+
+    switch (normalizedStatus) {
       case 'delivered':
       case 'completed':
         return {
@@ -149,10 +150,10 @@ export default function SellerOrdersScreen() {
     if (!dateString) return 'N/A';
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('en-IN', { 
-        day: '2-digit', 
-        month: 'short', 
-        year: 'numeric' 
+      return date.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
       });
     } catch (error) {
       return dateString;
@@ -161,9 +162,9 @@ export default function SellerOrdersScreen() {
 
   const renderOrderItem = ({ item }) => {
     const statusColors = getStatusColor(item.status || item.orderStatus);
-    
+
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.orderCard}
         onPress={() => handleOrderPress(item)}
         activeOpacity={0.7}
@@ -185,7 +186,7 @@ export default function SellerOrdersScreen() {
               </Text>
             )}
           </View>
-          
+
           <View style={styles.orderRight}>
             <Text style={styles.orderAmount}>
               {formatAmount(item.amount || item.totalAmount || item.total)}
@@ -218,16 +219,8 @@ export default function SellerOrdersScreen() {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Icon name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Orders</Text>
-        <View style={styles.headerRight} />
-      </View>
+
+      <DriverHeader item={'My Orders'} showback={true} />
 
       <FlatList
         data={orders}
@@ -235,8 +228,8 @@ export default function SellerOrdersScreen() {
         keyExtractor={(item) => item.id?.toString() || item._id?.toString() || Math.random().toString()}
         contentContainerStyle={orders.length === 0 ? styles.emptyListContent : styles.listContent}
         refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
+          <RefreshControl
+            refreshing={refreshing}
             onRefresh={onRefresh}
             colors={['#3B82F6']}
             tintColor="#3B82F6"
@@ -281,7 +274,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerRight: {
-    width: 40, 
+    width: 40,
   },
   orderCount: {
     fontSize: 14,

@@ -124,7 +124,7 @@ const App = () => {
         if (userDetail?.token) {
             setuser(userDetail);
             getProfile();
-            
+
             // Check user type and role
             if (userDetail.type === 'ADMIN') {
                 setInitial('Employeetab');
@@ -138,9 +138,9 @@ const App = () => {
                 // Check if user is a seller
                 const userRole = String(userDetail?.role || userDetail?.user?.role || '').toLowerCase();
                 const userStatus = String(userDetail?.status || userDetail?.user?.status || '').toLowerCase();
-                
+
                 console.log('🔍 Checking seller status:', { userRole, userStatus });
-                
+
                 if (userRole === 'seller') {
                     if (userStatus === 'verified') {
                         console.log('✅ Verified seller - navigating to SellerTabs');
@@ -184,11 +184,11 @@ const App = () => {
                 if (res.status) {
                     res.data.token = user?.token;
                     setuser(res.data);
-                    
+
                     // Check if seller status changed and update route accordingly
                     const userRole = String(res.data?.role || '').toLowerCase();
                     const userStatus = String(res.data?.status || '').toLowerCase();
-                    
+
                     if (userRole === 'seller' && userStatus === 'verified' && initial !== 'SellerTabs') {
                         console.log('✅ Seller verified - updating to SellerTabs');
                         setInitial('SellerTabs');
@@ -269,9 +269,9 @@ const App = () => {
 
     const APP_ID = 'cc87775c-3a16-47a0-9158-b68702ac5c2c';
 
-    useEffect(() => {
-        initializeOneSignal();
-    }, []);
+    // useEffect(() => {
+    //     initializeOneSignal();
+    // }, []);
 
     const initializeOneSignal = async () => {
         try {
@@ -418,7 +418,7 @@ const App = () => {
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
             <PaperProvider>
-                <ToastProvider 
+                <ToastProvider
                     placement="bottom"
                     duration={3000}
                     animationType="slide-in"

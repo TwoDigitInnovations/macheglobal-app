@@ -1,14 +1,14 @@
 import React, { useCallback, useContext, useEffect, useState } from 'react';
-import { 
-  View, 
-  Text, 
-  Image, 
-  ScrollView, 
-  TouchableOpacity, 
-  StyleSheet, 
-  ActivityIndicator, 
+import {
+  View,
+  Text,
+  Image,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
   Platform,
-  SafeAreaView 
+  SafeAreaView
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { BackIcon } from '../../../Theme';
@@ -21,7 +21,7 @@ export default function CartScreen() {
   const navigation = useNavigation();
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [cartContext = [], setCartContext] = useContext(CartContext) || [[], () => {}];
+  const [cartContext = [], setCartContext] = useContext(CartContext) || [[], () => { }];
   const [selectedItems, setSelectedItems] = useState([]);
 
   // Refresh cart when screen comes into focus
@@ -41,14 +41,14 @@ export default function CartScreen() {
           setCartContext([]);
         }
       };
-      
+
       loadCart();
     }, [])
   );
 
   useEffect(() => {
     console.log('Cart Context:', cartContext);
-    
+
     if (!cartContext || !Array.isArray(cartContext) || cartContext.length === 0) {
       console.log('Cart is empty');
       setCartItems([]);
@@ -73,7 +73,7 @@ export default function CartScreen() {
       deliveryBy: item.isFreeShipping ? 'Free' : '$50',
       freeShipping: item.isFreeShipping ? 'Free Shipping' : ''
     }));
-    
+
     console.log('Transformed Items:', transformedItems);
     setCartItems(transformedItems);
     setLoading(false);
@@ -108,10 +108,10 @@ export default function CartScreen() {
     try {
       // Save to AsyncStorage
       await AsyncStorage.setItem('cartdata', JSON.stringify(newCart));
-      
+
       // Update cart context
       setCartContext(newCart);
-      
+
       console.log(`Updated quantity for item ${itemIndex}: ${newQty}`);
     } catch (error) {
       console.error('Error updating quantity:', error);
@@ -128,10 +128,10 @@ export default function CartScreen() {
     try {
       // Save to AsyncStorage
       await AsyncStorage.setItem('cartdata', JSON.stringify(newCart));
-      
+
       // Update cart context
       setCartContext(newCart);
-      
+
       console.log('Item removed. New cart length:', newCart.length);
     } catch (error) {
       console.error('Error removing item:', error);
@@ -162,11 +162,11 @@ export default function CartScreen() {
     try {
       // Save to AsyncStorage
       await AsyncStorage.setItem('cartdata', JSON.stringify(newCart));
-      
+
       // Update cart context
       setCartContext(newCart);
       setSelectedItems([]);
-      
+
       console.log('Removed items. New cart length:', newCart.length);
     } catch (error) {
       console.error('Error saving cart data:', error);
@@ -197,15 +197,15 @@ export default function CartScreen() {
   console.log('Selected items:', selectedItems.length);
 
   return (
-    <SafeAreaView style={styles.safeContainer}>
+    <View style={styles.safeContainer}>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <BackIcon width={24} height={24} />
+            <BackIcon width={20} height={20} color='white' />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>
             {t('Cart')} {cartItems.length > 0 ? `(${cartItems.length})` : ''}
@@ -215,7 +215,7 @@ export default function CartScreen() {
         {/* Remove Button - Show when items are selected */}
         {selectedItems.length > 0 && (
           <View style={styles.removeButtonContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.removeButton}
               onPress={removeSelectedItems}
             >
@@ -228,7 +228,7 @@ export default function CartScreen() {
 
         {/* Cart Items with Flex Layout */}
         <View style={styles.contentWrapper}>
-          <ScrollView 
+          <ScrollView
             style={styles.scrollView}
             contentContainerStyle={styles.scrollContentContainer}
             showsVerticalScrollIndicator={false}
@@ -245,30 +245,30 @@ export default function CartScreen() {
 
                   {item.variants.map((variant) => (
                     <View key={`${item.id}-${variant.id}`} style={styles.variantCard}>
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         style={styles.productImagePlaceholder}
                         onPress={() => navigation.navigate('Preview', variant.slug || variant.productId)}
                       >
-                        <Image 
+                        <Image
                           source={{ uri: variant.image }}
                           style={styles.productImage}
                           resizeMode="cover"
                         />
                       </TouchableOpacity>
-                      
+
                       <View style={styles.variantInfo}>
                         <View style={styles.nameAndRemove}>
                           <Text style={styles.variantName} numberOfLines={2}>
                             {variant.name}
                           </Text>
-                          <TouchableOpacity 
+                          <TouchableOpacity
                             style={styles.removeIcon}
                             onPress={() => removeItem(item.originalIndex)}
                           >
                             <Text style={styles.removeIconText}>✕</Text>
                           </TouchableOpacity>
                         </View>
-                        
+
                         <View style={styles.priceContainer}>
                           {variant.offerPrice && variant.offerPrice !== variant.price ? (
                             <>
@@ -279,17 +279,17 @@ export default function CartScreen() {
                             <Text style={styles.variantPrice}>${variant.price}</Text>
                           )}
                         </View>
-                        
+
                         {/* Quantity Controls */}
                         <View style={styles.quantityControls}>
-                          <TouchableOpacity 
+                          <TouchableOpacity
                             style={styles.quantityButton}
                             onPress={() => updateQuantity(item.originalIndex, -1)}
                           >
                             <Text style={styles.quantityButtonText}>−</Text>
                           </TouchableOpacity>
                           <Text style={styles.quantityValue}>{variant.qty || 1}</Text>
-                          <TouchableOpacity 
+                          <TouchableOpacity
                             style={styles.quantityButton}
                             onPress={() => updateQuantity(item.originalIndex, 1)}
                           >
@@ -304,7 +304,7 @@ export default function CartScreen() {
             ) : (
               <View style={styles.emptyCartContainer}>
                 <Text style={styles.emptyCartText}>{t('Your cart is empty')}</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.continueShoppingButton}
                   onPress={() => navigation.navigate('Home')}
                 >
@@ -322,7 +322,7 @@ export default function CartScreen() {
                   <Text style={styles.totalLabel}>{t('Total')}</Text>
                   <Text style={styles.totalAmount}>${totalAmount.toFixed(2)}</Text>
                 </View>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.checkoutButton}
                   onPress={() => {
                     console.log('Proceed to checkout clicked!');
@@ -336,7 +336,7 @@ export default function CartScreen() {
           )}
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -398,18 +398,18 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 20,
   },
   backButton: {
-    backgroundColor: 'white',
+    // backgroundColor: 'white',
     width: 30,
     height: 30,
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    // elevation: 3,
+    // shadowColor: '#000',
+    // shadowOffset: { width: 0, height: 2 },
+    // shadowOpacity: 0.1,
+    // shadowRadius: 2,
   },
   headerTitle: {
     fontSize: 24,

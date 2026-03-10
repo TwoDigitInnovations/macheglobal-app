@@ -38,12 +38,12 @@ const Categories = ({ navigation }) => {
   const [toast, setToast] = useContext(ToastContext);
   const [loading, setLoading] = useContext(LoadContext);
   const [categorylist, setcategorylist] = useState();
-  
+
   useEffect(() => {
     console.log('useEffect running, calling getCategory');
     getCategory();
   }, []);
-  
+
   useEffect(() => {
     console.log('categorylist updated:', categorylist);
   }, [categorylist]);
@@ -67,7 +67,7 @@ const Categories = ({ navigation }) => {
     );
   };
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Header />
       {/* <TouchableOpacity
           style={[styles.inpcov]}
@@ -108,14 +108,14 @@ const Categories = ({ navigation }) => {
           renderItem={({ item }) => {
             const hasSubcategory = item.Subcategory && Array.isArray(item.Subcategory) && item.Subcategory.length > 0;
             console.log('Category:', item.name, 'hasSubcategory:', hasSubcategory, 'Subcategory:', item.Subcategory);
-            
+
             return (
               <TouchableOpacity
                 style={{ flex: 1, marginVertical: 10 }}
                 onPress={() => {
                   if (hasSubcategory) {
-                    navigation.navigate('CategorySubCat', { 
-                      categoryId: item._id, 
+                    navigation.navigate('CategorySubCat', {
+                      categoryId: item._id,
                       categoryName: item.name,
                       categoryImage: item.image
                     });
@@ -159,7 +159,7 @@ const Categories = ({ navigation }) => {
         </Text>
       </LinearGradient> */}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 

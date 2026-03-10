@@ -124,8 +124,8 @@ const ManufacturerProductDetail = ({ route }) => {
   }
 
   const images = product?.varients?.[0]?.image || [];
-  const price = product?.varients?.[0]?.selected?.[0]?.offerprice || 
-                product?.varients?.[0]?.selected?.[0]?.price || 0;
+  const price = product?.varients?.[0]?.selected?.[0]?.offerprice ||
+    product?.varients?.[0]?.selected?.[0]?.price || 0;
   const quantity = product?.pieces || 0;
 
   const handleScroll = (event) => {
@@ -136,14 +136,14 @@ const ManufacturerProductDetail = ({ route }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => goBack()} style={styles.backButton}>
-          <BackIcon height={24} width={24} color={Constants.white} />
+          <BackIcon height={20} width={20} color={Constants.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{product?.name}</Text>
-        <View style={{ width: 24 }} />
+        {/* <View style={{ width: 24 }} /> */}
       </View>
 
       <ScrollView style={styles.content}>
@@ -169,7 +169,7 @@ const ManufacturerProductDetail = ({ route }) => {
               </View>
             )}
           />
-          
+
           {/* Image Indicator Dots */}
           {images.length > 1 && (
             <View style={styles.dotsContainer}>
@@ -189,10 +189,10 @@ const ManufacturerProductDetail = ({ route }) => {
         {/* Product Info */}
         <View style={styles.infoContainer}>
           <Text style={styles.productName}>{product?.name}</Text>
-          
+
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>{t('Price')}:</Text>
-            <Text style={styles.price}>{Currency} {price.toFixed(2)}</Text>
+            <Text style={styles.price}>{Currency} {Number(price).toFixed(2)}</Text>
           </View>
 
           <View style={styles.quantityRow}>
@@ -252,7 +252,7 @@ const ManufacturerProductDetail = ({ route }) => {
                   {product?.name}
                 </Text>
                 <Text style={styles.modalProductPrice}>
-                  {Currency} {price.toFixed(2)}
+                  {Currency} {Number(price).toFixed(2)}
                 </Text>
               </View>
             </View>
@@ -310,7 +310,7 @@ const ManufacturerProductDetail = ({ route }) => {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -325,7 +325,8 @@ const styles = StyleSheet.create({
     backgroundColor: Constants.saffron,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    // justifyContent: 'space-between',
+    gap: 10,
     paddingHorizontal: 15,
     paddingVertical: 15,
   },
@@ -337,7 +338,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.Bold,
     color: Constants.white,
     flex: 1,
-    textAlign: 'center',
+    // textAlign: 'center',
     marginHorizontal: 10,
   },
   content: {

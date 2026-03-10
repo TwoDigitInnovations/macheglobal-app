@@ -112,30 +112,30 @@ export default function Navigation(props) {
         <Stack.Screen name="Cart" component={Cart} />
         <Stack.Screen name="InvoiceGenerator" component={InvoiceGenerator} />
         <Stack.Screen name="Language" component={Language} />
-        <Stack.Screen 
-          name="AddAddressScreen" 
-          component={AddAddressScreen} 
+        <Stack.Screen
+          name="AddAddressScreen"
+          component={AddAddressScreen}
           options={{ headerShown: false }}
         />
-        <Stack.Screen 
-          name="SearchAddressScreen" 
-          component={SearchAddressScreen} 
+        <Stack.Screen
+          name="SearchAddressScreen"
+          component={SearchAddressScreen}
           options={{ headerShown: false }}
         />
-        <Stack.Screen 
-          name="AddressListScreen" 
-          component={AddressListScreen} 
+        <Stack.Screen
+          name="AddressListScreen"
+          component={AddressListScreen}
           options={{ headerShown: false }}
         />
         <Stack.Screen name="posterDetail" component={posterDetail} />
         <Stack.Screen name="AddProduct" component={ProductForm} />
         <Stack.Screen name="TestMap" component={TestMap} />
         <Stack.Screen name="SellerStore" component={SellerStore} />
-        <Stack.Screen 
-          name="ProductDetails" 
-          component={ProductDetails} 
+        <Stack.Screen
+          name="ProductDetails"
+          component={ProductDetails}
           options={{
-            headerShown: true,
+            headerShown: false,
             title: 'Product Details',
             headerStyle: {
               backgroundColor: '#FF7000',
@@ -148,27 +148,27 @@ export default function Navigation(props) {
         />
         <Stack.Screen name="SellerTabs" component={SellerTabs} />
         <Stack.Screen name="CategorySubCat" component={CategorySubCat} />
-        <Stack.Screen 
-          name="HelpCenter" 
-          component={HelpCenter} 
-          options={{ headerShown: false }} 
+        <Stack.Screen
+          name="HelpCenter"
+          component={HelpCenter}
+          options={{ headerShown: false }}
         />
-        <Stack.Screen 
-          name="CheckoutOrder" 
-          component={CheckoutOrder} 
-          options={{ headerShown: false }} 
+        <Stack.Screen
+          name="CheckoutOrder"
+          component={CheckoutOrder}
+          options={{ headerShown: false }}
         />
-        <Stack.Screen 
-          name="OrderSuccess" 
-          component={OrderSuccessScreen} 
+        <Stack.Screen
+          name="OrderSuccess"
+          component={OrderSuccessScreen}
           options={{
             headerShown: false,
             gestureEnabled: false // Prevent swipe back
           }}
         />
-        <Stack.Screen 
-          name="Preview" 
-          component={Preview} 
+        <Stack.Screen
+          name="Preview"
+          component={Preview}
           options={{
             headerShown: false
           }}

@@ -6,12 +6,10 @@
 	<string>development</string>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
-		<string>P7PH9NZDDP .com.macheGlobal</string>
+		<string>P7PH9NZDDP.com.macheGlobal</string>
 		<string>macheGlobal.com</string>
 	</array>
 	<key>com.apple.security.application-groups</key>
-	<array>
-		<string>group.com.macheGlobal.onesignal</string>
-	</array>
+	<array/>
 </dict>
 </plist>

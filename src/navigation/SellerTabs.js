@@ -1,7 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import SellerOrders from '../screen/seller/SellerOrders';
 import SellerProducts from '../screen/seller/SellerProducts';
@@ -20,19 +20,19 @@ const OrdersStack = createStackNavigator();
 const OrdersStackScreen = () => {
   console.log('OrdersStackScreen rendered');
   return (
-    <OrdersStack.Navigator 
+    <OrdersStack.Navigator
       initialRouteName="SellerOrders"
       screenOptions={{
         headerShown: false
       }}
     >
-      <OrdersStack.Screen 
-        name="SellerOrders" 
-        component={SellerOrders} 
+      <OrdersStack.Screen
+        name="SellerOrders"
+        component={SellerOrders}
         options={{ headerShown: false }}
       />
-      <OrdersStack.Screen 
-        name="OrderDetails" 
+      <OrdersStack.Screen
+        name="OrderDetails"
         component={OrderDetails}
         options={{
           headerShown: false
@@ -48,11 +48,11 @@ const WalletStack = createStackNavigator();
 const WalletStackScreen = () => (
   <WalletStack.Navigator screenOptions={{ headerShown: false }}>
     <WalletStack.Screen name="WalletMain" component={SellerWallet} />
-    <WalletStack.Screen 
-      name="TransactionHistory" 
+    <WalletStack.Screen
+      name="TransactionHistory"
       component={TransactionHistory}
       options={{
-        headerShown: true,
+        headerShown: false,
         title: 'Withdrawal History',
         headerBackTitle: 'Back'
       }}
@@ -80,11 +80,11 @@ const SellerTabs = () => {
         const AsyncStorage = require('@react-native-async-storage/async-storage').default;
         const userDetail = await AsyncStorage.getItem('userDetail');
         if (!userDetail) return;
-        
+
         const user = JSON.parse(userDetail);
         const { GetApi } = require('../Assets/Helpers/Service');
         const response = await GetApi(`chat/conversations/${user._id}`);
-        
+
         if (response && response.status && response.data) {
           // Count unread messages
           const unreadCount = response.data.reduce((total, conv) => {
@@ -96,9 +96,9 @@ const SellerTabs = () => {
         console.error('Error fetching unread messages:', error);
       }
     };
-    
+
     fetchUnreadCount();
-    
+
     // Refresh every 30 seconds
     const interval = setInterval(fetchUnreadCount, 30000);
     return () => clearInterval(interval);
@@ -126,33 +126,30 @@ const SellerTabs = () => {
         },
         tabBarActiveTintColor: '#FF7000',
         tabBarInactiveTintColor: '#9CA3AF',
+        tabBarShowLabel: true,
         headerShown: false,
+        tabBarHideOnKeyboard: true,
         tabBarStyle: {
-          borderTopWidth: 1,
-          borderTopColor: '#F3F4F6',
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          marginTop: 4,
-        },
-        tabBarBadgeStyle: {
-          backgroundColor: '#FF0000',
-          color: '#fff',
-          fontSize: 10,
-          minWidth: 18,
-          height: 18,
-          borderRadius: 9,
-          lineHeight: 18,
+          position: 'absolute',
+          width: '100%',
+          minHeight: Platform?.OS === 'android' ? 70 : 90,
+          backgroundColor: 'white',
+          borderTopRightRadius: 15,
+          borderTopLeftRadius: 15,
+          borderTopWidth: 0,
+          paddingTop: 20,
+          elevation: 10,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 5,
         },
       })}
     >
       <Tab.Screen name="Products" component={SellerProducts} />
       <Tab.Screen name="Orders" component={OrdersStackScreen} />
-      <Tab.Screen 
-        name="Messages" 
+      <Tab.Screen
+        name="Messages"
         component={MessagesStackScreen}
         options={{
           tabBarBadge: unreadMessagesCount > 0 ? (unreadMessagesCount > 99 ? '99+' : unreadMessagesCount) : undefined,

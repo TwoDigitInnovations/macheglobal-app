@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
-  ActivityIndicator, 
-  RefreshControl, 
-  Modal, 
-  TextInput, 
-  KeyboardAvoidingView, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
@@ -19,6 +19,7 @@ import { useNavigation } from '@react-navigation/native';
 import { GetApi, Post } from '../../Assets/Helpers/Service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import DriverHeader from '../../Assets/Component/DriverHeader';
 
 const SellerWallet = () => {
   const navigation = useNavigation();
@@ -45,7 +46,7 @@ const SellerWallet = () => {
       const user = await AsyncStorage.getItem('userDetail');
       const userDetail = JSON.parse(user);
       const sellerId = userDetail?.user?._id || userDetail?._id || userDetail?.id;
-      
+
       if (!sellerId) {
         throw new Error('Seller ID not found');
       }
@@ -57,10 +58,10 @@ const SellerWallet = () => {
         GetApi(`wallet/seller/${sellerId}`, {}),
         GetApi(`wallet/transactions?sellerId=${sellerId}`, {})
       ]);
-      
+
       console.log('Wallet balance response:', walletResponse);
       console.log('Transactions response:', transactionsResponse);
-      
+
       if (walletResponse && walletResponse.data) {
         const formattedData = {
           balance: walletResponse.data.balance || 0,
@@ -68,10 +69,10 @@ const SellerWallet = () => {
             id: trans._id || Math.random().toString(),
             amount: trans.amount || 0,
             description: trans.description || trans.type || 'Transaction',
-            date: trans.createdAt ? new Date(trans.createdAt).toLocaleDateString('en-US', { 
-              year: 'numeric', 
-              month: 'short', 
-              day: 'numeric' 
+            date: trans.createdAt ? new Date(trans.createdAt).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric'
             }) : 'N/A',
             type: trans.type?.toLowerCase() || 'credit'
           }))
@@ -95,61 +96,61 @@ const SellerWallet = () => {
 
   const handleWithdrawSubmit = async () => {
     const amount = parseFloat(withdrawAmount);
-    
+
     // Validate amount
     if (!amount || isNaN(amount) || amount <= 0) {
       setWithdrawError('Please enter a valid amount');
       return;
     }
-    
+
     if (amount > walletData.balance) {
       setWithdrawError('Insufficient balance');
       return;
     }
-    
+
     try {
       setLoading(true);
-      
-      
+
+
       const user = await AsyncStorage.getItem('userDetail');
       if (!user) {
         throw new Error('User not authenticated. Please log in again.');
       }
-      
+
       const userDetail = JSON.parse(user);
       console.log('User details from storage:', userDetail);
-      
-      
+
+
       const sellerId = userDetail?._id || userDetail?.id;
       const sellerName = userDetail?.name || userDetail?.fullName || 'Seller';
-      
+
       if (!sellerId) {
         console.error('User ID not found in user details');
         throw new Error('User ID not found. Please log in again.');
       }
-      
-      console.log('Sending withdrawal request with:', { 
-        amount, 
-        sellerId, 
-        sellerName 
+
+      console.log('Sending withdrawal request with:', {
+        amount,
+        sellerId,
+        sellerName
       });
-      
+
       // Make the withdrawal request
       const response = await Post('wallet/withdraw', {
         amount: amount,
         sellerId: sellerId,
         sellerName: sellerName
       });
-      
+
       if (response.status === true) {
         setWithdrawAmount('');
         setWithdrawError('');
         setWithdrawModalVisible(false);
         setShowSuccess(true);
-        
+
         // Refresh wallet data
         await fetchWalletData();
-        
+
         // Hide success message after 3 seconds and navigate to transaction history
         setTimeout(() => {
           setShowSuccess(false);
@@ -169,7 +170,7 @@ const SellerWallet = () => {
       setLoading(false);
     }
   };
-  
+
   const handleCloseModal = () => {
     setWithdrawModalVisible(false);
     setWithdrawAmount('');
@@ -180,7 +181,7 @@ const SellerWallet = () => {
   const onRefresh = useCallback(() => {
     fetchWalletData();
   }, []);
-  
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -190,15 +191,15 @@ const SellerWallet = () => {
 
   const renderTransaction = (transaction) => {
     const isCredit = transaction.type === 'credit';
-    
+
     return (
       <View key={transaction.id} style={styles.transactionItem}>
         <View style={styles.transactionLeft}>
           <View style={[styles.iconContainer, isCredit ? styles.creditIconBg : styles.debitIconBg]}>
-            <Icon 
-              name={isCredit ? 'arrow-downward' : 'arrow-upward'} 
-              size={20} 
-              color={isCredit ? '#4CAF50' : '#F44336'} 
+            <Icon
+              name={isCredit ? 'arrow-downward' : 'arrow-upward'}
+              size={20}
+              color={isCredit ? '#4CAF50' : '#F44336'}
             />
           </View>
           <View style={styles.transactionInfo}>
@@ -208,7 +209,7 @@ const SellerWallet = () => {
             <Text style={styles.transactionDate}>{transaction.date}</Text>
           </View>
         </View>
-        <Text 
+        <Text
           style={[
             styles.transactionAmount,
             isCredit ? styles.credit : styles.debit
@@ -232,7 +233,7 @@ const SellerWallet = () => {
     return (
       <View style={[styles.container, styles.center, { padding: 20 }]}>
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.retryButton}
           onPress={fetchWalletData}
         >
@@ -245,7 +246,7 @@ const SellerWallet = () => {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      {/* <View style={styles.header}>
         <View style={styles.headerLeft}>
           <TouchableOpacity 
             style={styles.backButton}
@@ -256,7 +257,9 @@ const SellerWallet = () => {
           <Text style={styles.headerTitle}>Wallet</Text>
         </View>
         <View style={styles.headerRight} />
-      </View>
+      </View> */}
+
+      <DriverHeader item={'Wallet'} showback={true} />
 
       {/* Success Message */}
       {showSuccess && (
@@ -267,54 +270,54 @@ const SellerWallet = () => {
           </Text>
         </View>
       )}
-      
+
       {/* Main Content */}
       <View style={styles.contentContainer}>
         {/* Balance Card */}
         <View style={styles.balanceCard}>
-        <Text style={styles.balanceLabel}>Available Balance</Text>
-        <Text style={styles.balanceAmount}>{formatCurrency(walletData.balance)}</Text>
-        
-        <View style={styles.actionButtons}>
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.withdrawButton]}
-            onPress={handleWithdrawPress}
-          >
-            <Text style={styles.withdrawButtonText}>Withdraw</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.historyButton]}
-            onPress={() => navigation.navigate('TransactionHistory')}
-          >
-            <Text style={styles.historyButtonText}>Transaction History</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+          <Text style={styles.balanceLabel}>Available Balance</Text>
+          <Text style={styles.balanceAmount}>{formatCurrency(walletData.balance)}</Text>
 
-      {/* Recent Transactions */}
-      <View style={styles.transactionsContainer}>
-        <Text style={styles.sectionTitle}>Recent Transactions</Text>
-        <ScrollView 
-          style={styles.transactionsList}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={['#FF7000']}
-              tintColor="#FF7000"
-            />
-          }
-        >
-          {walletData.transactions.length > 0 ? (
-            walletData.transactions.map(renderTransaction)
-          ) : (
-            <Text style={styles.noTransactions}>No transactions found</Text>
-          )}
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.withdrawButton]}
+              onPress={handleWithdrawPress}
+            >
+              <Text style={styles.withdrawButtonText}>Withdraw</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.historyButton]}
+              onPress={() => navigation.navigate('TransactionHistory')}
+            >
+              <Text style={styles.historyButtonText}>Transaction History</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Recent Transactions */}
+        <View style={styles.transactionsContainer}>
+          <Text style={styles.sectionTitle}>Recent Transactions</Text>
+          <ScrollView
+            style={styles.transactionsList}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={['#FF7000']}
+                tintColor="#FF7000"
+              />
+            }
+          >
+            {walletData.transactions.length > 0 ? (
+              walletData.transactions.map(renderTransaction)
+            ) : (
+              <Text style={styles.noTransactions}>No transactions found</Text>
+            )}
           </ScrollView>
         </View>
       </View>
-      
+
       {/* Withdraw Modal */}
       <Modal
         animationType="slide"
@@ -324,7 +327,7 @@ const SellerWallet = () => {
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.modalOverlay}>
-            <KeyboardAvoidingView 
+            <KeyboardAvoidingView
               behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
               style={styles.keyboardAvoidingView}
             >
@@ -335,14 +338,14 @@ const SellerWallet = () => {
                     <Text style={styles.closeButtonText}>✕</Text>
                   </TouchableOpacity>
                 </View>
-                
+
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>Available Balance</Text>
                   <View style={styles.balanceContainer}>
                     <Text style={styles.balanceText}>${walletData.balance.toFixed(2)}</Text>
                   </View>
                 </View>
-                
+
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>Amount to Withdraw</Text>
                   <TextInput
@@ -360,8 +363,8 @@ const SellerWallet = () => {
                     <Text style={styles.errorText}>{withdrawError}</Text>
                   ) : null}
                 </View>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={styles.submitButton}
                   onPress={handleWithdrawSubmit}
                   disabled={!withdrawAmount}
@@ -370,7 +373,7 @@ const SellerWallet = () => {
                     Request Withdrawal
                   </Text>
                 </TouchableOpacity>
-                
+
                 <Text style={styles.note}>
                   Note: Withdrawals may take 1-3 business days to process.
                 </Text>

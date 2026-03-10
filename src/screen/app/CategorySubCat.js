@@ -13,12 +13,12 @@ export default function CategoriesScreen({ route }) {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState(route?.params?.selectedCategoryId || 'all');
 
-  
+
   useEffect(() => {
     fetchCategories();
   }, []);
 
-  
+
   useEffect(() => {
     if (selectedCategory && categories.length > 0) {
       fetchSubcategories(selectedCategory);
@@ -31,10 +31,10 @@ export default function CategoriesScreen({ route }) {
       const response = await GetApi('category/getCategories', {});
       if (response.status) {
         setCategories([{ _id: 'all', name: t('All') }, ...response.data]);
-        
+
         // If a category was passed from Home, use it, otherwise use 'all'
         const initialCategory = route?.params?.selectedCategoryId || 'all';
-        
+
         if (initialCategory === 'all' && response.data.length > 0) {
           // Set subcategories for 'all' category by combining all subcategories
           const allSubcategories = response.data.flatMap(cat => cat.Subcategory || []);
@@ -84,14 +84,14 @@ export default function CategoriesScreen({ route }) {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
           <BackIcon height={20} width={20} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('Categories')}</Text>
-        <View style={{width: 40}} />
+        <View style={{ width: 40 }} />
       </View>
 
       <View style={styles.content}>
@@ -190,16 +190,17 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#FF7000',
-    paddingTop: 50,
+    paddingTop: 10,
     paddingBottom: 18,
     paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 10,
+    // justifyContent: 'space-between',
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
-  
+
   backButton: {
     padding: 5,
   },

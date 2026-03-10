@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
-  ActivityIndicator, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
 import { GetApi } from '../../Assets/Helpers/Service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import DriverHeader from '../../Assets/Component/DriverHeader';
 
 const TransactionHistory = ({ navigation }) => {
   const [transactions, setTransactions] = useState([]);
@@ -22,19 +23,19 @@ const TransactionHistory = ({ navigation }) => {
     try {
       setRefreshing(true);
       setError(null);
-      
+
       const user = await AsyncStorage.getItem('userDetail');
       const userDetail = JSON.parse(user);
       const sellerId = userDetail?.id || userDetail?._id;
-      
+
       if (!sellerId) {
         throw new Error('Seller ID not found');
       }
 
       const response = await GetApi(`wallet/seller/withdrawals/${sellerId}`);
-      
+
       console.log('Withdrawal history response:', response);
-      
+
       if (response?.status === true && Array.isArray(response.data)) {
         const formattedTransactions = response.data.map(trans => ({
           id: trans._id || Math.random().toString(),
@@ -51,7 +52,7 @@ const TransactionHistory = ({ navigation }) => {
           transactionId: trans.transactionId || 'N/A',
           notes: trans.notes || ''
         }));
-        
+
         setTransactions(formattedTransactions);
       } else {
         throw new Error(response?.message || 'Failed to fetch withdrawal history');
@@ -114,10 +115,10 @@ const TransactionHistory = ({ navigation }) => {
       <View style={styles.transactionHeader}>
         <View style={styles.transactionLeft}>
           <View style={[styles.statusIcon, { backgroundColor: `${getStatusColor(transaction.status)}20` }]}>
-            <Icon 
-              name={getStatusIcon(transaction.status)} 
-              size={20} 
-              color={getStatusColor(transaction.status)} 
+            <Icon
+              name={getStatusIcon(transaction.status)}
+              size={20}
+              color={getStatusColor(transaction.status)}
             />
           </View>
           <View>
@@ -129,7 +130,7 @@ const TransactionHistory = ({ navigation }) => {
           {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
         </Text>
       </View>
-      
+
       <View style={styles.transactionDetails}>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Date:</Text>
@@ -164,7 +165,7 @@ const TransactionHistory = ({ navigation }) => {
       <View style={[styles.container, styles.center, { padding: 20 }]}>
         <Icon name="error-outline" size={48} color="#F44336" style={{ marginBottom: 16 }} />
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.retryButton}
           onPress={fetchWithdrawalHistory}
         >
@@ -176,9 +177,9 @@ const TransactionHistory = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-     
+      <DriverHeader item={'Withdrawal History'} showback={true} />
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         refreshControl={
           <RefreshControl

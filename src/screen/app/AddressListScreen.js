@@ -15,6 +15,7 @@ import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/nativ
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { GetApi, Delete, Put } from '../../Assets/Helpers/Service';
 import { useTranslation } from 'react-i18next';
+import DriverHeader from '../../Assets/Component/DriverHeader';
 
 const AddressListScreen = ({ navigation, route }) => {
   const { t } = useTranslation();
@@ -30,7 +31,7 @@ const AddressListScreen = ({ navigation, route }) => {
       const response = await GetApi('addresses');
       if (response.success) {
         // Sort addresses to show default address first
-        const sortedAddresses = response.data ? [...response.data].sort((a, b) => 
+        const sortedAddresses = response.data ? [...response.data].sort((a, b) =>
           (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0)
         ) : [];
         setAddresses(sortedAddresses);
@@ -50,7 +51,7 @@ const AddressListScreen = ({ navigation, route }) => {
   useFocusEffect(
     useCallback(() => {
       fetchAddresses();
-      
+
       // Show success message if coming from Add/Edit screen
       if (route.params?.message) {
         Alert.alert(t('Success'), route.params.message);
@@ -68,7 +69,7 @@ const AddressListScreen = ({ navigation, route }) => {
   // Handle address selection for checkout
   const handleSelectAddress = (address) => {
     console.log('Address selected:', address);
-    
+
     if (route.params?.fromCheckout) {
       // If we have a callback, use it
       if (route.params.onSelectAddress) {
@@ -79,7 +80,7 @@ const AddressListScreen = ({ navigation, route }) => {
         console.log('Navigating back with address');
         navigation.navigate({
           name: 'CheckoutOrder',
-          params: { 
+          params: {
             selectedAddress: address,
             timestamp: new Date().getTime() // Add timestamp to force re-render
           },
@@ -91,7 +92,7 @@ const AddressListScreen = ({ navigation, route }) => {
     } else {
       // If not from checkout, just navigate to checkout with the selected address
       console.log('Navigating to CheckoutOrder with address');
-      navigation.navigate('CheckoutOrder', { 
+      navigation.navigate('CheckoutOrder', {
         selectedAddress: address,
         timestamp: new Date().getTime() // Add timestamp to force re-render
       });
@@ -155,10 +156,11 @@ const AddressListScreen = ({ navigation, route }) => {
   // Render the main content
   return (
     <SafeAreaView style={styles.safeContainer}>
-      <StatusBar barStyle="light-content" backgroundColor="#FF7000" />
+      {/* <StatusBar barStyle="light-content" backgroundColor="#FF7000" /> */}
+      <DriverHeader item={t('My Address')} showback={true} />
       <View style={styles.container}>
         {/* Header */}
-        <View style={styles.headerContainer}>
+        {/* <View style={styles.headerContainer}>
           <View style={styles.header}>
             <TouchableOpacity
               style={styles.backButton}
@@ -171,7 +173,7 @@ const AddressListScreen = ({ navigation, route }) => {
               <Text style={styles.headerTitle}>{t('My Address')}</Text>
             </View>
           </View>
-        </View>
+        </View> */}
 
         <ScrollView
           style={styles.scrollView}
@@ -256,12 +258,12 @@ const AddressListScreen = ({ navigation, route }) => {
                     <Icon name="person" size={16} color="#666666" />
                     <Text style={styles.addressName}>{address.name}</Text>
                   </View>
-                  
+
                   <View style={styles.infoRow}>
                     <Icon name="phone" size={14} color="#999999" />
                     <Text style={styles.addressPhone}>{address.phone}</Text>
                   </View>
-                  
+
                   <View style={styles.addressTextContainer}>
                     <Text style={styles.addressStreet}>{address.street}</Text>
                     <Text style={styles.addressCity}>
@@ -315,7 +317,7 @@ const AddressListScreen = ({ navigation, route }) => {
               </TouchableOpacity>
             ))
           )}
-          
+
           {/* {addresses.length === 0 && (
             <View style={styles.emptyContainer}>
               <View style={styles.emptyIconContainer}>
@@ -358,8 +360,8 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     backgroundColor: '#FF7000',
-    borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25,
+    // borderBottomLeftRadius: 25,
+    // borderBottomRightRadius: 25,
     elevation: 8,
     shadowColor: '#FF7000',
     shadowOffset: { width: 0, height: 4 },
