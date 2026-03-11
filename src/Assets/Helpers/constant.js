@@ -2,20 +2,13 @@
 // const prodUrl = 'http://192.168.220.173:3000/v1/api/';
 
 
-<<<<<<< HEAD
-// const prodUrl = 'http://192.168.56.1:3003/api/';
-
-
-const prodUrl = 'https://api.macheglobal.com/api/';
-=======
-//  const prodUrl = 'http://192.168.1.8:3003/api/';
+//  const prodUrl = 'http://192.168.1.5:3003/api/';
 
 
 //  const prodUrl = 'http://192.168.56.1:3003/api/';
 
 // Production URL
-   const prodUrl = 'https://api.macheglobal.com/api/';
->>>>>>> main
+ const prodUrl = 'https://api.macheglobal.com/api/';
 
 let apiUrl = prodUrl;
 export const Googlekey = 'AIzaSyB7uae9_UQGuFbdzHKJq1UXZJDufQUjyME';

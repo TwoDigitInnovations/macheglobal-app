@@ -359,7 +359,7 @@ const Coupons = () => {
           )}
         </ScrollView>
       )}
-    </View>
+    </SafeAreaView>
   );
 };
 

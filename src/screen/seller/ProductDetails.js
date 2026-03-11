@@ -12,6 +12,7 @@ import {
   FlatList
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { GetApi } from '../../Assets/Helpers/Service';
 import DriverHeader from '../../Assets/Component/DriverHeader';
 
@@ -346,7 +347,7 @@ const ProductDetails = () => {
           </View>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 

@@ -64,13 +64,9 @@ const WalletStackScreen = () => (
       name="TransactionHistory"
       component={TransactionHistory}
       options={{
-<<<<<<< HEAD
         headerShown: false,
         title: 'Withdrawal History',
         headerBackTitle: 'Back'
-=======
-        headerShown: false
->>>>>>> main
       }}
     />
   </WalletStack.Navigator>
@@ -164,15 +160,9 @@ const SellerTabs = () => {
     };
 
     fetchUnreadCount();
-<<<<<<< HEAD
-
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchUnreadCount, 30000);
-=======
     
     // Refresh every 5 seconds for faster updates
     const interval = setInterval(fetchUnreadCount, 5000);
->>>>>>> main
     return () => clearInterval(interval);
   }, []);
 
@@ -272,28 +262,6 @@ const SellerTabs = () => {
         headerShown: false,
         tabBarHideOnKeyboard: true,
         tabBarStyle: {
-<<<<<<< HEAD
-          position: 'absolute',
-          width: '100%',
-          minHeight: Platform?.OS === 'android' ? 70 : 90,
-          backgroundColor: 'white',
-          borderTopRightRadius: 15,
-          borderTopLeftRadius: 15,
-          borderTopWidth: 0,
-          paddingTop: 20,
-          elevation: 10,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 5,
-        },
-      })}
-    >
-      <Tab.Screen name="Products" component={SellerProducts} />
-      <Tab.Screen name="Orders" component={OrdersStackScreen} />
-      <Tab.Screen
-        name="Messages"
-=======
           borderTopWidth: 1,
           borderTopColor: '#F3F4F6',
           height: 75,
@@ -328,7 +296,6 @@ const SellerTabs = () => {
       />
       <Tab.Screen 
         name="Messages" 
->>>>>>> main
         component={MessagesStackScreen}
         options={{
           title: t('Messages'),
