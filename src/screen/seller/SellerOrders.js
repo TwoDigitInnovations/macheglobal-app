@@ -17,11 +17,15 @@ import { Post } from '../../Assets/Helpers/Service';
 import DriverHeader from '../../Assets/Component/DriverHeader';
 
 
-export default function SellerOrdersScreen() {
+export default function SellerOrdersScreen({ route }) {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState([]);
+  
+  // Check if we came from Account screen
+  const fromAccount = route?.params?.fromAccount || false;
 
 
   const fetchOrders = async (showLoader = true) => {
@@ -65,9 +69,9 @@ export default function SellerOrdersScreen() {
     } catch (error) {
       console.error('Error fetching orders:', error);
       if (error === 'No internet connection') {
-        Alert.alert('No Internet', 'Please check your internet connection');
+        Alert.alert(t('No Internet'), t('Please check your internet connection'));
       } else {
-        Alert.alert('Error', 'Failed to load orders. Please try again.');
+        Alert.alert(t('Error'), t('Failed to load orders. Please try again.'));
       }
       setOrders([]);
     } finally {
@@ -182,7 +186,7 @@ export default function SellerOrdersScreen() {
             </Text>
             {item.items?.length > 0 && (
               <Text style={styles.itemCount}>
-                {item.items.length} {item.items.length === 1 ? 'item' : 'items'}
+                {item.items.length} {item.items.length === 1 ? t('item') : t('items')}
               </Text>
             )}
           </View>
@@ -210,7 +214,7 @@ export default function SellerOrdersScreen() {
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#3B82F6" />
-          <Text style={styles.loadingText}>Loading orders...</Text>
+          <Text style={styles.loadingText}>{t('Loading orders...')}</Text>
         </View>
       </View>
     );
@@ -237,9 +241,9 @@ export default function SellerOrdersScreen() {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No orders found</Text>
+            <Text style={styles.emptyText}>{t('No orders found')}</Text>
             <Text style={styles.emptySubtext}>
-              Your orders will appear here once customers place orders
+              {t('Your orders will appear here once customers place orders')}
             </Text>
           </View>
         }

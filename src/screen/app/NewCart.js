@@ -8,27 +8,35 @@ import {
   StyleSheet,
   ActivityIndicator,
   Platform,
-  SafeAreaView
+  SafeAreaView,
+  Alert 
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { BackIcon } from '../../../Theme';
 import { CartContext } from '../../../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
+import Toast from 'react-native-toast-message';
+import { syncCartWithLatestData } from '../../Assets/Helpers/cartSyncHelper';
 
 export default function CartScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [cartContext = [], setCartContext] = useContext(CartContext) || [[], () => { }];
+  const [syncing, setSyncing] = useState(false);
+  const [cartContext = [], setCartContext] = useContext(CartContext) || [[], () => {}];
   const [selectedItems, setSelectedItems] = useState([]);
+  const [productStocks, setProductStocks] = useState({}); 
 
-  // Refresh cart when screen comes into focus
+ 
   useFocusEffect(
     useCallback(() => {
       const loadCart = async () => {
         try {
+          setLoading(true);
+          
+          
           const savedCart = await AsyncStorage.getItem('cartdata');
           if (savedCart) {
             const parsedCart = JSON.parse(savedCart);
@@ -36,9 +44,12 @@ export default function CartScreen() {
           } else {
             setCartContext([]);
           }
+          
         } catch (error) {
           console.error('Error loading cart:', error);
           setCartContext([]);
+        } finally {
+          setLoading(false);
         }
       };
 
@@ -46,11 +57,36 @@ export default function CartScreen() {
     }, [])
   );
 
-  useEffect(() => {
-    console.log('Cart Context:', cartContext);
+ 
+  const showCartChangesAlert = (changes) => {
+    const deletedItems = changes.filter(c => c.type === 'PRODUCT_DELETED' || c.type === 'VARIANT_DELETED' || c.type === 'OUT_OF_STOCK');
+    const priceChanges = changes.filter(c => c.type === 'PRICE_CHANGED');
+    const qtyAdjustments = changes.filter(c => c.type === 'QUANTITY_ADJUSTED');
+    
+    let message = '';
+    
+    if (deletedItems.length > 0) {
+      message += `${deletedItems.length} item(s) removed (unavailable)\n`;
+    }
+    if (priceChanges.length > 0) {
+      message += `${priceChanges.length} item(s) price updated\n`;
+    }
+    if (qtyAdjustments.length > 0) {
+      message += `${qtyAdjustments.length} item(s) quantity adjusted\n`;
+    }
+    
+    if (message) {
+      Alert.alert(
+        t('Cart Updated'),
+        message.trim(),
+        [{ text: t('OK') }]
+      );
+    }
+  };
 
+  useEffect(() => {
+    
     if (!cartContext || !Array.isArray(cartContext) || cartContext.length === 0) {
-      console.log('Cart is empty');
       setCartItems([]);
       setLoading(false);
       return;
@@ -73,11 +109,71 @@ export default function CartScreen() {
       deliveryBy: item.isFreeShipping ? 'Free' : '$50',
       freeShipping: item.isFreeShipping ? 'Free Shipping' : ''
     }));
-
-    console.log('Transformed Items:', transformedItems);
     setCartItems(transformedItems);
     setLoading(false);
+    
+   
+    fetchStockForAllProducts(cartContext);
   }, [cartContext]);
+
+ 
+  const fetchStockForAllProducts = async (cart) => {
+    const { GetApi } = require('../../Assets/Helpers/Service');
+    const stockData = {};
+    
+    for (const item of cart) {
+      
+      if (item.slug) {
+        try {
+          const response = await GetApi(`product/getProductByslug?slug=${item.slug}`);
+          if (response && response.status && response.data) {
+            const product = response.data;
+            
+         
+            let availableStock = 0;
+            
+            if (product.variants && product.variants.length > 0) {
+         
+              let targetVariant = null;
+              if (item.variantId) {
+                targetVariant = product.variants.find(v => v._id === item.variantId);
+              } else if (item.variantIndex !== undefined && product.variants[item.variantIndex]) {
+                targetVariant = product.variants[item.variantIndex];
+              } else {
+                targetVariant = product.variants[0]; 
+              }
+              availableStock = parseInt(targetVariant?.stock) || 0;
+            } else if (product.varients && product.varients.length > 0) {
+             
+              const variantIndex = item.variantIndex || 0;
+              const targetVariant = product.varients[variantIndex] || product.varients[0];
+              availableStock = parseInt(targetVariant?.selected?.[0]?.qty) || 0;
+            } else if (product.simpleProduct && product.simpleProduct.stock !== undefined) {
+            
+              availableStock = parseInt(product.simpleProduct.stock) || 0;
+            } else if (product.pieces !== undefined) {
+            
+              availableStock = parseInt(product.pieces) || 0;
+            }
+            
+         
+            let stockKey = item.productid;
+            if (item.selectedAttributes && Array.isArray(item.selectedAttributes)) {
+              const sizeAttr = item.selectedAttributes.find(attr => attr.name.toLowerCase() === 'size');
+              if (sizeAttr) {
+                stockKey = `${item.productid}_${sizeAttr.value}`;
+              }
+            }
+            
+            stockData[stockKey] = availableStock;
+          }
+        } catch (error) {
+          console.error(`Error fetching stock for ${item.slug}:`, error);
+        }
+      }
+    }
+    setProductStocks(stockData);
+  };
 
   const toggleItemSelection = useCallback((itemId) => {
     setSelectedItems(prevSelectedItems => {
@@ -90,29 +186,59 @@ export default function CartScreen() {
   }, []);
 
   const updateQuantity = async (itemIndex, change) => {
+    console.log(' updateQuantity called - Index:', itemIndex, 'Change:', change);
+    
     if (itemIndex === undefined) return;
 
     const newCart = [...cartContext];
-    const currentQty = newCart[itemIndex].qty || 1;
+    const item = newCart[itemIndex];
+    const currentQty = item.qty || 1;
     const newQty = currentQty + change;
 
-    // If quantity becomes 0 or less, remove the item
+   
     if (newQty <= 0) {
       removeItem(itemIndex);
       return;
     }
 
-    // Update quantity
+  
+    if (change > 0) {
+     
+      const cartItem = item;
+      let stockKey = item.productid;
+      if (cartItem?.selectedAttributes && Array.isArray(cartItem.selectedAttributes)) {
+        const sizeAttr = cartItem.selectedAttributes.find(attr => attr.name.toLowerCase() === 'size');
+        if (sizeAttr) {
+          stockKey = `${item.productid}_${sizeAttr.value}`;
+        }
+      }
+      
+      const availableStock = productStocks[stockKey];
+      
+      console.log(' Stock check - Available:', availableStock, 'NewQty:', newQty, 'StockKey:', stockKey);
+      
+      if (availableStock !== undefined && newQty > availableStock) {
+        Toast.show({
+          type: 'error',
+          text1: t('Out of Stock'),
+          text2: t('Only') + ' ' + availableStock + ' ' + t('items available in stock'),
+          visibilityTime: 2000,
+        });
+        return;
+      }
+    }
+
+   
     newCart[itemIndex].qty = newQty;
 
     try {
-      // Save to AsyncStorage
+      
       await AsyncStorage.setItem('cartdata', JSON.stringify(newCart));
-
-      // Update cart context
+      
+    
       setCartContext(newCart);
-
-      console.log(`Updated quantity for item ${itemIndex}: ${newQty}`);
+      
+      console.log('Quantity updated to:', newQty);
     } catch (error) {
       console.error('Error updating quantity:', error);
       alert(t('Failed to update quantity. Please try again.'));
@@ -126,13 +252,11 @@ export default function CartScreen() {
     newCart.splice(itemIndex, 1);
 
     try {
-      // Save to AsyncStorage
+     
       await AsyncStorage.setItem('cartdata', JSON.stringify(newCart));
-
-      // Update cart context
+      
+    
       setCartContext(newCart);
-
-      console.log('Item removed. New cart length:', newCart.length);
     } catch (error) {
       console.error('Error removing item:', error);
       alert(t('Failed to remove item. Please try again.'));
@@ -145,13 +269,13 @@ export default function CartScreen() {
       return;
     }
 
-    // Get indices of items to remove
+   
     const indicesToRemove = cartItems
       .filter(item => selectedItems.includes(item.id))
       .map(item => item.originalIndex)
-      .sort((a, b) => b - a); // Sort in descending order
+      .sort((a, b) => b - a); 
 
-    // Create new cart array without selected items
+   
     const newCart = [...cartContext];
     indicesToRemove.forEach(index => {
       if (index !== undefined) {
@@ -160,25 +284,23 @@ export default function CartScreen() {
     });
 
     try {
-      // Save to AsyncStorage
+      
       await AsyncStorage.setItem('cartdata', JSON.stringify(newCart));
-
-      // Update cart context
+      
+   
       setCartContext(newCart);
       setSelectedItems([]);
-
-      console.log('Removed items. New cart length:', newCart.length);
     } catch (error) {
       console.error('Error saving cart data:', error);
       alert(t('Failed to update cart. Please try again.'));
     }
   };
 
-  if (loading) {
+  if (loading || syncing) {
     return (
       <SafeAreaView style={[styles.container, styles.centerContent]}>
-
         <ActivityIndicator size="large" color="#FF7000" />
+        {syncing && <Text style={styles.syncingText}>{t('Syncing cart...')}</Text>}
       </SafeAreaView>
     );
   }
@@ -192,9 +314,6 @@ export default function CartScreen() {
   };
 
   const totalAmount = calculateTotal();
-
-  console.log('Rendering Cart. Items count:', cartItems.length);
-  console.log('Selected items:', selectedItems.length);
 
   return (
     <View style={styles.safeContainer}>
@@ -234,18 +353,24 @@ export default function CartScreen() {
             showsVerticalScrollIndicator={false}
           >
             {cartItems.length > 0 ? (
-              cartItems.map((item, itemIndex) => (
-                <View key={item.id} style={styles.deliverySection}>
-                  {itemIndex === 0 && (
-                    <View style={styles.deliveryHeader}>
-                      <Text style={styles.deliveryText}>{t('Estimated Delivery: ')}</Text>
-                      <Text style={styles.deliveryPrice}>{t('3-5 Business Days')}</Text>
-                    </View>
-                  )}
+              cartItems.map((item, itemIndex) => {
+                // Create a unique key that includes size if available
+                const cartItem = cartContext[item.originalIndex];
+                const sizeAttr = cartItem?.selectedAttributes?.find(attr => attr.name.toLowerCase() === 'size');
+                const uniqueKey = sizeAttr ? `${item.id}_${sizeAttr.value}` : `${item.id}_${itemIndex}`;
+                
+                return (
+                  <View key={uniqueKey} style={styles.deliverySection}>
+                    {itemIndex === 0 && (
+                      <View style={styles.deliveryHeader}>
+                        <Text style={styles.deliveryText}>{t('Estimated Delivery: ')}</Text>
+                        <Text style={styles.deliveryPrice}>{t('3-5 Business Days')}</Text>
+                      </View>
+                    )}
 
-                  {item.variants.map((variant) => (
-                    <View key={`${item.id}-${variant.id}`} style={styles.variantCard}>
-                      <TouchableOpacity
+                    {item.variants.map((variant) => (
+                      <View key={`${uniqueKey}-${variant.id}`} style={styles.variantCard}>
+                      <TouchableOpacity 
                         style={styles.productImagePlaceholder}
                         onPress={() => navigation.navigate('Preview', variant.slug || variant.productId)}
                       >
@@ -279,7 +404,81 @@ export default function CartScreen() {
                             <Text style={styles.variantPrice}>${variant.price}</Text>
                           )}
                         </View>
-
+                        
+                        {/* Display Color and Size attributes */}
+                        {(() => {
+                          const cartItem = cartContext[item.originalIndex];
+                          const attributes = cartItem?.selectedAttributes || [];
+                          
+                          if (attributes.length > 0) {
+                            return (
+                              <View style={styles.attributesContainer}>
+                                {attributes.map((attr, idx) => {
+                                  const attrName = attr.name?.toLowerCase();
+                                  
+                                  // Display color as a circle
+                                  if (attrName === 'color') {
+                                    // Check if it's a hex color or color name
+                                    const isHexColor = /^#[0-9A-F]{6}$/i.test(attr.value);
+                                    
+                                    return (
+                                      <View key={idx} style={styles.attributeItem}>
+                                        <Text style={styles.attributeLabel}>{t('Color')}: </Text>
+                                        {isHexColor ? (
+                                          <View style={[
+                                            styles.colorCircle,
+                                            { backgroundColor: attr.value }
+                                          ]} />
+                                        ) : (
+                                          <Text style={styles.attributeValue}>{attr.value}</Text>
+                                        )}
+                                      </View>
+                                    );
+                                  }
+                                  
+                                  // Display size as text
+                                  if (attrName === 'size') {
+                                    return (
+                                      <View key={idx} style={styles.attributeItem}>
+                                        <Text style={styles.attributeLabel}>{t('Size')}: </Text>
+                                        <Text style={styles.attributeValue}>{attr.value}</Text>
+                                      </View>
+                                    );
+                                  }
+                                  
+                                  // Display other attributes
+                                  return (
+                                    <View key={idx} style={styles.attributeItem}>
+                                      <Text style={styles.attributeLabel}>{attr.name}: </Text>
+                                      <Text style={styles.attributeValue}>{attr.value}</Text>
+                                    </View>
+                                  );
+                                })}
+                              </View>
+                            );
+                          }
+                          return null;
+                        })()}
+                        
+                        {/* Stock Info */}
+                        {(() => {
+                          const cartItem = cartContext[item.originalIndex];
+                          let stockKey = variant.productId;
+                          if (cartItem?.selectedAttributes && Array.isArray(cartItem.selectedAttributes)) {
+                            const sizeAttr = cartItem.selectedAttributes.find(attr => attr.name.toLowerCase() === 'size');
+                            if (sizeAttr) {
+                              stockKey = `${variant.productId}_${sizeAttr.value}`;
+                            }
+                          }
+                          const stock = productStocks[stockKey];
+                          
+                          return stock !== undefined && (
+                            <Text style={styles.stockInfo}>
+                              {stock} {t('in stock')}
+                            </Text>
+                          );
+                        })()}
+                        
                         {/* Quantity Controls */}
                         <View style={styles.quantityControls}>
                           <TouchableOpacity
@@ -289,18 +488,59 @@ export default function CartScreen() {
                             <Text style={styles.quantityButtonText}>−</Text>
                           </TouchableOpacity>
                           <Text style={styles.quantityValue}>{variant.qty || 1}</Text>
-                          <TouchableOpacity
-                            style={styles.quantityButton}
+                          <TouchableOpacity 
+                            style={[
+                              styles.quantityButton,
+                              (() => {
+                                const cartItem = cartContext[item.originalIndex];
+                                let stockKey = variant.productId;
+                                if (cartItem?.selectedAttributes && Array.isArray(cartItem.selectedAttributes)) {
+                                  const sizeAttr = cartItem.selectedAttributes.find(attr => attr.name.toLowerCase() === 'size');
+                                  if (sizeAttr) {
+                                    stockKey = `${variant.productId}_${sizeAttr.value}`;
+                                  }
+                                }
+                                const stock = productStocks[stockKey];
+                                return (stock !== undefined && variant.qty >= stock) && styles.quantityButtonDisabled;
+                              })()
+                            ]}
                             onPress={() => updateQuantity(item.originalIndex, 1)}
+                            disabled={(() => {
+                              const cartItem = cartContext[item.originalIndex];
+                              let stockKey = variant.productId;
+                              if (cartItem?.selectedAttributes && Array.isArray(cartItem.selectedAttributes)) {
+                                const sizeAttr = cartItem.selectedAttributes.find(attr => attr.name.toLowerCase() === 'size');
+                                if (sizeAttr) {
+                                  stockKey = `${variant.productId}_${sizeAttr.value}`;
+                                }
+                              }
+                              const stock = productStocks[stockKey];
+                              return stock !== undefined && variant.qty >= stock;
+                            })()}
                           >
-                            <Text style={styles.quantityButtonText}>+</Text>
+                            <Text style={[
+                              styles.quantityButtonText,
+                              (() => {
+                                const cartItem = cartContext[item.originalIndex];
+                                let stockKey = variant.productId;
+                                if (cartItem?.selectedAttributes && Array.isArray(cartItem.selectedAttributes)) {
+                                  const sizeAttr = cartItem.selectedAttributes.find(attr => attr.name.toLowerCase() === 'size');
+                                  if (sizeAttr) {
+                                    stockKey = `${variant.productId}_${sizeAttr.value}`;
+                                  }
+                                }
+                                const stock = productStocks[stockKey];
+                                return (stock !== undefined && variant.qty >= stock) && styles.quantityButtonTextDisabled;
+                              })()
+                            ]}>+</Text>
                           </TouchableOpacity>
                         </View>
                       </View>
                     </View>
                   ))}
                 </View>
-              ))
+                );
+              })
             ) : (
               <View style={styles.emptyCartContainer}>
                 <Text style={styles.emptyCartText}>{t('Your cart is empty')}</Text>
@@ -325,7 +565,6 @@ export default function CartScreen() {
                 <TouchableOpacity
                   style={styles.checkoutButton}
                   onPress={() => {
-                    console.log('Proceed to checkout clicked!');
                     navigation.navigate('CheckoutOrder');
                   }}
                 >
@@ -352,6 +591,12 @@ const styles = StyleSheet.create({
   centerContent: {
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  syncingText: {
+    marginTop: 16,
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
   },
   emptyCartContainer: {
     flex: 1,
@@ -572,11 +817,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  quantityButtonDisabled: {
+    backgroundColor: '#CCCCCC',
+    opacity: 0.5,
+  },
   quantityButtonText: {
     color: '#fff',
     fontSize: 22,
     fontWeight: 'bold',
     lineHeight: 22,
+  },
+  quantityButtonTextDisabled: {
+    color: '#999',
   },
   quantityValue: {
     fontSize: 18,
@@ -585,6 +837,43 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     minWidth: 30,
     textAlign: 'center',
+  },
+  stockInfo: {
+    fontSize: 12,
+    color: '#4CAF50',
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  attributesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 6,
+    gap: 8,
+  },
+  attributeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  attributeLabel: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
+  attributeValue: {
+    fontSize: 12,
+    color: '#000',
+    fontWeight: '600',
+  },
+  colorCircle: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
   },
   checkoutWrapper: {
     backgroundColor: '#fff',

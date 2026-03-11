@@ -483,27 +483,33 @@ const Myorder = () => {
                             : (item.orderItems[0]?.name || item.orderItems[0]?.product?.name)}
                         </Text>
                       </View>
-
-                      {/* Price and Rate Button Row */}
+                      
+                      {/* Quantity, Price and Rate Button Row */}
                       <View style={{
                         flexDirection: 'row',
                         justifyContent: 'space-between',
-                        alignItems: 'center',
+                        alignItems: 'flex-end',
                         marginTop: 8,
+                        gap: 8,
                       }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={{ 
+                          flexDirection: 'column',
+                          flex: 1,
+                          flexShrink: 1,
+                          gap: 6,
+                        }}>
                           <View style={{
                             backgroundColor: '#F3F4F6',
                             paddingHorizontal: 10,
                             paddingVertical: 4,
                             borderRadius: 8,
-                            marginRight: 8,
+                            alignSelf: 'flex-start',
                           }}>
                             <Text style={styles.boxtxt2}>
                               {t('Qty')}: {item.orderItems[0]?.qty}
                             </Text>
                           </View>
-                          <Text style={styles.boxtxt3}>
+                          <Text style={[styles.boxtxt3, { flexShrink: 1 }]} numberOfLines={1}>
                             {Currency} {Number(item.orderItems[0]?.price ?? 0).toFixed(2)}
                           </Text>
                         </View>
@@ -527,20 +533,20 @@ const Myorder = () => {
                             }}
                             style={{
                               paddingVertical: 8,
-                              paddingHorizontal: 12,
+                              paddingHorizontal: 10,
                               backgroundColor: '#FF7000',
                               borderRadius: 6,
-                              minWidth: 100,
                               alignItems: 'center',
                               justifyContent: 'center',
+                              flexShrink: 0,
                             }}>
-                            <Text style={{
-                              fontSize: 12,
+                            <Text style={{ 
+                              fontSize: 11,
                               color: '#FFFFFF',
                               fontWeight: '600',
-                            }}>
-                              {reviewedProducts.has(item.orderItems[0]?.product?._id || item.orderItems[0]?._id)
-                                ? t('Update Rating')
+                            }} numberOfLines={1}>
+                              {reviewedProducts.has(item.orderItems[0]?.product?._id || item.orderItems[0]?._id) 
+                                ? t('Update Rating') 
                                 : t('Rate Product')}
                             </Text>
                           </TouchableOpacity>
@@ -624,22 +630,28 @@ const Myorder = () => {
                           <View style={{
                             flexDirection: 'row',
                             justifyContent: 'space-between',
-                            alignItems: 'center',
+                            alignItems: 'flex-end',
                             marginTop: 8,
+                            gap: 8,
                           }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <View style={{ 
+                              flexDirection: 'column',
+                              flex: 1,
+                              flexShrink: 1,
+                              gap: 6,
+                            }}>
                               <View style={{
                                 backgroundColor: '#F3F4F6',
                                 paddingHorizontal: 10,
                                 paddingVertical: 4,
                                 borderRadius: 8,
-                                marginRight: 8,
+                                alignSelf: 'flex-start',
                               }}>
                                 <Text style={styles.boxtxt2}>
                                   {t('Qty')}: {prod?.qty}
                                 </Text>
                               </View>
-                              <Text style={styles.boxtxt3}>
+                              <Text style={[styles.boxtxt3, { flexShrink: 1 }]} numberOfLines={1}>
                                 {Currency} {Number(prod?.price ?? 0).toFixed(2)}
                               </Text>
                             </View>
@@ -663,18 +675,18 @@ const Myorder = () => {
                                 }}
                                 style={{
                                   paddingVertical: 8,
-                                  paddingHorizontal: 12,
+                                  paddingHorizontal: 10,
                                   backgroundColor: '#FF7000',
                                   borderRadius: 6,
-                                  minWidth: 100,
                                   alignItems: 'center',
                                   justifyContent: 'center',
+                                  flexShrink: 0,
                                 }}>
-                                <Text style={{
-                                  fontSize: 12,
+                                <Text style={{ 
+                                  fontSize: 11,
                                   color: '#FFFFFF',
                                   fontWeight: '600',
-                                }}>
+                                }} numberOfLines={1}>
                                   {reviewedProducts.has(prod?.product?._id || prod?._id)
                                     ? t('Update Rating')
                                     : t('Rate Product')}

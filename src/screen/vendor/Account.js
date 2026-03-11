@@ -89,7 +89,9 @@ const VendorAccount = props => {
     );
   };
   const logout = async () => {
+    // DON'T remove cart data - preserve it for next login
     await AsyncStorage.removeItem('userDetail');
+    await AsyncStorage.removeItem('userData');
     setuser({})
     reset('Auth');
   };

@@ -1,7 +1,5 @@
-import React, { useCallback, useContext, useRef } from 'react';
+import React, { useContext } from 'react';
 import {
-  Animated,
-  Dimensions,
   Platform,
   StyleSheet,
   Text,
@@ -9,31 +7,13 @@ import {
   View,
 } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { useFocusEffect } from '@react-navigation/native';
-import {
-  CartFilledIcon,
-  CartIcon,
-  CategoriesFilledIcon,
-  CategoriesIcon,
-  HomeFilledIcon,
-  HomeIcon,
-  OrdersFilledIcon,
-  OrdersIcon,
-  OrdersIconFilled,
-  OrdersIconNone,
-  ReferalIcon,
-  AccountIcon,
-  AccountFilledIcon,
-} from '../../Theme';
-import Icon from 'react-native-vector-icons/FontAwesome';
+import { Home as HomeIcon, ChartBarStacked, MessagesSquare, ShoppingCart, User } from 'lucide-react-native';
 import Account from '../screen/app/Account';
 import Constants, { FONTS } from '../Assets/Helpers/constant';
 import Home from '../screen/app/Home';
 import Categories from '../screen/app/Categories';
-import Referal from '../screen/app/Referal';
 import NewCart from '../screen/app/NewCart';
 import { useTranslation } from 'react-i18next';
-import Myorder from '../screen/app/Myorder';
 import Products from '../screen/app/Products';
 import SubcategoryProducts from '../screen/app/SubcategoryProducts';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -87,164 +67,141 @@ const CartStack = () => (
   </Stack.Navigator>
 );
 
-export const TabNav = () => {
-  const { t } = useTranslation();
-  const [cartdetail, setcartdetail] = useContext(CartContext);
-  const [isGuestUser, setIsGuestUser] = React.useState(false);
-  const [refreshKey, setRefreshKey] = React.useState(0);
-  const [unreadMessagesCount, setUnreadMessagesCount] = React.useState(0);
-
-  // Check guest status on mount only
-  React.useEffect(() => {
-    const checkGuestStatus = async () => {
-      const guestStatus = await AsyncStorage.getItem('isGuestUser');
-      const userDetail = await AsyncStorage.getItem('userDetail');
-      
-      // If user is logged in (has userDetail), they are NOT a guest
-      if (userDetail) {
-        setIsGuestUser(false);
-      } else {
-        setIsGuestUser(guestStatus === 'true');
-      }
-    };
-    
-    checkGuestStatus();
-  }, []);
-
-  // Fetch unread messages count
-  React.useEffect(() => {
-    const fetchUnreadCount = async () => {
-      try {
-        const userDetail = await AsyncStorage.getItem('userDetail');
-        if (!userDetail) return;
-        
-        const user = JSON.parse(userDetail);
-        const { GetApi } = require('../Assets/Helpers/Service');
-        const response = await GetApi(`chat/conversations/${user._id}`);
-        
-        if (response && response.status && response.data) {
-          // Count unread messages
-          const unreadCount = response.data.reduce((total, conv) => {
-            return total + (conv.unreadCount || 0);
-          }, 0);
-          setUnreadMessagesCount(unreadCount);
-        }
-      } catch (error) {
-        console.error('Error fetching unread messages:', error);
-      }
-    };
-    
-    fetchUnreadCount();
-    
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchUnreadCount, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
 const AccountStack = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
+  <Stack.Navigator 
+    screenOptions={{ 
+      headerShown: false,
+    }}
+  >
     <Stack.Screen name="AccountTab" component={Account} />
-    <Stack.Screen name="Favorites" component={Favorites} />
+    <Stack.Screen 
+      name="Favorites" 
+      component={Favorites}
+    />
     <Stack.Screen name="Coupons" component={Coupons} />
   </Stack.Navigator>
 );
 
 const allTabs = [
-    {
-      iconActive: <HomeIcon color={Constants.saffron} height={24} />,
-      iconInActive: (
-        <HomeFilledIcon color={Constants.black} height={24} />
-      ),
-      component: HomeStack,
-      routeName: 'Home',
-      name: 'Home',
-    },
-    {
-      iconActive: <CategoriesFilledIcon color={Constants.saffron} height={25} />,
-      iconInActive: (
-        <CategoriesIcon color={Constants.black} height={24} />
-      ),
-      component: CategoriesStack,
-      routeName: 'Categories',
-      name: 'Categories',
-    },
-    {
-      iconActive: <Icon name="comments" size={28} color={Constants.saffron} />,
-      iconInActive: (
-        <Icon name="comments-o" size={28} color={Constants.black} />
-      ),
-      component: MessagesStack,
-      routeName: 'Messages',
-      name: 'Messages',
-    },
-    {
-      iconActive: <CartFilledIcon color={Constants.saffron} height={26} />,
-      iconInActive: <CartIcon color={Constants.black} height={26} />,
-      component: CartStack,
-      routeName: 'Cart',
-      name: 'Cart',
-    },
-    {
-      iconActive: <AccountFilledIcon color={Constants.saffron} height={26} />,
-      iconInActive: <AccountIcon color={Constants.black} height={26} />,
-      component: AccountStack,
-      routeName: 'Account',
-      name: 'Account',
-      hideForGuest: true,
-    },
-  ];
+  {
+    icon: HomeIcon,
+    component: HomeStack,
+    routeName: 'Home',
+    name: 'Home',
+  },
+  {
+    icon: ChartBarStacked,
+    component: CategoriesStack,
+    routeName: 'Categories',
+    name: 'Categories',
+  },
+  {
+    icon: MessagesSquare,
+    component: MessagesStack,
+    routeName: 'Messages',
+    name: 'Messages',
+  },
+  {
+    icon: ShoppingCart,
+    component: CartStack,
+    routeName: 'Cart',
+    name: 'Cart',
+  },
+  {
+    icon: User,
+    component: AccountStack,
+    routeName: 'Account',
+    name: 'Account',
+    hideForGuest: true,
+  },
+];
 
-  // Always show all tabs
-  const TabArr = allTabs;
+export const TabNav = () => {
+  const { t } = useTranslation();
+  const [cartdetail] = useContext(CartContext);
+  const [unreadMessagesCount, setUnreadMessagesCount] = React.useState(0);
 
-  console.log('TabNav render - isGuestUser:', isGuestUser, 'TabArr length:', TabArr.length);
+  // Fetch unread messages count
+  const fetchUnreadCount = React.useCallback(async () => {
+    try {
+      const userDetail = await AsyncStorage.getItem('userDetail');
+      if (!userDetail) return;
+      
+      const user = JSON.parse(userDetail);
+      const { GetApi } = require('../Assets/Helpers/Service');
+      const response = await GetApi(`chat/conversations/${user._id}`);
+      
+      if (response && response.status && response.data) {
+        const unreadCount = response.data.reduce((total, conv) => {
+          return total + (conv.unreadCount || 0);
+        }, 0);
+        setUnreadMessagesCount(unreadCount);
+      }
+    } catch (error) {
+      console.error('Error fetching unread messages:', error);
+    }
+  }, []);
 
-  const TabButton = useCallback(
-    ({ accessibilityState, onPress, onclick, item, index }) => {
-      const isSelected = accessibilityState?.selected;
-      const isCartTab = item.routeName === 'Cart';
-      const isMessagesTab = item.routeName === 'Messages';
-      const cartCount = cartdetail?.length || 0;
+  React.useEffect(() => {
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 10000); // Reduced to 10 seconds for faster updates
+    return () => clearInterval(interval);
+  }, [fetchUnreadCount]);
 
-      return (
-        <View style={styles.tabBtnView}>
-          <View style={styles.iconContainer}>
-            <TouchableOpacity
-              onPress={onclick ? onclick : onPress}
-              style={[
-                styles.tabBtn,
-                isSelected ? styles.tabBtnActive : styles.tabBtnInActive,
-              ]}>
-              {isSelected ? item.iconActive : item.iconInActive}
-            </TouchableOpacity>
-            {isCartTab && cartCount > 0 && (
-              <View style={[styles.badge, { backgroundColor: '#FF7000' }]}>
-                <Text style={styles.badgeText}>
-                  {cartCount > 99 ? '99+' : cartCount}
-                </Text>
-              </View>
-            )}
-            {isMessagesTab && unreadMessagesCount > 0 && (
-              <View style={[styles.badge, { backgroundColor: '#FF0000' }]}>
-                <Text style={styles.badgeText}>
-                  {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
-                </Text>
-              </View>
-            )}
-          </View>
-          <Text
+  const renderTabButton = (props) => {
+    const { accessibilityState, onPress, item, isFocused } = props;
+    const isSelected = isFocused || accessibilityState?.selected;
+    const isCartTab = item.routeName === 'Cart';
+    const isMessagesTab = item.routeName === 'Messages';
+    const cartCount = cartdetail?.length || 0;
+    
+    const IconComponent = item.icon;
+    const iconColor = isSelected ? '#FF7000' : '#000000';
+    const iconStrokeWidth = isSelected ? 2.5 : 2;
+
+    console.log(`Tab ${item.routeName}: isSelected=${isSelected}, isFocused=${isFocused}, color=${iconColor}`);
+
+    return (
+      <View style={styles.tabBtnView}>
+        <View style={styles.iconContainer}>
+          <TouchableOpacity
+            onPress={onPress}
             style={[
-              styles.tabtxt,
-              { color: isSelected ? Constants.saffron : Constants.black },
+              styles.tabBtn,
+              isSelected ? styles.tabBtnActive : styles.tabBtnInActive,
             ]}>
-            {t(item.name)}
-          </Text>
+            <IconComponent 
+              size={24} 
+              color={iconColor}
+              stroke={iconColor}
+              strokeWidth={iconStrokeWidth} 
+            />
+          </TouchableOpacity>
+          {isCartTab && cartCount > 0 && (
+            <View style={[styles.badge, { backgroundColor: '#FF7000' }]}>
+              <Text style={styles.badgeText}>
+                {cartCount > 99 ? '99+' : cartCount}
+              </Text>
+            </View>
+          )}
+          {isMessagesTab && unreadMessagesCount > 0 && (
+            <View style={[styles.badge, { backgroundColor: '#FF0000' }]}>
+              <Text style={styles.badgeText}>
+                {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
+              </Text>
+            </View>
+          )}
         </View>
-      );
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [cartdetail, unreadMessagesCount],
-  );
+        <Text
+          style={[
+            styles.tabtxt,
+            { color: isSelected ? '#FF7000' : '#000000' },
+          ]}>
+          {t(item.name)}
+        </Text>
+      </View>
+    );
+  };
 
   return (
     <Tab.Navigator
@@ -255,12 +212,13 @@ const allTabs = [
         tabBarStyle: {
           position: 'absolute',
           width: '100%',
-          minHeight: Platform?.OS === 'android' ? 70 : 90,
+          height: Platform?.OS === 'android' ? 68 : 88,
           backgroundColor: 'white',
           borderTopRightRadius: 15,
           borderTopLeftRadius: 15,
           borderTopWidth: 0,
-          paddingTop: 20,
+          paddingTop: 15,
+          paddingBottom: 8,
           elevation: 10, 
           shadowColor: '#000', 
           shadowOffset: { width: 0, height: -2 },
@@ -268,18 +226,35 @@ const allTabs = [
           shadowRadius: 5,
         },
       }}>
-      {TabArr.map((item, index) => {
+      {allTabs.map((item, index) => {
         return (
           <Tab.Screen
             key={index}
             name={item.routeName}
             component={item.component}
-            options={{
+            listeners={({ navigation }) => ({
+              tabPress: (e) => {
+                // Refresh unread count when Messages tab is pressed
+                if (item.routeName === 'Messages') {
+                  fetchUnreadCount();
+                }
+                // Reset stack to initial screen when tab is pressed
+                navigation.navigate(item.routeName, {
+                  screen: item.routeName === 'Home' ? 'HomeScreen' :
+                         item.routeName === 'Categories' ? 'CategoriesTab' :
+                         item.routeName === 'Messages' ? 'MessagesTab' :
+                         item.routeName === 'Cart' ? 'CartTab' :
+                         item.routeName === 'Account' ? 'AccountTab' : undefined
+                });
+              },
+            })}
+            options={({ route, navigation }) => ({
               tabBarShowLabel: false,
-              tabBarButton: props => (
-                <TabButton {...props} item={item} index={index} />
-              ),
-            }}
+              tabBarButton: props => {
+                const isFocused = navigation.isFocused();
+                return renderTabButton({ ...props, item, isFocused });
+              },
+            })}
           />
         );
       })}
@@ -293,6 +268,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 0,
   },
   iconContainer: {
     position: 'relative',
@@ -314,7 +290,7 @@ const styles = StyleSheet.create({
   tabtxt: {
     color: Constants.black,
     fontSize: 12,
-    marginTop: 4,
+    marginTop: -8,
     fontFamily: FONTS.Medium,
   },
   badge: {

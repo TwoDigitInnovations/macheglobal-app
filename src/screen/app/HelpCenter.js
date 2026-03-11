@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Modal, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Modal, Linking } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { BackIcon } from '../../../Theme';
 import { Post } from '../../Assets/Helpers/Service';
@@ -43,6 +43,84 @@ const HelpCenter = () => {
   });
   const [errors, setErrors] = useState({});
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  const handleEmailPress = async () => {
+    console.log('Email button pressed!');
+    const email = 'Macheglobal2026@gmail.com';
+    const mailtoUrl = `mailto:${email}`;
+    
+    try {
+      console.log('Trying to open:', mailtoUrl);
+      const supported = await Linking.canOpenURL(mailtoUrl);
+      console.log('Email supported:', supported);
+      if (supported) {
+        await Linking.openURL(mailtoUrl);
+      } else {
+        // For emulator or devices without email app, copy to clipboard
+        console.log('Email not supported, showing fallback');
+        setTimeout(() => {
+          Alert.alert(
+            'Email',
+            `No email app found. Please copy this email manually:\n\n${email}`,
+            [
+              { 
+                text: 'OK',
+                onPress: () => console.log('Email alert dismissed')
+              }
+            ]
+          );
+        }, 100);
+      }
+    } catch (error) {
+      console.error('Error opening email:', error);
+      setTimeout(() => {
+        Alert.alert(
+          'Error',
+          'Cannot open email app',
+          [{ text: 'OK' }]
+        );
+      }, 100);
+    }
+  };
+
+  const handlePhonePress = async () => {
+    console.log('Phone button pressed!');
+    const phone = '+15551234567';
+    const telUrl = `tel:${phone}`;
+    
+    try {
+      console.log('Trying to open:', telUrl);
+      const supported = await Linking.canOpenURL(telUrl);
+      console.log('Phone supported:', supported);
+      if (supported) {
+        await Linking.openURL(telUrl);
+      } else {
+        // For emulator or devices without phone app
+        console.log('Phone not supported, showing fallback');
+        setTimeout(() => {
+          Alert.alert(
+            'Phone',
+            `Cannot make calls. Please dial manually:\n\n${phone}`,
+            [
+              { 
+                text: 'OK',
+                onPress: () => console.log('Phone alert dismissed')
+              }
+            ]
+          );
+        }, 100);
+      }
+    } catch (error) {
+      console.error('Error opening phone:', error);
+      setTimeout(() => {
+        Alert.alert(
+          'Error',
+          'Cannot open phone app',
+          [{ text: 'OK' }]
+        );
+      }, 100);
+    }
+  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -180,12 +258,26 @@ const HelpCenter = () => {
 
         <View style={styles.contactInfo}>
           <Text style={styles.contactTitle}>{t('Contact Information')}</Text>
-          <Text style={styles.contactText}>
-            {t('Email')}: support@macheglobal.com
-          </Text>
-          <Text style={styles.contactText}>
-            {t('Phone')}: +1 (555) 123-4567
-          </Text>
+          <View style={styles.contactItem}>
+            <Text style={styles.contactLabel}>{t('Email')}: </Text>
+            <TouchableOpacity 
+              onPress={handleEmailPress}
+              activeOpacity={0.7}
+              style={styles.touchableArea}
+            >
+              <Text style={styles.contactLink}>Macheglobal2026@gmail.com</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.contactItem}>
+            <Text style={styles.contactLabel}>{t('Phone')}: </Text>
+            <TouchableOpacity 
+              onPress={handlePhonePress}
+              activeOpacity={0.7}
+              style={styles.touchableArea}
+            >
+              <Text style={styles.contactLink}>+1 (555) 123-4567</Text>
+            </TouchableOpacity>
+          </View>
           <Text style={styles.contactText}>
             {t('Address')}: 123 Market Street, City, Country
           </Text>
@@ -327,6 +419,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#4B5563',
     marginBottom: 8,
+  },
+  contactItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  contactLabel: {
+    fontSize: 14,
+    color: '#4B5563',
+  },
+  contactLink: {
+    fontSize: 14,
+    color: '#FF7000',
+    textDecorationLine: 'underline',
+    fontWeight: '500',
+  },
+  touchableArea: {
+    padding: 4,
+    marginHorizontal: -4,
   },
   modalContainer: {
     flex: 1,

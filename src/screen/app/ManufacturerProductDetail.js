@@ -12,6 +12,8 @@ import {
   TextInput,
   Dimensions,
   FlatList,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { BackIcon } from '../../../Theme';
 import { goBack, navigate } from '../../../navigationRef';
@@ -92,7 +94,7 @@ const ManufacturerProductDetail = ({ route }) => {
       productId: product?._id,
       productImage: images[currentImageIndex] || images[0],
       productName: product?.name,
-      productPrice: product?.varients?.[0]?.selected?.[0]?.offerprice || product?.varients?.[0]?.selected?.[0]?.price,
+      productPrice: price, // Use the calculated price variable
       initialMessage: finalMessage,
     });
 
@@ -115,7 +117,7 @@ const ManufacturerProductDetail = ({ route }) => {
       productId: product?._id,
       productImage: images[currentImageIndex] || images[0],
       productName: product?.name,
-      productPrice: product?.varients?.[0]?.selected?.[0]?.offerprice || product?.varients?.[0]?.selected?.[0]?.price,
+      productPrice: price, // Use the calculated price variable
     });
   };
 
@@ -123,9 +125,68 @@ const ManufacturerProductDetail = ({ route }) => {
     return null;
   }
 
-  const images = product?.varients?.[0]?.image || [];
-  const price = product?.varients?.[0]?.selected?.[0]?.offerprice ||
-    product?.varients?.[0]?.selected?.[0]?.price || 0;
+  // Extract images with robust logic
+  const getImages = () => {
+    // For simple products
+    if (product.productType === 'simple' && product?.simpleProduct?.images?.length > 0) {
+      return product.simpleProduct.images;
+    }
+    
+    // For variable products - check varients[0].image
+    if (product?.varients?.[0]?.image?.length > 0) {
+      return product.varients[0].image;
+    }
+    
+    // Alternative structure - variants[0].images
+    if (product?.variants?.[0]?.images?.length > 0) {
+      return product.variants[0].images;
+    }
+    
+    return [];
+  };
+
+  // Extract price with robust logic
+  const getPrice = () => {
+    try {
+      // For variable products - check varients[0].selected[0]
+      if (product?.varients?.[0]?.selected?.[0]) {
+        const selected = product.varients[0].selected[0];
+        const price = parseFloat(selected.price) || 0;
+        const offerPrice = parseFloat(selected.offerprice || selected.offerPrice) || price;
+        return offerPrice;
+      }
+      
+      // For simple products - check simpleProduct
+      if (product?.simpleProduct) {
+        const price = parseFloat(product.simpleProduct.price) || 0;
+        const offerPrice = parseFloat(product.simpleProduct.offerPrice || product.simpleProduct.offerprice) || price;
+        return offerPrice;
+      }
+      
+      // Check variants array (alternative structure)
+      if (product?.variants?.[0]) {
+        const variant = product.variants[0];
+        const price = parseFloat(variant.price) || 0;
+        const offerPrice = parseFloat(variant.offerPrice || variant.offerprice) || price;
+        return offerPrice;
+      }
+      
+      // Fallback to direct properties
+      if (product?.price !== undefined) {
+        const price = parseFloat(product.price) || 0;
+        const offerPrice = parseFloat(product.offerPrice || product.offerprice) || price;
+        return offerPrice;
+      }
+      
+      return 0;
+    } catch (error) {
+      console.error('Error getting product price:', error);
+      return 0;
+    }
+  };
+
+  const images = getImages();
+  const price = getPrice();
   const quantity = product?.pieces || 0;
 
   const handleScroll = (event) => {
@@ -149,39 +210,47 @@ const ManufacturerProductDetail = ({ route }) => {
       <ScrollView style={styles.content}>
         {/* Product Images Carousel */}
         <View style={styles.imageContainer}>
-          <FlatList
-            data={images}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScroll={handleScroll}
-            scrollEventThrottle={16}
-            snapToInterval={Dimensions.get('window').width}
-            decelerationRate="fast"
-            keyExtractor={(item, index) => `image-${index}`}
-            renderItem={({ item }) => (
-              <View style={styles.imageSlide}>
-                <Image
-                  source={{ uri: item }}
-                  style={styles.productImage}
-                  resizeMode="contain"
-                />
-              </View>
-            )}
-          />
-
-          {/* Image Indicator Dots */}
-          {images.length > 1 && (
-            <View style={styles.dotsContainer}>
-              {images.map((_, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.dot,
-                    index === currentImageIndex && styles.activeDot
-                  ]}
-                />
-              ))}
+          {images.length > 0 ? (
+            <>
+              <FlatList
+                data={images}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onScroll={handleScroll}
+                scrollEventThrottle={16}
+                snapToInterval={Dimensions.get('window').width}
+                decelerationRate="fast"
+                keyExtractor={(item, index) => `image-${index}`}
+                renderItem={({ item }) => (
+                  <View style={styles.imageSlide}>
+                    <Image
+                      source={{ uri: item }}
+                      style={styles.productImage}
+                      resizeMode="contain"
+                    />
+                  </View>
+                )}
+              />
+              
+              {/* Image Indicator Dots */}
+              {images.length > 1 && (
+                <View style={styles.dotsContainer}>
+                  {images.map((_, index) => (
+                    <View
+                      key={index}
+                      style={[
+                        styles.dot,
+                        index === currentImageIndex && styles.activeDot
+                      ]}
+                    />
+                  ))}
+                </View>
+              )}
+            </>
+          ) : (
+            <View style={styles.placeholderImageContainer}>
+              <Text style={styles.placeholderText}>No Product Image</Text>
             </View>
           )}
         </View>
@@ -229,7 +298,9 @@ const ManufacturerProductDetail = ({ route }) => {
         transparent={true}
         animationType="slide"
         onRequestClose={() => setShowInquiryModal(false)}>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView 
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{t('Send Inquiry')}</Text>
@@ -238,77 +309,82 @@ const ManufacturerProductDetail = ({ route }) => {
               </TouchableOpacity>
             </View>
 
-            {/* Product Preview in Modal */}
-            <View style={styles.modalProductPreview}>
-              <View style={styles.modalImageContainer}>
-                <Image
-                  source={{ uri: images[currentImageIndex] || images[0] }}
-                  style={styles.modalProductImage}
-                  resizeMode="contain"
-                />
-              </View>
-              <View style={styles.modalProductInfo}>
-                <Text style={styles.modalProductName} numberOfLines={2}>
-                  {product?.name}
-                </Text>
-                <Text style={styles.modalProductPrice}>
-                  {Currency} {Number(price).toFixed(2)}
-                </Text>
-              </View>
-            </View>
-
-            <Text style={styles.questionsLabel}>{t('Select questions')}:</Text>
-
-            {/* Predefined Questions */}
-            {predefinedQuestions.map((question, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.questionOption,
-                  selectedQuestions.includes(question) && styles.questionOptionSelected
-                ]}
-                onPress={() => toggleQuestion(question)}>
-                <View style={[
-                  styles.checkbox,
-                  selectedQuestions.includes(question) && styles.checkboxSelected
-                ]}>
-                  {selectedQuestions.includes(question) && (
-                    <Text style={styles.checkmark}>✓</Text>
-                  )}
+            <ScrollView 
+              style={styles.modalScrollView}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled">
+              {/* Product Preview in Modal */}
+              <View style={styles.modalProductPreview}>
+                <View style={styles.modalImageContainer}>
+                  <Image
+                    source={{ uri: images[currentImageIndex] || images[0] }}
+                    style={styles.modalProductImage}
+                    resizeMode="contain"
+                  />
                 </View>
-                <Text style={[
-                  styles.questionText,
-                  selectedQuestions.includes(question) && styles.questionTextSelected
-                ]}>
-                  {question}
-                </Text>
+                <View style={styles.modalProductInfo}>
+                  <Text style={styles.modalProductName} numberOfLines={2}>
+                    {product?.name}
+                  </Text>
+                  <Text style={styles.modalProductPrice}>
+                    {Currency} {price.toFixed(2)}
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={styles.questionsLabel}>{t('Select questions')}:</Text>
+
+              {/* Predefined Questions */}
+              {predefinedQuestions.map((question, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.questionOption,
+                    selectedQuestions.includes(question) && styles.questionOptionSelected
+                  ]}
+                  onPress={() => toggleQuestion(question)}>
+                  <View style={[
+                    styles.checkbox,
+                    selectedQuestions.includes(question) && styles.checkboxSelected
+                  ]}>
+                    {selectedQuestions.includes(question) && (
+                      <Text style={styles.checkmark}>✓</Text>
+                    )}
+                  </View>
+                  <Text style={[
+                    styles.questionText,
+                    selectedQuestions.includes(question) && styles.questionTextSelected
+                  ]}>
+                    {question}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+
+              {/* Custom Message Input */}
+              <Text style={styles.customMessageLabel}>{t('Additional message')} ({t('optional')}):</Text>
+              <TextInput
+                style={styles.customMessageInput}
+                placeholder={t('Type your message here...')}
+                placeholderTextColor="#999"
+                multiline
+                numberOfLines={4}
+                value={customMessage}
+                onChangeText={setCustomMessage}
+              />
+
+              {/* Submit Button */}
+              <TouchableOpacity
+                style={[
+                  styles.submitButton,
+                  (selectedQuestions.length === 0 && !customMessage.trim()) && styles.submitButtonDisabled
+                ]}
+                onPress={handleSendInquiry}
+                disabled={selectedQuestions.length === 0 && !customMessage.trim()}>
+                <Text style={styles.submitButtonText}>{t('Send Inquiry')}</Text>
               </TouchableOpacity>
-            ))}
-
-            {/* Custom Message Input */}
-            <Text style={styles.customMessageLabel}>{t('Additional message')} ({t('optional')}):</Text>
-            <TextInput
-              style={styles.customMessageInput}
-              placeholder={t('Type your message here...')}
-              placeholderTextColor="#999"
-              multiline
-              numberOfLines={4}
-              value={customMessage}
-              onChangeText={setCustomMessage}
-            />
-
-            {/* Submit Button */}
-            <TouchableOpacity
-              style={[
-                styles.submitButton,
-                (selectedQuestions.length === 0 && !customMessage.trim()) && styles.submitButtonDisabled
-              ]}
-              onPress={handleSendInquiry}
-              disabled={selectedQuestions.length === 0 && !customMessage.trim()}>
-              <Text style={styles.submitButtonText}>{t('Send Inquiry')}</Text>
-            </TouchableOpacity>
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -348,6 +424,7 @@ const styles = StyleSheet.create({
     backgroundColor: Constants.white,
     height: 340,
     position: 'relative',
+    marginTop: 4,
   },
   imageSlide: {
     width: Dimensions.get('window').width,
@@ -474,14 +551,23 @@ const styles = StyleSheet.create({
     backgroundColor: Constants.white,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    padding: 20,
-    maxHeight: '85%',
+    maxHeight: '90%',
+    minHeight: '50%',
+  },
+  modalScrollView: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   modalTitle: {
     fontSize: 20,
@@ -498,6 +584,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9F9F9',
     padding: 12,
     borderRadius: 8,
+    marginTop: 15,
     marginBottom: 20,
   },
   modalImageContainer: {
@@ -603,6 +690,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 20,
+    marginBottom: 10,
   },
   submitButtonDisabled: {
     backgroundColor: '#CCC',
@@ -611,5 +699,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: FONTS.Bold,
     color: Constants.white,
+  },
+  placeholderImageContainer: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#F0F0F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderText: {
+    fontSize: 14,
+    color: '#999',
+    fontFamily: FONTS.Medium,
   },
 });

@@ -21,6 +21,14 @@ import DriverHeader from '../../Assets/Component/DriverHeader';
 import { useTranslation } from 'react-i18next';
 import i18n from 'i18next';
 
+// Helper function to convert AVIF to JPG for React Native compatibility
+const convertAvifToJpg = (imageUrl) => {
+  if (imageUrl && imageUrl.includes('.avif')) {
+    return imageUrl.replace('.avif', '.jpg');
+  }
+  return imageUrl;
+};
+
 const Products = props => {
   const { t } = useTranslation();
   const [cartdetail, setcartdetail] = useContext(CartContext);
@@ -131,7 +139,12 @@ const Products = props => {
         frenchName: productdata?.frenchName,
         price: productdata?.price_slot?.[0]?.other_price || 0,
         offer: productdata?.price_slot?.[0]?.our_price || 0,
-        image: productdata.varients?.[0]?.image?.[0] || '',
+        image: convertAvifToJpg(
+          productdata.varients?.[0]?.image?.[0] || 
+          productdata.simpleProduct?.images?.[0] || 
+          productdata.variants?.[0]?.images?.[0] || 
+          'https://via.placeholder.com/150'
+        ),
         price_slot: productdata?.price_slot?.[0] || {},
         qty: 1,
         seller_id: productdata.SellerId,
@@ -166,7 +179,12 @@ const Products = props => {
 
     const moq = item?.pieces || 0;
     const price = item?.price_slot?.[0]?.our_price || item?.price_slot?.[0]?.other_price || 0;
-    const imageUrl = item?.varients?.[0]?.image?.[0] || '';
+    const imageUrl = convertAvifToJpg(
+      item?.varients?.[0]?.image?.[0] || 
+      item?.simpleProduct?.images?.[0] || 
+      item?.variants?.[0]?.images?.[0] || 
+      'https://via.placeholder.com/150'
+    );
 
     return (
       <TouchableOpacity

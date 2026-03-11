@@ -157,8 +157,11 @@ const App = () => {
                 }
             }
         } else {
+            // No user logged in - Enable Guest Mode
+            console.log('👤 No user logged in - Starting Guest Mode');
+            await AsyncStorage.setItem('isGuestUser', 'true');
             setTimeout(() => {
-                setInitial('Auth');
+                setInitial('App'); // Start with Home screen for guest users
             }, 1000);
         }
     };

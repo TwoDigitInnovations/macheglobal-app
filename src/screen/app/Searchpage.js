@@ -27,6 +27,14 @@ import {
 
 const { width } = Dimensions.get('window');
 
+// Helper function to convert AVIF to JPG for React Native compatibility
+const convertAvifToJpg = (imageUrl) => {
+  if (imageUrl && imageUrl.includes('.avif')) {
+    return imageUrl.replace('.avif', '.jpg');
+  }
+  return imageUrl;
+};
+
 const Searchpage = () => {
   const navigation = useNavigation();
   const { t } = useTranslation();
@@ -128,7 +136,12 @@ const Searchpage = () => {
         frenchName: productdata?.frenchName,
         price: productdata?.price_slot?.[0]?.other_price || 0,
         offer: productdata?.price_slot?.[0]?.our_price || 0,
-        image: productdata.varients?.[0]?.image?.[0] || '',
+        image: convertAvifToJpg(
+          productdata.varients?.[0]?.image?.[0] || 
+          productdata.simpleProduct?.images?.[0] || 
+          productdata.variants?.[0]?.images?.[0] || 
+          'https://via.placeholder.com/150'
+        ),
         price_slot: productdata?.price_slot?.[0] || {},
         qty: 1,
         seller_id: productdata.userid,
@@ -161,7 +174,12 @@ const Searchpage = () => {
 
     const moq = item?.pieces || 0;
     const price = item?.price_slot?.[0]?.our_price || item?.price_slot?.[0]?.other_price || 0;
-    const imageUrl = item?.varients?.[0]?.image?.[0] || '';
+    const imageUrl = convertAvifToJpg(
+      item?.varients?.[0]?.image?.[0] || 
+      item?.simpleProduct?.images?.[0] || 
+      item?.variants?.[0]?.images?.[0] || 
+      'https://via.placeholder.com/150'
+    );
 
     return (
       <TouchableOpacity
@@ -194,7 +212,7 @@ const Searchpage = () => {
 
           {/* MOQ */}
           <Text style={styles.moqText}>
-            MOQ: {moq}
+            {t('MOQ')}: {moq}
           </Text>
 
           {/* Price & Add to Cart */}
@@ -210,7 +228,7 @@ const Searchpage = () => {
 
           {/* Fast Delivery Badge */}
           <View style={styles.deliveryBadge}>
-            <Text style={styles.deliveryText}>Fast Delivery</Text>
+            <Text style={styles.deliveryText}>{t('Fast Delivery')}</Text>
           </View>
         </View>
       </TouchableOpacity>

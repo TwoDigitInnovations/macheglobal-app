@@ -18,6 +18,7 @@ import { format, parseISO } from 'date-fns';
 import DriverHeader from '../../Assets/Component/DriverHeader';
 
 const OrderDetails = () => {
+  const { t } = useTranslation();
   console.log('OrderDetails component rendered');
   const route = useRoute();
   const navigation = useNavigation();
@@ -108,7 +109,7 @@ const OrderDetails = () => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#3B82F6" />
-        <Text style={styles.loadingText}>Loading order details...</Text>
+        <Text style={styles.loadingText}>{t('Loading order details...')}</Text>
       </View>
     );
   }
@@ -167,7 +168,7 @@ const OrderDetails = () => {
         >
           <Icon name="arrow-back" size={24} color="#111827" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Order Details</Text>
+        <Text style={styles.headerTitle}>{t('Order Details')}</Text>
         <View style={{ width: 32 }} />
       </View> */}
 
@@ -177,7 +178,7 @@ const OrderDetails = () => {
         {/* Order Status */}
         <View style={styles.statusContainer}>
           <View style={styles.statusHeader}>
-            <Text style={styles.orderNumber}>Order {orderDetails.orderNumber}</Text>
+            <Text style={styles.orderNumber}>{t('Order')} {orderDetails.orderNumber}</Text>
             <View style={[styles.statusBadge, { backgroundColor: getStatusColor(orderDetails.status) + '20' }]}>
               <Text style={[styles.statusText, { color: getStatusColor(orderDetails.status) }]}>
                 {orderDetails.status.charAt(0).toUpperCase() + orderDetails.status.slice(1)}
@@ -191,7 +192,7 @@ const OrderDetails = () => {
 
         {/* Delivery Address */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Delivery Address</Text>
+          <Text style={styles.sectionTitle}>{t('Delivery Address')}</Text>
           <View style={styles.addressContainer}>
             <Icon name="location-on" size={20} color="#6B7280" style={styles.icon} />
             <View>
@@ -217,7 +218,7 @@ const OrderDetails = () => {
 
         {/* Order Items */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Order Items ({orderDetails.items.length})</Text>
+          <Text style={styles.sectionTitle}>{t('Order Items')} ({orderDetails.items.length})</Text>
           {orderDetails.items.map((item, index) => {
             // Get the image URL - check multiple possible locations
             const imageUrl = item.image ||
@@ -290,43 +291,43 @@ const OrderDetails = () => {
 
         {/* Order Summary */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Order Summary</Text>
+          <Text style={styles.sectionTitle}>{t('Order Summary')}</Text>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Subtotal</Text>
+            <Text style={styles.summaryLabel}>{t('Subtotal')}</Text>
             <Text style={styles.summaryValue}>${orderDetails.subTotal.toFixed(2)}</Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Shipping</Text>
+            <Text style={styles.summaryLabel}>{t('Shipping')}</Text>
             <Text style={styles.summaryValue}>
               {orderDetails.shipping > 0 ? `$${orderDetails.shipping.toFixed(2)}` : 'Free'}
             </Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Tax</Text>
+            <Text style={styles.summaryLabel}>{t('Tax')}</Text>
             <Text style={styles.summaryValue}>${orderDetails.tax.toFixed(2)}</Text>
           </View>
           <View style={[styles.summaryRow, styles.totalRow]}>
-            <Text style={styles.totalLabel}>Total</Text>
+            <Text style={styles.totalLabel}>{t('Total')}</Text>
             <Text style={styles.totalValue}>${orderDetails.total.toFixed(2)}</Text>
           </View>
         </View>
 
         {/* Payment Information */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Payment Information</Text>
+          <Text style={styles.sectionTitle}>{t('Payment Information')}</Text>
           <View style={styles.paymentInfo}>
             <View style={styles.paymentRow}>
-              <Text style={styles.paymentLabel}>Payment Method:</Text>
+              <Text style={styles.paymentLabel}>{t('Payment Method')}:</Text>
               <Text style={styles.paymentValue}>
-                {orderDetails.paymentMethod === 'wallet' ? 'Wallet' :
-                  orderDetails.paymentMethod === 'cod' ? 'Cash on Delivery' :
-                    orderDetails.paymentMethod}
+                {orderDetails.paymentMethod === 'wallet' ? t('Wallet') : 
+                 orderDetails.paymentMethod === 'cod' ? t('Cash on Delivery') : 
+                 orderDetails.paymentMethod}
               </Text>
             </View>
             <View style={styles.paymentRow}>
-              <Text style={styles.paymentLabel}>Payment Status:</Text>
-              <View style={[styles.paymentStatus,
-              { backgroundColor: orderDetails.paymentStatus === 'paid' ? '#D1FAE5' : '#FEE2E2' }]}>
+              <Text style={styles.paymentLabel}>{t('Payment Status')}:</Text>
+              <View style={[styles.paymentStatus, 
+                { backgroundColor: orderDetails.paymentStatus === 'paid' ? '#D1FAE5' : '#FEE2E2' }]}>
                 <Text style={[
                   styles.paymentStatusText,
                   { color: orderDetails.paymentStatus === 'paid' ? '#065F46' : '#B91C1C' }

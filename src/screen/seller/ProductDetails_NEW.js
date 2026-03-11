@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { GetApi } from '../../Assets/Helpers/Service';
+import { useTranslation } from 'react-i18next';
 import DriverHeader from '../../Assets/Component/DriverHeader';
 
 const COLORS = {
@@ -35,7 +36,7 @@ const ProductDetails = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { productId } = route.params;
-
+  
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -45,31 +46,22 @@ const ProductDetails = () => {
   const images = useMemo(() => {
     if (!product) return [];
     
-    // Helper to convert AVIF to JPG
-    const convertAvifToJpg = (imageUrl) => {
-      if (imageUrl && imageUrl.includes('.avif')) {
-        return imageUrl.replace('.avif', '.jpg');
-      }
-      return imageUrl;
-    };
-    
-    let productImages = [];
-    
     // For simple products
     if (product.productType === 'simple' && product?.simpleProduct?.images?.length > 0) {
-      productImages = product.simpleProduct.images;
-    }
-    // For variable products - check varients[0].image
-    else if (product?.varients?.[0]?.image?.length > 0) {
-      productImages = product.varients[0].image;
-    }
-    // Alternative structure - variants[0].images
-    else if (product?.variants?.[0]?.images?.length > 0) {
-      productImages = product.variants[0].images;
+      return product.simpleProduct.images;
     }
     
-    // Convert all AVIF images to JPG
-    return productImages.map(convertAvifToJpg);
+    // For variable products - check varients[0].image
+    if (product?.varients?.[0]?.image?.length > 0) {
+      return product.varients[0].image;
+    }
+    
+    // Alternative structure - variants[0].images
+    if (product?.variants?.[0]?.images?.length > 0) {
+      return product.variants[0].images;
+    }
+    
+    return [];
   }, [product]);
 
   useEffect(() => {
@@ -328,7 +320,7 @@ const ProductDetails = () => {
               })}
             </View>
           )}
-
+          
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('Product Information')}</Text>
             <View style={styles.detailRow}>
@@ -346,7 +338,7 @@ const ProductDetails = () => {
           </View>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -354,25 +346,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    // justifyContent: 'space-between',
-    gap: 10,
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  shareButton: {
-    padding: 8,
   },
   content: {
     flex: 1,

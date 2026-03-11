@@ -126,8 +126,12 @@ const Orderview = props => {
       const token = user.token;
       console.log('Token:', token ? 'Found' : 'Not found');
       
-      // Create invoice download URL
-      const invoiceUrl = `${Constants.baseUrl}invoice/${orderview._id}`;
+      // Get current language
+      const currentLanguage = i18n.language || 'en';
+      console.log('Current language:', currentLanguage);
+      
+      // Create invoice download URL with language parameter
+      const invoiceUrl = `${Constants.baseUrl}invoice/${orderview._id}?lang=${currentLanguage}`;
       const fileName = `invoice-${orderview.orderId || orderview._id}.pdf`;
       
       console.log('Invoice URL:', invoiceUrl);

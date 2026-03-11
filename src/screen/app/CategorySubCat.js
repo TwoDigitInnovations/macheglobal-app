@@ -32,15 +32,15 @@ export default function CategoriesScreen({ route }) {
       if (response.status) {
         setCategories([{ _id: 'all', name: t('All') }, ...response.data]);
 
-        // If a category was passed from Home, use it, otherwise use 'all'
+      
         const initialCategory = route?.params?.selectedCategoryId || 'all';
 
         if (initialCategory === 'all' && response.data.length > 0) {
-          // Set subcategories for 'all' category by combining all subcategories
+          
           const allSubcategories = response.data.flatMap(cat => cat.Subcategory || []);
           setSubcategories(allSubcategories);
         } else if (initialCategory !== 'all') {
-          // Find and set subcategories for the selected category
+       
           const selectedCat = response.data.find(cat => cat._id === initialCategory);
           if (selectedCat) {
             setSubcategories(selectedCat.Subcategory || []);
@@ -122,7 +122,7 @@ export default function CategoriesScreen({ route }) {
           </ScrollView>
         </View>
 
-        {/* Right Side - Subcategories Grid (3 columns) */}
+     
         <View style={styles.subcategoriesSection}>
           <ScrollView showsVerticalScrollIndicator={false}>
             <View style={styles.grid}>

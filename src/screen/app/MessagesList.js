@@ -13,8 +13,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GetApi } from '../../Assets/Helpers/Service';
 import DriverHeader from '../../Assets/Component/DriverHeader';
 import { useIsFocused } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 const MessagesList = ({ navigation }) => {
+  const { t } = useTranslation();
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const isFocused = useIsFocused();
@@ -51,22 +53,22 @@ const MessagesList = ({ navigation }) => {
     
     // Less than 1 minute
     if (diff < 60000) {
-      return 'Just now';
+      return t('Just now');
     }
     // Less than 1 hour
     if (diff < 3600000) {
       const minutes = Math.floor(diff / 60000);
-      return `${minutes}m ago`;
+      return t('minutes_ago', { count: minutes });
     }
     // Less than 24 hours
     if (diff < 86400000) {
       const hours = Math.floor(diff / 3600000);
-      return `${hours}h ago`;
+      return t('hours_ago', { count: hours });
     }
     // Less than 7 days
     if (diff < 604800000) {
       const days = Math.floor(diff / 86400000);
-      return `${days}d ago`;
+      return t('days_ago', { count: days });
     }
     // More than 7 days
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -86,12 +88,25 @@ const MessagesList = ({ navigation }) => {
     return (
       <TouchableOpacity
         style={styles.conversationItem}
-        onPress={() => navigation.navigate('ChatRoom', {
-          sellerId: otherUserId,
-          sellerName: displayName,
-          sellerImage: displayImage,
-          productId: item.productId
-        })}
+        onPress={() => {
+          console.log('🔍 [MessagesList] Opening chat:', {
+            sellerId: otherUserId,
+            productId: item.productId,
+            hasProductId: !!item.productId
+          });
+          
+          // Don't pass productId from MessagesList - show all messages
+          // Only pass productId when coming from product inquiry
+          navigation.navigate('ChatRoom', {
+            sellerId: otherUserId,
+            sellerName: displayName,
+            sellerImage: displayImage,
+            productId: undefined, // Don't filter by product in normal chat
+            productImage: undefined,
+            productName: undefined,
+            productPrice: undefined
+          });
+        }}
       >
         {hasValidImage ? (
           <Image
@@ -122,7 +137,7 @@ const MessagesList = ({ navigation }) => {
           </Text>
           {item.productName && (
             <Text style={styles.productName} numberOfLines={1}>
-              Product: {item.productName}
+              {t('Product')}: {item.productName}
             </Text>
           )}
         </View>
@@ -140,7 +155,7 @@ const MessagesList = ({ navigation }) => {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <DriverHeader item="Messages" showback={false} />
+        <DriverHeader item={t('Messages')} showback={false} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#FF7000" />
         </View>
@@ -150,7 +165,7 @@ const MessagesList = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <DriverHeader item="Messages" showback={false} />
+      <DriverHeader item={t('Messages')} showback={false} />
       
       {conversations.length === 0 ? (
         <EmptyState />
@@ -168,6 +183,7 @@ const MessagesList = ({ navigation }) => {
 
 // Empty State Component - Shows different message for sellers vs users
 const EmptyState = () => {
+  const { t } = useTranslation();
   const [userRole, setUserRole] = React.useState('user');
 
   React.useEffect(() => {
@@ -185,11 +201,11 @@ const EmptyState = () => {
 
   return (
     <View style={styles.emptyContainer}>
-      <Text style={styles.emptyTitle}>No Messages Yet</Text>
+      <Text style={styles.emptyTitle}>{t('No Messages Yet')}</Text>
       <Text style={styles.emptyText}>
         {isSeller 
-          ? "You don't have any customer messages yet. Customers can message you from your product pages."
-          : 'Start chatting with sellers by clicking "Chat with Seller" on product pages'
+          ? t('No customer messages yet')
+          : t('Start chatting with sellers')
         }
       </Text>
     </View>

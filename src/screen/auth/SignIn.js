@@ -146,7 +146,9 @@ const LoginScreen = ({ navigation }) => {
         userRole, 
         userStatus, 
         statusString,
-        fullUserData: responseUserData 
+        fullUserData: responseUserData,
+        originalRole: responseUserData?.role,
+        isSeller: userRole === 'seller'
       });
       
       try {
@@ -167,7 +169,7 @@ const LoginScreen = ({ navigation }) => {
               routes: [{ name: 'SellerStore' }],
             });
           } else {
-            console.log('⚠️ Unknown seller status, navigating to App');
+            console.log('⚠️ Unknown seller status:', statusString, 'navigating to App');
             navigation.replace('App');
           }
         } else {

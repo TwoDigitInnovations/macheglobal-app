@@ -47,96 +47,49 @@ const CameraGalleryPeacker = (props) => {
   };
 
   const launchCameras = async () => {
-    // console.log(options);
-    // ImagePicker.openCamera(options)
-    //   .then(
-    //     image => {
-    //       console.log(image);
-    //       props.getImageValue(image);
-    //     },
-    //     err => {
-    //       console.log(err);
-    //     },
-    //   )
-    //   .catch(e => {
-    //     alert(e);
-    //   });
     launchCamera(options2, (response) => {
-      console.log(response)
+      console.log('Camera response:', response);
       if (response.didCancel) {
-        props?.cancel()
-        console.log('User cancelled image picker');
+        props?.cancel();
+        console.log('User cancelled camera');
       } else if (response.error) {
-        props?.cancel()
-        console.log('ImagePicker Error:', response.error);
-        // setErrorMessage('Error selecting image. Please try again.');
+        props?.cancel();
+        console.log('Camera Error:', response.error);
       } else if (response.customButton) {
-        props?.cancel()
+        props?.cancel();
         console.log('User tapped custom button: ', response.customButton);
       } else {
-        const source = { uri: response.uri };
-        console.log('User tapped custom button: ', response.customButton);
+        console.log('Camera photo captured successfully');
+        // Call getImageValue first, then cancel
         props.getImageValue(response);
-        props?.cancel()
-        // setSelectedImage(source);
+        // Small delay to ensure image processing starts before modal closes
+        setTimeout(() => {
+          props?.cancel();
+        }, 100);
       }
     });
-
-    // const result = await launchCamera(options2);
-    // props.getImageValue(result);
   };
 
   const launchImageLibrarys = async () => {
-    // if (Platform.OS === 'ios') {
-    //   request(PERMISSIONS.IOS.PHOTO_LIBRARY).then(result => {
-    //     console.log('result ====>', result);
-    //     if (result === 'granted') {
-    //       ImagePicker.openPicker(options).then(
-    //         image => {
-    //           props.getImageValue(image);
-    //         },
-    //         err => {
-    //           console.log(err);
-    //         },
-    //       );
-    //     }
-    //   });
-    // }
-
-    // ImagePicker.openPicker(options)
-    //   .then(
-    //     image => {
-    //       console.log(image);
-    //       props.getImageValue(image);
-    //     },
-    //     err => {
-    //       console.log(err);
-    //     },
-    //   )
-    //   .catch(e => {
-    //     alert(e);
-    //   });
-
-    // const result = await launchImageLibrary(options2);
-    // props.getImageValue(result);
-
     launchImageLibrary(options2, (response) => {
-      console.log(response)
+      console.log('Gallery response:', response);
       if (response.didCancel) {
-        props?.cancel()
-        console.log('User cancelled image picker');
+        props?.cancel();
+        console.log('User cancelled gallery picker');
       } else if (response.error) {
-        props?.cancel()
-        console.log('ImagePicker Error:', response.error);
-        // setErrorMessage('Error selecting image. Please try again.');
+        props?.cancel();
+        console.log('Gallery Error:', response.error);
       } else if (response.customButton) {
-        props?.cancel()
+        props?.cancel();
         console.log('User tapped custom button: ', response.customButton);
       } else {
-        const source = { uri: response.uri };
+        console.log('Gallery photo selected successfully');
+        // Call getImageValue first, then cancel
         props.getImageValue(response);
-        props?.cancel()
-        // setSelectedImage(source);
+        // Small delay to ensure image processing starts before modal closes
+        setTimeout(() => {
+          props?.cancel();
+        }, 100);
       }
     });
   };
@@ -171,6 +124,52 @@ const CameraGalleryPeacker = (props) => {
   //     // launchCameras();
   //   }
   // };
+
+  const requestCameraPermission = async (type) => {
+    try {
+      if (Platform.OS === 'android') {
+        // For Android, request both camera and storage permissions
+        const permissions = [
+          PERMISSIONS.ANDROID.CAMERA,
+          PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE,
+        ];
+        
+        const results = await requestMultiple(permissions);
+        
+        if (results[PERMISSIONS.ANDROID.CAMERA] === RESULTS.GRANTED) {
+          console.log('Camera permission granted');
+          type();
+        } else {
+          console.log('Camera permission denied');
+          alert('Camera permission is required to take photos');
+        }
+      } else {
+        // For iOS
+        const cameraPermission = PERMISSIONS.IOS.CAMERA;
+        const result = await check(cameraPermission);
+        
+        if (result === RESULTS.GRANTED) {
+          type();
+          console.log('Camera permission already granted');
+          return;
+        }
+        
+        if (result === RESULTS.DENIED || result === RESULTS.UNAVAILABLE) {
+          const permissionResult = await request(cameraPermission);
+          
+          if (permissionResult === RESULTS.GRANTED) {
+            console.log('Camera permission granted');
+            type();
+          } else {
+            console.log('Camera permission denied');
+            alert('Camera permission is required to take photos');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking or requesting camera permission:', error);
+    }
+  };
 
   const requestMediaPermission = async (type) => {
     try {
@@ -233,7 +232,7 @@ const CameraGalleryPeacker = (props) => {
         <TouchableOpacity
           style={{ flexDirection: 'row', width: '100%' }}
           onPress={() => {
-            requestMediaPermission(launchCameras);
+            requestCameraPermission(launchCameras);
             // launchCameras();
 
             // props.refs.current?.hide();

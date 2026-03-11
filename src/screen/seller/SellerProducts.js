@@ -21,6 +21,7 @@ import Constants from '../../Assets/Helpers/constant';
 const { width } = Dimensions.get('window');
 
 const SellerProducts = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,11 +54,11 @@ const SellerProducts = () => {
       if (response?.status && Array.isArray(response?.data)) {
         setProducts(response.data);
       } else {
-        setError('Failed to load products');
+        setError(t('Failed to load products'));
       }
     } catch (err) {
       console.error('Error fetching products:', err);
-      setError('An error occurred while loading products');
+      setError(t('An error occurred while loading products'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -75,56 +76,99 @@ const SellerProducts = () => {
   };
 
   const getProductImage = (item) => {
-
+    // Helper to convert AVIF to JPG
+    const convertAvifToJpg = (imageUrl) => {
+      if (imageUrl && imageUrl.includes('.avif')) {
+        return imageUrl.replace('.avif', '.jpg');
+      }
+      return imageUrl;
+    };
+    
+    // Check for variant images first (this is where your product images are)
     if (item?.varients && Array.isArray(item.varients) && item.varients.length > 0) {
       const variant = item.varients[0];
-
+      
+      // Check variant.image array (your data structure uses this)
+      if (variant?.image && Array.isArray(variant.image) && variant.image.length > 0) {
+        const imageUrl = typeof variant.image[0] === 'string' 
+          ? variant.image[0] 
+          : variant.image[0]?.url || variant.image[0];
+        return convertAvifToJpg(imageUrl);
+      }
+      
+      // Check variant.images array (alternative structure)
       if (variant?.images && Array.isArray(variant.images) && variant.images.length > 0) {
-
-        return typeof variant.images[0] === 'string'
+        const imageUrl = typeof variant.images[0] === 'string' 
+          ? variant.images[0] 
+          : variant.images[0]?.url;
+        return convertAvifToJpg(imageUrl);
+      }
+    }
+    
+    // Check for simple product images
+    if (item?.simpleProduct?.images && Array.isArray(item.simpleProduct.images) && item.simpleProduct.images.length > 0) {
+      const imageUrl = typeof item.simpleProduct.images[0] === 'string'
+        ? item.simpleProduct.images[0]
+        : item.simpleProduct.images[0]?.url;
+      return convertAvifToJpg(imageUrl);
+    }
+    
+    // Check for variants array (alternative structure)
+    if (item?.variants && Array.isArray(item.variants) && item.variants.length > 0) {
+      const variant = item.variants[0];
+      if (variant?.images && Array.isArray(variant.images) && variant.images.length > 0) {
+        const imageUrl = typeof variant.images[0] === 'string'
           ? variant.images[0]
           : variant.images[0]?.url;
-      }
-
-      if (variant?.image) {
-        return Array.isArray(variant.image)
-          ? variant.image[0]?.url || variant.image[0]
-          : variant.image;
+        return convertAvifToJpg(imageUrl);
       }
     }
 
-    if (item?.category?.image?.url) {
-      return item.category.image.url;
-    }
-
+    // Only use placeholder if no product images found - DO NOT use category image
     return 'https://via.placeholder.com/150';
   };
 
   const getProductPrice = (item) => {
     try {
-      // Try to get from varients[0].selected[0] (your data structure)
-      if (item?.varients?.[0]?.selected?.[0] !== undefined) {
+      // For variable products - check varients[0].selected[0]
+      if (item?.varients?.[0]?.selected?.[0]) {
         const selected = item.varients[0].selected[0];
-        return {
-          originalPrice: parseFloat(selected.price) || 0,
-          offerPrice: parseFloat(selected.offerprice || selected.price) || 0
-        };
-      }
-
-      // Fallback to direct properties in case the structure is different
-      if (item?.price !== undefined) {
-        return {
-          originalPrice: parseFloat(item.price) || 0,
-          offerPrice: parseFloat(item.offerprice || item.price) || 0
-        };
-      }
-
-      // Last resort, check pieces as price (some APIs use this)
-      if (item?.pieces !== undefined) {
-        const price = parseFloat(item.pieces) || 0;
+        const price = parseFloat(selected.price) || 0;
+        const offerPrice = parseFloat(selected.offerprice || selected.offerPrice) || price;
         return {
           originalPrice: price,
-          offerPrice: price
+          offerPrice: offerPrice
+        };
+      }
+      
+      // For simple products - check simpleProduct
+      if (item?.simpleProduct) {
+        const price = parseFloat(item.simpleProduct.price) || 0;
+        const offerPrice = parseFloat(item.simpleProduct.offerPrice || item.simpleProduct.offerprice) || price;
+        return {
+          originalPrice: price,
+          offerPrice: offerPrice
+        };
+      }
+      
+      // Check variants array (alternative structure)
+      if (item?.variants?.[0]) {
+        const variant = item.variants[0];
+        const price = parseFloat(variant.price) || 0;
+        const offerPrice = parseFloat(variant.offerPrice || variant.offerprice) || price;
+        return {
+          originalPrice: price,
+          offerPrice: offerPrice
+        };
+      }
+      
+      // Fallback to direct properties
+      if (item?.price !== undefined) {
+        const price = parseFloat(item.price) || 0;
+        const offerPrice = parseFloat(item.offerPrice || item.offerprice) || price;
+        return {
+          originalPrice: price,
+          offerPrice: offerPrice
         };
       }
 
@@ -176,15 +220,15 @@ const SellerProducts = () => {
       if (response?.status === true || response?.success === true) {
 
         setProducts(prevProducts => prevProducts.filter(product => product._id !== productId));
-        Alert.alert('Success', 'Product deleted successfully');
+        Alert.alert(t('Success'), t('Product deleted successfully'));
         // Refresh the list
         fetchProducts(false);
       } else {
-        throw new Error(response?.message || 'Failed to delete product');
+        throw new Error(response?.message || t('Failed to delete product'));
       }
     } catch (error) {
       console.error('Error deleting product:', error);
-      Alert.alert('Error', error.message || 'An error occurred while deleting the product');
+      Alert.alert(t('Error'), error.message || t('An error occurred while deleting the product'));
     } finally {
       setLoading(false);
     }
@@ -220,7 +264,7 @@ const SellerProducts = () => {
           {/* Product Info */}
           <View style={styles.productInfo}>
             <Text style={styles.productName} numberOfLines={1}>
-              {item.name || 'Unnamed Product'}
+              {item.name || t('Unnamed Product')}
             </Text>
             <Text style={styles.categoryName} numberOfLines={1}>
               {item.categoryName}
@@ -272,7 +316,7 @@ const SellerProducts = () => {
           >
             <Icon name="arrow-back" size={24} color="#111827" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>My Products</Text>
+          <Text style={styles.headerTitle}>{t('My Products')}</Text>
           <View style={styles.headerSpacer} />
         </View>
         <View style={styles.centerContainer}>
@@ -293,7 +337,7 @@ const SellerProducts = () => {
           >
             <Icon name="arrow-back" size={24} color="#111827" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>My Products</Text>
+          <Text style={styles.headerTitle}>{t('My Products')}</Text>
           <View style={styles.headerSpacer} />
         </View>
         <View style={styles.centerContainer}>
@@ -303,7 +347,7 @@ const SellerProducts = () => {
             style={styles.retryButton}
             onPress={() => fetchProducts()}
           >
-            <Text style={styles.retryButtonText}>Retry</Text>
+            <Text style={styles.retryButtonText}>{t('Retry')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -321,8 +365,8 @@ const SellerProducts = () => {
           onPress={() => navigation.goBack()}
         >
           <Icon name="arrow-back" size={24} color="#111827" />
-        </TouchableOpacity> */}
-        <Text style={styles.headerTitle}>My Products</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{t('My Products')}</Text>
         {/* <TouchableOpacity 
           style={styles.addButton}
           onPress={() => navigation.navigate('AddProduct')}
@@ -348,9 +392,9 @@ const SellerProducts = () => {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Icon name="inventory-2" size={64} color="#E5E7EB" />
-            <Text style={styles.emptyText}>No products found</Text>
+            <Text style={styles.emptyText}>{t('No products found')}</Text>
             <Text style={styles.emptySubtext}>
-              Tap + Add Product to get started
+              {t('Tap + Add Product to get started')}
             </Text>
           </View>
         }
@@ -368,10 +412,10 @@ const SellerProducts = () => {
             <View style={styles.modalIconContainer}>
               <Icon name="delete-outline" size={48} color="#EF4444" />
             </View>
-
-            <Text style={styles.modalTitle}>Delete Product</Text>
+            
+            <Text style={styles.modalTitle}>{t('Delete Product')}</Text>
             <Text style={styles.modalMessage}>
-              Are you sure you want to delete this product? This action cannot be undone.
+              {t('Are you sure you want to delete this product? This action cannot be undone.')}
             </Text>
 
             <View style={styles.modalButtons}>
@@ -379,14 +423,14 @@ const SellerProducts = () => {
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={cancelDelete}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>{t('Cancel')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.modalButton, styles.deleteButton]}
                 onPress={confirmDelete}
               >
-                <Text style={styles.deleteButtonText}>Delete</Text>
+                <Text style={styles.deleteButtonText}>{t('Delete')}</Text>
               </TouchableOpacity>
             </View>
           </View>

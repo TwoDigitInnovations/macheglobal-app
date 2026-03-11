@@ -8,26 +8,33 @@ import {
   FlatList,
   SafeAreaView,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
-import { BackIcon } from '../../../Theme';
 import { goBack } from '../../../navigationRef';
 import Constants, { Currency, FONTS } from '../../Assets/Helpers/constant';
 import { GetApi } from '../../Assets/Helpers/Service';
-
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useTranslation } from 'react-i18next';
 import { Copy, Check } from 'lucide-react-native';
 import { Clipboard } from 'react-native';
 
 const Coupons = () => {
   const { t } = useTranslation();
+  const [mainTab, setMainTab] = useState('coupons'); // 'coupons' or 'credit'
   const [activeTab, setActiveTab] = useState('available');
   const [coupons, setCoupons] = useState([]);
   const [copiedCode, setCopiedCode] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [creditBalance, setCreditBalance] = useState(0);
+  const [creditTransactions, setCreditTransactions] = useState([]);
 
   useEffect(() => {
-    getCoupons();
-  }, [activeTab]);
+    if (mainTab === 'coupons') {
+      getCoupons();
+    } else {
+      getCreditData();
+    }
+  }, [activeTab, mainTab]);
 
   const getCoupons = async () => {
     try {
@@ -41,6 +48,28 @@ const Coupons = () => {
     } catch (err) {
       setLoading(false);
       console.log('Error fetching coupons:', err);
+    }
+  };
+
+  const getCreditData = async () => {
+    try {
+      setLoading(true);
+      const [balanceRes, transactionsRes] = await Promise.all([
+        GetApi('credit/balance', {}),
+        GetApi('credit/transactions?page=1&limit=20', {})
+      ]);
+      
+      if (balanceRes?.success) {
+        setCreditBalance(balanceRes.data.creditBalance || 0);
+      }
+      
+      if (transactionsRes?.success) {
+        setCreditTransactions(transactionsRes.data || []);
+      }
+      setLoading(false);
+    } catch (err) {
+      setLoading(false);
+      console.log('Error fetching credit data:', err);
     }
   };
 
@@ -156,63 +185,96 @@ const Coupons = () => {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => goBack()} style={styles.backButton}>
-          <BackIcon height={20} width={20} color={Constants.white} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t('Coupons & Credit')}</Text>
-        <View style={{ width: 24 }} />
+    <SafeAreaView style={styles.container}>
+      {/* Header with Tabs */}
+      <View style={styles.headerContainer}>
+        <View style={styles.headerTop}>
+          <TouchableOpacity onPress={() => goBack()} style={styles.backButton}>
+            <Icon name="arrow-back" size={24} color={Constants.white} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{t('Coupons & Credit')}</Text>
+          <View style={{ width: 24 }} />
+        </View>
+
+        {/* Main Tabs inside Header */}
+        <View style={styles.headerTabsContainer}>
+          <TouchableOpacity
+            style={styles.headerTab}
+            onPress={() => setMainTab('coupons')}>
+            <Text
+              style={[
+                styles.headerTabText,
+                mainTab === 'coupons' && styles.activeHeaderTabText,
+              ]}>
+              {t('Coupons')}
+            </Text>
+            {mainTab === 'coupons' && <View style={styles.headerTabUnderline} />}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.headerTab}
+            onPress={() => setMainTab('credit')}>
+            <Text
+              style={[
+                styles.headerTabText,
+                mainTab === 'credit' && styles.activeHeaderTabText,
+              ]}>
+              {t('Credit')}
+            </Text>
+            {mainTab === 'credit' && <View style={styles.headerTabUnderline} />}
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Tabs */}
-      <View style={styles.tabsContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'available' && styles.activeTab]}
-          onPress={() => setActiveTab('available')}>
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === 'available' && styles.activeTabText,
-            ]}>
-            {t('Available')}
-          </Text>
-        </TouchableOpacity>
+      {/* Sub Tabs - Only show for coupons */}
+      {mainTab === 'coupons' && (
+        <View style={styles.tabsContainer}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'available' && styles.activeTab]}
+            onPress={() => setActiveTab('available')}>
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === 'available' && styles.activeTabText,
+              ]}>
+              {t('Available')}
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'used' && styles.activeTab]}
-          onPress={() => setActiveTab('used')}>
-          <Text
-            style={[styles.tabText, activeTab === 'used' && styles.activeTabText]}>
-            {t('Used')}
-          </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'used' && styles.activeTab]}
+            onPress={() => setActiveTab('used')}>
+            <Text
+              style={[styles.tabText, activeTab === 'used' && styles.activeTabText]}>
+              {t('Used')}
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'expired' && styles.activeTab]}
-          onPress={() => setActiveTab('expired')}>
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === 'expired' && styles.activeTabText,
-            ]}>
-            {t('Expired')}
-          </Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'expired' && styles.activeTab]}
+            onPress={() => setActiveTab('expired')}>
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === 'expired' && styles.activeTabText,
+              ]}>
+              {t('Expired')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
-      {/* Coupons List */}
+      {/* Content */}
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Constants.saffron} />
         </View>
-      ) : (
+      ) : mainTab === 'coupons' ? (
         <FlatList
           data={coupons}
           keyExtractor={(item) => item._id}
           renderItem={renderCoupon}
-          contentContainerStyle={styles.listContainer}
+          contentContainerStyle={[styles.listContainer, { paddingBottom: 100 }]}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyIcon}>🎟️</Text>
@@ -222,6 +284,80 @@ const Coupons = () => {
             </View>
           }
         />
+      ) : (
+        <ScrollView contentContainerStyle={[styles.listContainer, { paddingBottom: 100 }]}>
+          {/* Credit Balance Card */}
+          <View style={styles.creditBalanceCard}>
+            <Text style={styles.creditBalanceLabel}>{t('Total Credit Balance')}</Text>
+            <Text style={styles.creditBalanceAmount}>
+              {Currency}{creditBalance.toFixed(2)}
+            </Text>
+            <Text style={styles.creditBalanceNote}>
+              {t('1 credit is equivalent to 1 HTG')}
+            </Text>
+          </View>
+
+          {/* Credit Transactions */}
+          {creditTransactions.length > 0 ? (
+            <View>
+              <Text style={styles.sectionTitle}>{t('Recent Transactions')}</Text>
+              {creditTransactions.map((item) => {
+                const isCredit = item.type === 'credit';
+                const date = new Date(item.createdAt);
+                return (
+                  <View key={item._id} style={styles.creditTransactionCard}>
+                    <View style={styles.creditTransactionHeader}>
+                      <View style={styles.creditTransactionLeft}>
+                        <View
+                          style={[
+                            styles.creditTransactionIcon,
+                            { backgroundColor: isCredit ? '#E8F5E9' : '#FFEBEE' },
+                          ]}>
+                          <Text style={[styles.creditTransactionIconText, { color: isCredit ? '#4CAF50' : '#F44336' }]}>
+                            {isCredit ? '+' : '-'}
+                          </Text>
+                        </View>
+                        <View style={styles.creditTransactionInfo}>
+                          <Text style={styles.creditTransactionReason}>
+                            {item.reason === 'order_cancelled' ? t('Order Cancelled') :
+                             item.reason === 'order_returned' ? t('Order Returned') :
+                             item.reason === 'order_payment' ? t('Order Payment') :
+                             t('Admin Adjustment')}
+                          </Text>
+                          <Text style={styles.creditTransactionDescription} numberOfLines={2}>
+                            {item.description}
+                          </Text>
+                          <Text style={styles.creditTransactionDate}>
+                            {date.toLocaleDateString()} {date.toLocaleTimeString()}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.creditTransactionRight}>
+                        <Text
+                          style={[
+                            styles.creditTransactionAmount,
+                            { color: isCredit ? '#4CAF50' : '#F44336' },
+                          ]}>
+                          {isCredit ? '+' : '-'}{Currency}{item.amount.toFixed(2)}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyIcon}>💳</Text>
+              <Text style={styles.emptyText}>
+                {t('No records yet')}
+              </Text>
+              <Text style={styles.emptySubtext}>
+                {t('Keep an eye out for future promotions')}
+              </Text>
+            </View>
+          )}
+        </ScrollView>
       )}
     </View>
   );
@@ -234,8 +370,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F3F3F3',
   },
-  header: {
+  headerContainer: {
     backgroundColor: Constants.saffron,
+    paddingBottom: 15,
+  },
+  headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
     // justifyContent: 'space-between',
@@ -251,27 +390,55 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.Bold,
     color: Constants.white,
   },
+  headerTabsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 15,
+    gap: 30,
+  },
+  headerTab: {
+    paddingBottom: 8,
+    
+  },
+  headerTabText: {
+    fontSize: 16,
+    fontFamily: FONTS.Medium,
+    color: 'rgba(255, 255, 255, 0.6)',
+  },
+  activeHeaderTabText: {
+    color: Constants.white,
+    fontFamily: FONTS.Bold,
+  },
+  headerTabUnderline: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    backgroundColor: Constants.white,
+    borderRadius: 2,
+  },
   tabsContainer: {
     flexDirection: 'row',
-    backgroundColor: Constants.white,
+    backgroundColor: '#F3F3F3',
     paddingHorizontal: 15,
-    paddingVertical: 10,
-    gap: 10,
+    paddingTop: 15,
+    paddingBottom: 10,
+    gap: 8,
   },
   tab: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: '#F3F3F3',
+    paddingVertical: 8,
+    borderRadius: 18,
+    backgroundColor: '#E0E0E0',
     alignItems: 'center',
   },
   activeTab: {
     backgroundColor: Constants.saffron,
   },
   tabText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: FONTS.Medium,
-    color: '#666',
+    color: '#888',
   },
   activeTabText: {
     color: Constants.white,
@@ -279,7 +446,7 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: 15,
-    paddingBottom: 30,
+    paddingBottom: 100, // Extra padding for bottom tab bar
   },
   couponCard: {
     backgroundColor: Constants.white,
@@ -410,5 +577,108 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.Medium,
     color: '#999',
     textAlign: 'center',
+  },
+  emptySubtext: {
+    fontSize: 14,
+    fontFamily: FONTS.Regular,
+    color: '#BBB',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+
+  creditBalanceCard: {
+    backgroundColor: Constants.white,
+    borderRadius: 16,
+    padding: 24,
+    marginBottom: 20,
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  creditBalanceLabel: {
+    fontSize: 16,
+    fontFamily: FONTS.Medium,
+    color: '#666',
+    marginBottom: 8,
+  },
+  creditBalanceAmount: {
+    fontSize: 48,
+    fontFamily: FONTS.Bold,
+    color: Constants.saffron,
+    marginBottom: 8,
+  },
+  creditBalanceNote: {
+    fontSize: 13,
+    fontFamily: FONTS.Regular,
+    color: '#999',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontFamily: FONTS.Bold,
+    color: Constants.black,
+    marginBottom: 15,
+  },
+  creditTransactionCard: {
+    backgroundColor: Constants.white,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  creditTransactionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  creditTransactionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  creditTransactionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  creditTransactionIconText: {
+    fontSize: 24,
+    fontFamily: FONTS.Bold,
+  },
+  creditTransactionInfo: {
+    flex: 1,
+  },
+  creditTransactionReason: {
+    fontSize: 15,
+    fontFamily: FONTS.Bold,
+    color: Constants.black,
+    marginBottom: 4,
+  },
+  creditTransactionDescription: {
+    fontSize: 13,
+    fontFamily: FONTS.Regular,
+    color: '#666',
+    marginBottom: 4,
+  },
+  creditTransactionDate: {
+    fontSize: 12,
+    fontFamily: FONTS.Regular,
+    color: '#999',
+  },
+  creditTransactionRight: {
+    alignItems: 'flex-end',
+  },
+  creditTransactionAmount: {
+    fontSize: 18,
+    fontFamily: FONTS.Bold,
   },
 });
