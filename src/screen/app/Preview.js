@@ -9,7 +9,9 @@ import {
   TouchableOpacity,
   View,
   ActivityIndicator,
-  Alert
+  Alert,
+  Share,
+  Platform
 } from 'react-native';
 // import Carousel from 'react-native-snap-carousel'
 import Constants, { FONTS, Currency } from '../../Assets/Helpers/constant';
@@ -623,6 +625,52 @@ const flashDiscount = route.params?.discount || 0;
     }
   };
 
+  const shareProduct = async () => {
+    try {
+      const productUrl = `macheglobalapp://product/${slug}`;
+      
+      
+      const playStoreUrl = `https://play.google.com/store/apps/details?id=com.macheglobal&url=macheglobalapp://product/${slug}`;
+      const appStoreUrl = `https://apps.apple.com/app/idYOUR_APP_ID`; 
+      
+      const isVariableProduct = product.productType === 'variable' && product.variants?.length > 0;
+      let priceText = '';
+      
+      if (isVariableProduct) {
+        const selectedVariantData = product.variants?.[selectedVariant] || product.variants?.[0];
+        const price = parseFloat(selectedVariantData?.offerPrice || selectedVariantData?.price) || 0;
+        priceText = `${Currency}${price.toFixed(2)}`;
+      } else {
+        const price = parseFloat(product.simpleProduct?.offerPrice || product.simpleProduct?.price) || 0;
+        priceText = `${Currency}${price.toFixed(2)}`;
+      }
+      
+     
+      const storeLink = Platform.OS === 'ios' ? appStoreUrl : playStoreUrl;
+      
+      const message = `${t('Check out this product')}: ${product.name}\n${t('Price')}: ${priceText}\n\n${storeLink}`;
+      
+      const result = await Share.share({
+        message: message,
+        url: Platform.OS === 'ios' ? storeLink : undefined,
+        title: product.name
+      });
+
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+          console.log('Shared with activity type:', result.activityType);
+        } else {
+          console.log('Product shared successfully');
+        }
+      } else if (result.action === Share.dismissedAction) {
+        console.log('Share dismissed');
+      }
+    } catch (error) {
+      console.error('Error sharing product:', error);
+      Alert.alert(t('Error'), t('Failed to share product'));
+    }
+  };
+
   const renderCarouselItem = ({ item, index }) => {
     return (
       <View style={styles.carouselSlide}>
@@ -1164,6 +1212,17 @@ const flashDiscount = route.params?.discount || 0;
                   name={isInWishlist ? 'heart' : 'heart-o'} 
                   size={28} 
                   color={isInWishlist ? '#FF0000' : '#333'} 
+                />
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                onPress={shareProduct}
+                style={styles.shareButton}
+              >
+                <Icon 
+                  name="share-alt" 
+                  size={24} 
+                  color="#333" 
                 />
               </TouchableOpacity>
               
@@ -2291,6 +2350,146 @@ const flashDiscount = route.params?.discount || 0;
           )}
         </View>
       </ScrollView>
+
+      {/* Bottom Action Buttons */}
+      <View style={styles.bottomActionBar}>
+        <TouchableOpacity 
+          style={styles.buyNowButton}
+          onPress={async () => {
+            // Check if user is logged in
+            const loggedIn = await isUserLoggedIn();
+            if (!loggedIn) {
+              Alert.alert(
+                t('Login Required'),
+                t('Please login to proceed with purchase'),
+                [
+                  {
+                    text: t('Cancel'),
+                    style: 'cancel'
+                  },
+                  {
+                    text: t('Login'),
+                    onPress: () => reset('Auth')
+                  }
+                ]
+              );
+              return;
+            }
+
+            // Check stock availability
+            const isVariableProduct = product.productType === 'variable' && product.variants?.length > 0;
+            let availableStock = 0;
+            
+            if (isVariableProduct) {
+              const selectedVariantData = product.variants?.[selectedVariant] || product.variants?.[0];
+              const oldVarientData = product.varients?.[selectedVariant] || product.varients?.[0];
+              availableStock = parseInt(selectedVariantData?.stock) || 
+                              parseInt(oldVarientData?.selected?.[0]?.qty) || 0;
+            } else {
+              availableStock = parseInt(product.simpleProduct?.stock) || 
+                              parseInt(product.varients?.[0]?.selected?.[0]?.qty) ||
+                              parseInt(product.pieces) || 0;
+            }
+
+            if (availableStock <= 0) {
+              Alert.alert(
+                t('Out of Stock'),
+                t('This product is currently out of stock'),
+                [{ text: t('OK') }]
+              );
+              return;
+            }
+
+            // Create temporary cart item for direct checkout
+            let variantPrice = 0;
+            let variantOfferPrice = 0;
+            let productImage = '';
+            let selectedAttributes = null;
+            
+            if (isVariableProduct) {
+              const selectedVariantData = product.variants?.[selectedVariant] || product.variants?.[0];
+              const oldVarientData = product.varients?.[selectedVariant] || product.varients?.[0];
+              
+              variantPrice = parseFloat(selectedVariantData?.price) || 
+                            parseFloat(oldVarientData?.selected?.[0]?.price) || 0;
+              variantOfferPrice = parseFloat(selectedVariantData?.offerPrice) || 
+                                 parseFloat(oldVarientData?.selected?.[0]?.offerprice) || 
+                                 variantPrice;
+              productImage = convertAvifToJpg(
+                selectedVariantData?.images?.[0] || 
+                oldVarientData?.image?.[0] || ''
+              );
+              selectedAttributes = selectedVariantData?.attributes || 
+                                  oldVarientData?.selected?.[0]?.attributes || [];
+              
+              if (selectedSize) {
+                selectedAttributes = selectedAttributes.filter(attr => {
+                  if (attr.name.toLowerCase() !== 'size') return true;
+                  return attr.value === selectedSize;
+                });
+                
+                const hasColor = selectedAttributes.some(attr => attr.name.toLowerCase() === 'color');
+                if (!hasColor && oldVarientData?.color) {
+                  selectedAttributes.push({ name: 'Color', value: oldVarientData.color });
+                }
+              }
+            } else {
+              variantPrice = parseFloat(product.simpleProduct?.price) || 
+                             parseFloat(product.varients?.[0]?.selected?.[0]?.price) || 0;
+              variantOfferPrice = parseFloat(product.simpleProduct?.offerPrice) || 
+                                 parseFloat(product.varients?.[0]?.selected?.[0]?.offerprice) || 
+                                 variantPrice;
+              productImage = convertAvifToJpg(
+                product.simpleProduct?.images?.[0] || 
+                product.varients?.[0]?.image?.[0] || ''
+              );
+            }
+
+            if (isFlashSale) {
+              variantOfferPrice = flashSalePrice;
+            }
+
+            // Create temporary cart with single item
+            const tempCartItem = {
+              productid: product._id,
+              productname: product.name,
+              frenchName: product?.frenchName,
+              price: isFlashSale ? flashOriginalPrice : variantPrice,
+              offer: variantOfferPrice,
+              image: productImage,
+              price_slot: product?.price_slot?.[0] || {},
+              qty: 1,
+              seller_id: product.SellerId,
+              slug: product.slug,
+              total: variantOfferPrice,
+              BarCode: product.BarCode || '',
+              productType: product.productType,
+              selectedAttributes: isVariableProduct ? selectedAttributes : null,
+              variantIndex: isVariableProduct ? selectedVariant : null,
+              variantId: isVariableProduct && product.variants?.[selectedVariant]?._id ? product.variants[selectedVariant]._id : null,
+              isShipmentAvailable: product.isShipmentAvailable !== false,
+              isInStoreAvailable: product.isInStoreAvailable !== false,
+              isCurbSidePickupAvailable: product.isCurbSidePickupAvailable !== false,
+              isNextDayDeliveryAvailable: product.isNextDayDeliveryAvailable !== false,
+            };
+
+            // Save current cart
+            const currentCart = await AsyncStorage.getItem('cartdata');
+            
+            // Set temporary cart with single item
+            await AsyncStorage.setItem('cartdata', JSON.stringify([tempCartItem]));
+            setcartdetail([tempCartItem]);
+
+            // Navigate to checkout
+            navigation.navigate('CheckoutOrder', {
+              directBuy: true,
+              previousCart: currentCart // Save previous cart to restore later
+            });
+          }}
+        >
+          <Text style={styles.buyNowButtonText}>{t('Buy Now')}</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };
@@ -2672,7 +2871,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 180, // Increased to accommodate Buy Now button + bottom nav
   },
   mainImage: {
     width: '100%',
@@ -3228,5 +3427,40 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     textDecorationLine: 'underline',
+  },
+  bottomActionBar: {
+    position: 'absolute',
+    bottom: 60, // Adjusted to be above bottom navigation bar
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 8,
+  },
+  buyNowButton: {
+    backgroundColor: '#FF7000',
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buyNowButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  shareButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

@@ -18,7 +18,7 @@ import { Post } from '../../Assets/Helpers/Service';
 const IconePaymentWebView = ({ route }) => {
   const { t } = useTranslation();
   const navigation = useNavigation();
-  const { paymentUrl, orderId, amount } = route.params;
+  const { paymentUrl, orderId, amount, directBuy, previousCart } = route.params;
   
   const [loading, setLoading] = useState(true);
   const [canGoBack, setCanGoBack] = useState(false);
@@ -56,8 +56,16 @@ const IconePaymentWebView = ({ route }) => {
     try {
       // Clear cart on payment success
       const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-      await AsyncStorage.setItem('cartdata', JSON.stringify([]));
-      console.log('✅ Cart cleared on payment success');
+      
+      // If this was a direct buy, restore previous cart
+      if (directBuy && previousCart) {
+        await AsyncStorage.setItem('cartdata', previousCart);
+        console.log('✅ Previous cart restored after direct buy payment');
+      } else {
+        // Normal checkout - clear cart
+        await AsyncStorage.setItem('cartdata', JSON.stringify([]));
+        console.log('✅ Cart cleared on payment success');
+      }
       
       const statusResponse = await Post(`payment/icone/status/${orderId}`);
       
@@ -104,7 +112,14 @@ const IconePaymentWebView = ({ route }) => {
     }
   };
 
-  const handlePaymentCancel = () => {
+  const handlePaymentCancel = async () => {
+    // Restore previous cart if this was a direct buy
+    if (directBuy && previousCart) {
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+      await AsyncStorage.setItem('cartdata', previousCart);
+      console.log('✅ Previous cart restored after payment cancellation');
+    }
+    
     Alert.alert(
       t('Payment Cancelled'),
       t('Your payment was cancelled. The order has been cancelled and items have been restored to stock.'),
@@ -117,7 +132,14 @@ const IconePaymentWebView = ({ route }) => {
     );
   };
 
-  const handlePaymentFailed = () => {
+  const handlePaymentFailed = async () => {
+    // Restore previous cart if this was a direct buy
+    if (directBuy && previousCart) {
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+      await AsyncStorage.setItem('cartdata', previousCart);
+      console.log('✅ Previous cart restored after payment failure');
+    }
+    
     Alert.alert(
       t('Payment Failed'),
       t('Your payment could not be processed. Please try again.'),
@@ -135,7 +157,7 @@ const IconePaymentWebView = ({ route }) => {
     );
   };
 
-  const handleBackPress = () => {
+  const handleBackPress = async () => {
   
     if (canGoBack && webViewRef.current) {
       webViewRef.current.goBack();
@@ -158,6 +180,13 @@ const IconePaymentWebView = ({ route }) => {
             try {
               // Call cancel endpoint to mark order as cancelled and restore stock
               await Post(`payment/icone/cancel-order/${orderId}`);
+              
+              // Restore previous cart if this was a direct buy
+              if (directBuy && previousCart) {
+                const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                await AsyncStorage.setItem('cartdata', previousCart);
+                console.log('✅ Previous cart restored after manual cancellation');
+              }
             } catch (error) {
               console.error('Error cancelling order:', error);
             }

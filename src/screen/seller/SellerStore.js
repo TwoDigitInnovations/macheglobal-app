@@ -27,6 +27,7 @@ import { Post, GetApi } from '../../Assets/Helpers/Service';
 import { useToast } from 'react-native-toast-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
+import CountryPicker from 'react-native-country-picker-modal';
 
 const { width, height } = Dimensions.get('window');
 
@@ -79,7 +80,7 @@ const SellerStore = () => {
     address: '',
     city: '',
     state: '',
-    country: '',
+    country: 'Chile',
     pincode: '',
     gstNumber: '',
     panNumber: '',
@@ -95,6 +96,168 @@ const SellerStore = () => {
   const [logo, setLogo] = useState(null);
   const [documents, setDocuments] = useState([]);
   const [errors, setErrors] = useState({});
+  const [countryCode, setCountryCode] = useState('CL');
+  const [callingCode, setCallingCode] = useState('56');
+  const [selectedCountry, setSelectedCountry] = useState(null);
+  const [countryPickerVisible, setCountryPickerVisible] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorModalData, setErrorModalData] = useState({ title: '', message: '' });
+
+  // Helper function to get calling code from country code
+  const getCallingCodeFromCountry = (countryCode) => {
+    const callingCodes = {
+      'AD': '376', 'AE': '971', 'AF': '93', 'AG': '1', 'AI': '1', 'AL': '355',
+      'AM': '374', 'AO': '244', 'AR': '54', 'AS': '1', 'AT': '43', 'AU': '61',
+      'AW': '297', 'AX': '358', 'AZ': '994', 'BA': '387', 'BB': '1', 'BD': '880',
+      'BE': '32', 'BF': '226', 'BG': '359', 'BH': '973', 'BI': '257', 'BJ': '229',
+      'BL': '590', 'BM': '1', 'BN': '673', 'BO': '591', 'BQ': '599', 'BR': '55',
+      'BS': '1', 'BT': '975', 'BW': '267', 'BY': '375', 'BZ': '501', 'CA': '1',
+      'CC': '61', 'CD': '243', 'CF': '236', 'CG': '242', 'CH': '41', 'CI': '225',
+      'CK': '682', 'CL': '56', 'CM': '237', 'CN': '86', 'CO': '57', 'CR': '506',
+      'CU': '53', 'CV': '238', 'CW': '599', 'CX': '61', 'CY': '357', 'CZ': '420',
+      'DE': '49', 'DJ': '253', 'DK': '45', 'DM': '1', 'DO': '1', 'DZ': '213',
+      'EC': '593', 'EE': '372', 'EG': '20', 'EH': '212', 'ER': '291', 'ES': '34',
+      'ET': '251', 'FI': '358', 'FJ': '679', 'FK': '500', 'FM': '691', 'FO': '298',
+      'FR': '33', 'GA': '241', 'GB': '44', 'GD': '1', 'GE': '995', 'GF': '594',
+      'GG': '44', 'GH': '233', 'GI': '350', 'GL': '299', 'GM': '220', 'GN': '224',
+      'GP': '590', 'GQ': '240', 'GR': '30', 'GT': '502', 'GU': '1', 'GW': '245',
+      'GY': '592', 'HK': '852', 'HN': '504', 'HR': '385', 'HT': '509', 'HU': '36',
+      'ID': '62', 'IE': '353', 'IL': '972', 'IM': '44', 'IN': '91', 'IO': '246',
+      'IQ': '964', 'IR': '98', 'IS': '354', 'IT': '39', 'JE': '44', 'JM': '1',
+      'JO': '962', 'JP': '81', 'KE': '254', 'KG': '996', 'KH': '855', 'KI': '686',
+      'KM': '269', 'KN': '1', 'KP': '850', 'KR': '82', 'KW': '965', 'KY': '1',
+      'KZ': '7', 'LA': '856', 'LB': '961', 'LC': '1', 'LI': '423', 'LK': '94',
+      'LR': '231', 'LS': '266', 'LT': '370', 'LU': '352', 'LV': '371', 'LY': '218',
+      'MA': '212', 'MC': '377', 'MD': '373', 'ME': '382', 'MF': '590', 'MG': '261',
+      'MH': '692', 'MK': '389', 'ML': '223', 'MM': '95', 'MN': '976', 'MO': '853',
+      'MP': '1', 'MQ': '596', 'MR': '222', 'MS': '1', 'MT': '356', 'MU': '230',
+      'MV': '960', 'MW': '265', 'MX': '52', 'MY': '60', 'MZ': '258', 'NA': '264',
+      'NC': '687', 'NE': '227', 'NF': '672', 'NG': '234', 'NI': '505', 'NL': '31',
+      'NO': '47', 'NP': '977', 'NR': '674', 'NU': '683', 'NZ': '64', 'OM': '968',
+      'PA': '507', 'PE': '51', 'PF': '689', 'PG': '675', 'PH': '63', 'PK': '92',
+      'PL': '48', 'PM': '508', 'PR': '1', 'PS': '970', 'PT': '351', 'PW': '680',
+      'PY': '595', 'QA': '974', 'RE': '262', 'RO': '40', 'RS': '381', 'RU': '7',
+      'RW': '250', 'SA': '966', 'SB': '677', 'SC': '248', 'SD': '249', 'SE': '46',
+      'SG': '65', 'SH': '290', 'SI': '386', 'SJ': '47', 'SK': '421', 'SL': '232',
+      'SM': '378', 'SN': '221', 'SO': '252', 'SR': '597', 'SS': '211', 'ST': '239',
+      'SV': '503', 'SX': '1', 'SY': '963', 'SZ': '268', 'TC': '1', 'TD': '235',
+      'TG': '228', 'TH': '66', 'TJ': '992', 'TK': '690', 'TL': '670', 'TM': '993',
+      'TN': '216', 'TO': '676', 'TR': '90', 'TT': '1', 'TV': '688', 'TW': '886',
+      'TZ': '255', 'UA': '380', 'UG': '256', 'US': '1', 'UY': '598', 'UZ': '998',
+      'VA': '39', 'VC': '1', 'VE': '58', 'VG': '1', 'VI': '1', 'VN': '84',
+      'VU': '678', 'WF': '681', 'WS': '685', 'XK': '383', 'YE': '967', 'YT': '262',
+      'ZA': '27', 'ZM': '260', 'ZW': '263'
+    };
+    return callingCodes[countryCode] || '1';
+  };
+
+  // Helper function to get country flag emoji
+  const getCountryFlag = (countryCode) => {
+    const codePoints = countryCode
+      .toUpperCase()
+      .split('')
+      .map(char => 127397 + char.charCodeAt());
+    return String.fromCodePoint(...codePoints);
+  };
+
+  // Helper function to validate phone number based on country
+  const validatePhoneNumber = (phone, countryCode) => {
+    if (!phone || phone.trim() === '') {
+      return { isValid: false, message: 'Phone number is required' };
+    }
+
+    // Remove any non-digit characters
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+
+    // Country-specific validation rules
+    const validationRules = {
+      // Chile
+      'CL': { length: 9, pattern: /^[2-9]\d{8}$/, message: 'Chilean phone number must be 9 digits starting with 2-9' },
+      
+      // India
+      'IN': { length: 10, pattern: /^[6-9]\d{9}$/, message: 'Indian phone number must be 10 digits starting with 6-9' },
+      
+      // USA
+      'US': { length: 10, pattern: /^[2-9]\d{9}$/, message: 'US phone number must be 10 digits' },
+      
+      // UK
+      'GB': { length: 10, pattern: /^[1-9]\d{9}$/, message: 'UK phone number must be 10 digits' },
+      
+      // Canada
+      'CA': { length: 10, pattern: /^[2-9]\d{9}$/, message: 'Canadian phone number must be 10 digits' },
+      
+      // Australia
+      'AU': { length: 9, pattern: /^[2-9]\d{8}$/, message: 'Australian phone number must be 9 digits' },
+      
+      // Mexico
+      'MX': { length: 10, pattern: /^[1-9]\d{9}$/, message: 'Mexican phone number must be 10 digits' },
+      
+      // Brazil
+      'BR': { length: 11, pattern: /^[1-9]\d{10}$/, message: 'Brazilian phone number must be 11 digits' },
+      
+      // Argentina
+      'AR': { length: 10, pattern: /^[1-9]\d{9}$/, message: 'Argentine phone number must be 10 digits' },
+      
+      // Spain
+      'ES': { length: 9, pattern: /^[6-9]\d{8}$/, message: 'Spanish phone number must be 9 digits starting with 6-9' },
+      
+      // France
+      'FR': { length: 9, pattern: /^[1-9]\d{8}$/, message: 'French phone number must be 9 digits' },
+      
+      // Germany
+      'DE': { minLength: 10, maxLength: 11, pattern: /^[1-9]\d{9,10}$/, message: 'German phone number must be 10-11 digits' },
+      
+      // China
+      'CN': { length: 11, pattern: /^1[3-9]\d{9}$/, message: 'Chinese phone number must be 11 digits starting with 1' },
+      
+      // Japan
+      'JP': { length: 10, pattern: /^[0-9]\d{9}$/, message: 'Japanese phone number must be 10 digits' },
+      
+      // South Korea
+      'KR': { length: 10, pattern: /^[0-9]\d{9}$/, message: 'Korean phone number must be 10 digits' },
+      
+      // Pakistan
+      'PK': { length: 10, pattern: /^3\d{9}$/, message: 'Pakistani phone number must be 10 digits starting with 3' },
+      
+      // Bangladesh
+      'BD': { length: 10, pattern: /^1[3-9]\d{8}$/, message: 'Bangladeshi phone number must be 10 digits starting with 1' },
+      
+      // UAE
+      'AE': { length: 9, pattern: /^[5]\d{8}$/, message: 'UAE phone number must be 9 digits starting with 5' },
+      
+      // Saudi Arabia
+      'SA': { length: 9, pattern: /^[5]\d{8}$/, message: 'Saudi phone number must be 9 digits starting with 5' },
+    };
+
+    const rule = validationRules[countryCode];
+
+    if (rule) {
+      // Check length
+      if (rule.length && cleanPhone.length !== rule.length) {
+        return { isValid: false, message: rule.message };
+      }
+
+      // Check min/max length (for countries like Germany)
+      if (rule.minLength && rule.maxLength) {
+        if (cleanPhone.length < rule.minLength || cleanPhone.length > rule.maxLength) {
+          return { isValid: false, message: rule.message };
+        }
+      }
+
+      // Check pattern
+      if (rule.pattern && !rule.pattern.test(cleanPhone)) {
+        return { isValid: false, message: rule.message };
+      }
+
+      return { isValid: true, message: '' };
+    } else {
+      // Default validation for countries not in the list
+      if (cleanPhone.length < 7 || cleanPhone.length > 15) {
+        return { isValid: false, message: 'Phone number must be between 7-15 digits' };
+      }
+      return { isValid: true, message: '' };
+    }
+  };
 
   // Load existing store data if editing
   useEffect(() => {
@@ -128,7 +291,21 @@ const SellerStore = () => {
       [field]: value
     }));
     
-    if (errors[field]) {
+    // Real-time phone validation
+    if (field === 'phone' && value.trim() !== '') {
+      const phoneValidation = validatePhoneNumber(value, countryCode);
+      if (!phoneValidation.isValid) {
+        setErrors(prev => ({
+          ...prev,
+          [field]: phoneValidation.message
+        }));
+      } else {
+        setErrors(prev => ({
+          ...prev,
+          [field]: null
+        }));
+      }
+    } else if (errors[field]) {
       setErrors(prev => ({
         ...prev,
         [field]: null
@@ -287,9 +464,13 @@ const SellerStore = () => {
     if (!formData.phone?.trim()) {
       newErrors.phone = 'Phone number is required';
       console.log('Validation failed: Phone number is required');
-    } else if (!/^[0-9]{10,15}$/.test(formData.phone)) {
-      newErrors.phone = 'Please enter a valid phone number';
-      console.log('Validation failed: Invalid phone number format');
+    } else {
+      // Use country-specific validation
+      const phoneValidation = validatePhoneNumber(formData.phone, countryCode);
+      if (!phoneValidation.isValid) {
+        newErrors.phone = phoneValidation.message;
+        console.log('Validation failed:', phoneValidation.message);
+      }
     }
     
     if (!formData.address?.trim()) {
@@ -347,11 +528,18 @@ const SellerStore = () => {
     try {
       const formDataToSend = new FormData();
       
-      // Add form data
+      // Add form data with phone number including country code
       Object.keys(formData).forEach(key => {
         if (formData[key] !== null && formData[key] !== undefined && formData[key] !== '') {
-          formDataToSend.append(key, formData[key]);
-          console.log(`Added ${key}:`, formData[key]);
+          // Add country code to phone number
+          if (key === 'phone') {
+            const phoneWithCode = `+${callingCode}${formData[key]}`;
+            formDataToSend.append(key, phoneWithCode);
+            console.log(`Added ${key}:`, phoneWithCode);
+          } else {
+            formDataToSend.append(key, formData[key]);
+            console.log(`Added ${key}:`, formData[key]);
+          }
         }
       });
       
@@ -427,7 +615,18 @@ const SellerStore = () => {
       
       if (!response.ok) {
         console.error('API Error:', response.status, response.statusText);
-        throw new Error(responseData.message || `Server error: ${response.status}`);
+        console.error('Response data:', responseData);
+        
+        // Check if error field contains duplicate key error
+        if (responseData.error && responseData.error.includes('E11000 duplicate key error')) {
+          if (responseData.error.includes('email')) {
+            throw new Error('DUPLICATE_EMAIL');
+          } else {
+            throw new Error('DUPLICATE_ENTRY');
+          }
+        }
+        
+        throw new Error(responseData.message || responseData.error || `Server error: ${response.status}`);
       }
 
       if (responseData.success) {
@@ -457,38 +656,34 @@ const SellerStore = () => {
     } catch (error) {
       console.error('Error creating store:', error);
       let errorMessage = 'An error occurred while creating the store';
+      let errorTitle = 'Error';
     
-      if (error.message && error.message.includes('already have a store')) {
+      // Check for duplicate email error
+      if (error.message === 'DUPLICATE_EMAIL') {
+        errorTitle = 'Duplicate Email';
+        errorMessage = 'This email is already registered with another store. Please use a different email.';
+      } else if (error.message === 'DUPLICATE_ENTRY') {
+        errorTitle = 'Duplicate Entry';
+        errorMessage = 'This information is already registered. Please use different details.';
+      } else if (error.message && error.message.includes('E11000 duplicate key error')) {
+        errorTitle = 'Duplicate Entry';
+        if (error.message.includes('email')) {
+          errorMessage = 'This email is already registered with another store. Please use a different email.';
+        } else {
+          errorMessage = 'This information is already registered. Please use different details.';
+        }
+      } else if (error.message && error.message.includes('already have a store')) {
+        errorTitle = 'Store Exists';
         errorMessage = 'You already have a store. You cannot create another one.';
-        
-     
-        Alert.alert(
-          'Store Exists',
-          errorMessage,
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                // Always navigate to 'App' screen
-                navigation.navigate('App');
-              }
-            }
-          ]
-        );
-      } else if (error.message) {
+      } else if (error.message && error.message !== 'Error creating store') {
         errorMessage = error.message;
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
       }
       
-      // Show error toast if not already shown an alert
-      if (!error.message || !error.message.includes('already have a store')) {
-        toast.show(errorMessage, {
-          type: 'danger',
-          placement: 'bottom',
-          duration: 4000,
-        });
-      }
+      setErrorModalData({
+        title: errorTitle,
+        message: errorMessage
+      });
+      setShowErrorModal(true);
     } finally {
       setIsLoading(false);
     }
@@ -605,15 +800,78 @@ const SellerStore = () => {
               key="email"
             />
             
-            <InputField
-              label="Phone Number*"
-              value={formData.phone}
-              onChangeText={useCallback((text) => handleInputChange('phone', text), [handleInputChange])}
-              placeholder="Enter phone number"
-              keyboardType="phone-pad"
-              error={errors.phone}
-              icon="phone"
-              key="phone"
+            {/* Phone Number with Country Picker */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>{t('Phone Number')}*</Text>
+              <View style={[styles.phoneInputWrapper, errors.phone && styles.inputError]}>
+                <TouchableOpacity
+                  style={styles.countryPickerButton}
+                  onPress={() => {
+                    console.log('Button clicked! Opening country picker...');
+                    console.log('Current state - countryCode:', countryCode, 'callingCode:', callingCode);
+                    setCountryPickerVisible(true);
+                  }}
+                >
+                  <Text style={styles.flagEmoji}>{getCountryFlag(countryCode)}</Text>
+                  <Text style={styles.callingCode}>
+                    +{getCallingCodeFromCountry(countryCode)}
+                  </Text>
+                  <Icon name="chevron-down" size={16} color="#6B7280" />
+                </TouchableOpacity>
+                <TextInput
+                  style={styles.phoneInput}
+                  value={formData.phone}
+                  onChangeText={(text) => handleInputChange('phone', text.replace(/[^0-9]/g, ''))}
+                  placeholder={t('Enter phone number')}
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="phone-pad"
+                  maxLength={15}
+                />
+              </View>
+              {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+            </View>
+            
+            {/* Country Picker Modal */}
+            <CountryPicker
+              countryCode={countryCode}
+              withFilter
+              withFlag
+              withCallingCode
+              withEmoji
+              withCountryNameButton
+              withAlphaFilter
+              onSelect={(country) => {
+                console.log('=== Country Selected ===');
+                console.log('Country CCA2:', country.cca2);
+                
+                // Get calling code from our mapping
+                const newCallingCode = getCallingCodeFromCountry(country.cca2);
+                console.log('New calling code from mapping:', newCallingCode);
+                
+                // Update states
+                setCountryCode(country.cca2);
+                setCallingCode(newCallingCode);
+                setSelectedCountry(country);
+                
+                // Re-validate phone
+                if (formData.phone && formData.phone.trim() !== '') {
+                  const phoneValidation = validatePhoneNumber(formData.phone, country.cca2);
+                  if (!phoneValidation.isValid) {
+                    setErrors(prev => ({ ...prev, phone: phoneValidation.message }));
+                  } else {
+                    setErrors(prev => ({ ...prev, phone: null }));
+                  }
+                }
+                
+                setCountryPickerVisible(false);
+                console.log('Updated! New code:', newCallingCode);
+              }}
+              onClose={() => {
+                console.log('Country picker closed');
+                setCountryPickerVisible(false);
+              }}
+              visible={countryPickerVisible}
+              containerButtonStyle={{ display: 'none' }}
             />
           </View>
 
@@ -668,15 +926,37 @@ const SellerStore = () => {
               </View>
             </View>
             
-            <InputField
-              label="Country*"
-              value={formData.country}
-              onChangeText={useCallback((text) => handleInputChange('country', text), [handleInputChange])}
-              placeholder="Enter country"
-              error={errors.country}
-              icon="globe"
-              key="country"
-            />
+            {/* Country Picker */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>{t('Country')}*</Text>
+              <TouchableOpacity
+                style={[styles.countrySelectButton, errors.country && styles.inputError]}
+                onPress={() => setCountryPickerVisible(true)}
+              >
+                <View style={styles.countrySelectContent}>
+                  <CountryPicker
+                    countryCode={countryCode}
+                    withFilter
+                    withFlag
+                    withCountryNameButton={false}
+                    withAlphaFilter
+                    withCallingCode
+                    onSelect={(country) => {
+                      setCountryCode(country.cca2);
+                      handleInputChange('country', country.name);
+                      setCountryPickerVisible(false);
+                    }}
+                    visible={countryPickerVisible}
+                    onClose={() => setCountryPickerVisible(false)}
+                  />
+                  <Text style={styles.countrySelectText}>
+                    {formData.country || t('Select Country')}
+                  </Text>
+                </View>
+                <Icon name="chevron-down" size={20} color="#6B7280" />
+              </TouchableOpacity>
+              {errors.country && <Text style={styles.errorText}>{errors.country}</Text>}
+            </View>
           </View>
 
           <View style={styles.section}>
@@ -762,19 +1042,39 @@ const SellerStore = () => {
               <Text style={styles.modalSubMessage}>
                 {t('Your account is under verification. Please wait for 2-3 working days for your account to be verified. You will be able to access your dashboard after verification.')}
               </Text>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Error Modal */}
+      <Modal
+        visible={showErrorModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowErrorModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <View style={styles.errorIconContainer}>
+                <Icon name="alert-circle" size={60} color="#EF4444" />
+              </View>
               
-              {/* <TouchableOpacity 
-                style={styles.modalButton}
-                onPress={() => {
-                  setShowSuccessModal(false);
-                  navigation.reset({
-                    index: 0,
-                    routes: [{ name: 'SellerDashboard' }],
-                  });
-                }}
+              <Text style={styles.modalMessage}>
+                {errorModalData.title}
+              </Text>
+              
+              <Text style={styles.modalSubMessage}>
+                {errorModalData.message}
+              </Text>
+              
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.errorButton]}
+                onPress={() => setShowErrorModal(false)}
               >
-                <Text style={styles.modalButtonText}>Continue to Dashboard</Text>
-              </TouchableOpacity> */}
+                <Text style={styles.modalButtonText}>{t('OK')}</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -913,6 +1213,66 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginLeft: 4,
   },
+  // Phone Input Styles
+  phoneInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    minHeight: 48,
+    overflow: 'hidden',
+  },
+  countryPickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderRightWidth: 1,
+    borderRightColor: '#E5E7EB',
+    backgroundColor: '#F9FAFB',
+  },
+  flagEmoji: {
+    fontSize: 24,
+    marginRight: 4,
+  },
+  callingCode: {
+    fontSize: 14,
+    color: '#1F2937',
+    fontWeight: '500',
+    marginLeft: 8,
+    marginRight: 4,
+  },
+  phoneInput: {
+    flex: 1,
+    height: 48,
+    color: '#1F2937',
+    fontSize: 14,
+    paddingHorizontal: 12,
+  },
+  // Country Select Styles
+  countrySelectButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    minHeight: 48,
+    paddingHorizontal: 12,
+  },
+  countrySelectContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  countrySelectText: {
+    fontSize: 14,
+    color: '#1F2937',
+    marginLeft: 8,
+  },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1019,6 +1379,9 @@ const styles = StyleSheet.create({
   successIconContainer: {
     marginBottom: 20,
   },
+  errorIconContainer: {
+    marginBottom: 20,
+  },
   modalMessage: {
     fontSize: 18,
     fontWeight: '600',
@@ -1040,6 +1403,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     width: '100%',
     alignItems: 'center',
+  },
+  errorButton: {
+    backgroundColor: '#EF4444',
   },
   modalButtonText: {
     color: 'white',

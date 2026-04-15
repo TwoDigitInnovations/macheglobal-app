@@ -540,6 +540,8 @@
   "No Favorites Yet": "Aucun favori pour le moment",
   "Start adding products to your favorites list": "Commencez à ajouter des produits à votre liste de favoris",
   "Add to Cart": "Ajouter au panier",
+  "Buy Now": "Acheter maintenant",
+  "Please login to proceed with purchase": "Veuillez vous connecter pour procéder à l'achat",
   "Retry": "Réessayer",
   "What is the best price you can offer?": "Quel est le meilleur prix que vous pouvez offrir ?",
   "What is the shipping cost?": "Quel est le coût d'expédition ?",
@@ -806,5 +808,10 @@
   "Logout Required": "Déconnexion requise",
   "To access the user app, you need to logout from your seller account and login with a user account.": "Pour accéder à l'application utilisateur, vous devez vous déconnecter de votre compte vendeur et vous connecter avec un compte utilisateur.",
   "Cancel": "Annuler",
-  "Logout": "Se déconnecter"
+  "Logout": "Se déconnecter",
+  "Seller Login Not Allowed": "Connexion vendeur non autorisée",
+  "To access the seller dashboard, please login on the website": "Pour accéder au tableau de bord vendeur, veuillez vous connecter sur le site Web",
+  "Open Website": "Ouvrir le site Web",
+  "Request Under Review": "Demande en cours d'examen",
+  "Your request is under review. We will notify you via email within 3-4 business days if your verification is successful.": "Votre demande est en cours d'examen. Nous vous informerons par e-mail dans les 3 à 4 jours ouvrables si votre vérification est réussie."
 }

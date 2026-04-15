@@ -5,6 +5,7 @@ import React
 import ReactAppDependencyProvider
 import React_RCTAppDelegate
 import UIKit
+import RNBootSplash
 
 @main
 class AppDelegate: RCTAppDelegate {
@@ -20,7 +21,11 @@ class AppDelegate: RCTAppDelegate {
     // They will be passed down to the ViewController used by React Native.
     self.initialProps = [:]
 
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    let result = super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    
+    RNBootSplash.initWithStoryboard("BootSplash", rootView: self.rootView)
+    
+    return result
   }
 
   override func application(

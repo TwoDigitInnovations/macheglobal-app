@@ -84,8 +84,8 @@ export default function SignupScreen({ navigation }) {
   });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
-  const [countryCode, setCountryCode] = useState('IN');
-  const [callingCode, setCallingCode] = useState('91');
+  const [countryCode, setCountryCode] = useState('CL');
+  const [callingCode, setCallingCode] = useState('56');
   const [countryPickerVisible, setCountryPickerVisible] = useState(false);
 
   const handleInputChange = (name, value) => {
@@ -106,6 +106,8 @@ export default function SignupScreen({ navigation }) {
     }
     if (!formData.phone) {
       newErrors.phone = 'Phone number is required';
+    } else if (!/^[0-9]{7,15}$/.test(formData.phone)) {
+      newErrors.phone = 'Phone number must be 7-15 digits';
     }
     if (!formData.password) {
       newErrors.password = 'Password is required';
@@ -262,7 +264,12 @@ export default function SignupScreen({ navigation }) {
               placeholderTextColor="#9CA3AF"
               keyboardType="phone-pad"
               value={formData.phone}
-              onChangeText={(text) => handleInputChange('phone', text)}
+              onChangeText={(text) => {
+                // Only allow numbers
+                const cleaned = text.replace(/[^0-9]/g, '');
+                handleInputChange('phone', cleaned);
+              }}
+              maxLength={15}
             />
           </View>
           {errors.phone && <Text style={{ color: 'red' }}>{errors.phone}</Text>}

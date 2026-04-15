@@ -54,6 +54,7 @@
     "react-native": "0.81.1",
     "react-native-actions-sheet": "^0.9.7",
     "react-native-blob-util": "^0.22.2",
+    "react-native-bootsplash": "^7.2.0",
     "react-native-country-picker-modal": "^2.0.0",
     "react-native-dotenv": "^3.4.11",
     "react-native-element-dropdown": "^2.12.4",

@@ -93,6 +93,25 @@ const CheckoutOrderScreen = ({ route }) => {
     };
     checkAuthAndSyncCart();
   }, []);
+  
+  // Handle back button for direct buy - restore previous cart
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', async (e) => {
+      // Only restore cart if this was a direct buy
+      if (route.params?.directBuy && route.params?.previousCart) {
+        try {
+          // Restore previous cart
+          const previousCart = JSON.parse(route.params.previousCart);
+          await AsyncStorage.setItem('cartdata', route.params.previousCart);
+          setCartContext(previousCart);
+        } catch (error) {
+          console.error('Error restoring cart:', error);
+        }
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, route.params]);
   const [showSuccess, setShowSuccess] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
   const [selectedPayment, setSelectedPayment] = useState('card');
@@ -546,6 +565,25 @@ const CheckoutOrderScreen = ({ route }) => {
       if (response.success) {
         const orderId = response.data._id;
         
+        // Check if payment method is COD (Cash on Delivery)
+        if (selectedPayment === 'cod') {
+          console.log('✅ [ORDER] COD selected - Order placed successfully without payment');
+          
+          // Clear cart for COD orders
+          await AsyncStorage.removeItem('cartdata');
+          await AsyncStorage.removeItem('cartdetail');
+          setCartContext([]);
+          
+          // Navigate to OrderSuccessScreen
+          navigation.replace('OrderSuccess', {
+            orderId: orderId,
+            orderNumber: response.data.orderNumber || orderId,
+            paymentMethod: 'cod',
+            amount: finalTotal,
+            message: t('Your order has been placed successfully. You can pay when the order is delivered.')
+          });
+          return;
+        }
         
         console.log('Initializing Icon EHT payment for order:', orderId);
         
@@ -574,7 +612,9 @@ const CheckoutOrderScreen = ({ route }) => {
           navigation.replace('IconePaymentWebView', {
             paymentUrl: paymentResponse.paymentUrl,
             orderId: orderId,
-            amount: finalTotal
+            amount: finalTotal,
+            directBuy: route.params?.directBuy, // Pass directBuy flag
+            previousCart: route.params?.previousCart // Pass previous cart
           });
         } else {
           throw new Error(paymentResponse.message || 'Failed to initialize payment');
@@ -791,6 +831,19 @@ const CheckoutOrderScreen = ({ route }) => {
                   <Ionicons name="wallet-outline" size={20} color="#666666" />
                 </View>
                 <Text style={styles.paymentText}>{t('Wallet')}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.paymentOption}
+                onPress={() => setSelectedPayment('cod')}
+              >
+                <View style={styles.radioButton}>
+                  {selectedPayment === 'cod' && <View style={styles.radioButtonSelected} />}
+                </View>
+                <View style={styles.walletIcon}>
+                  <Ionicons name="cash-outline" size={20} color="#666666" />
+                </View>
+                <Text style={styles.paymentText}>{t('Pay when order is delivered')}</Text>
               </TouchableOpacity>
             </View>
           )}

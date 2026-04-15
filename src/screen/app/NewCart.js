@@ -473,8 +473,14 @@ export default function CartScreen() {
                           const stock = productStocks[stockKey];
                           
                           return stock !== undefined && (
-                            <Text style={styles.stockInfo}>
-                              {stock} {t('in stock')}
+                            <Text style={[
+                              styles.stockInfo,
+                              stock <= 0 && styles.outOfStockText
+                            ]}>
+                              {stock > 0 
+                                ? `${stock} ${t('in stock')}`
+                                : t('Out of Stock')
+                              }
                             </Text>
                           );
                         })()}
@@ -843,6 +849,10 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     marginTop: 4,
     fontWeight: '500',
+  },
+  outOfStockText: {
+    color: '#EF4444',
+    fontWeight: '600',
   },
   attributesContainer: {
     flexDirection: 'row',

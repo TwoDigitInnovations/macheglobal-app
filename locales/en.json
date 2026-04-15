@@ -540,6 +540,8 @@
   "No Favorites Yet": "No Favorites Yet",
   "Start adding products to your favorites list": "Start adding products to your favorites list",
   "Add to Cart": "Add to Cart",
+  "Buy Now": "Buy Now",
+  "Please login to proceed with purchase": "Please login to proceed with purchase",
   "Retry": "Retry",
   "What is the best price you can offer?": "What is the best price you can offer?",
   "What is the shipping cost?": "What is the shipping cost?",
@@ -702,7 +704,12 @@
   "Logout Required": "Logout Required",
   "To access the user app, you need to logout from your seller account and login with a user account.": "To access the user app, you need to logout from your seller account and login with a user account.",
   "Cancel": "Cancel",
-  "Logout": "Logout"
+  "Logout": "Logout",
+  "Seller Login Not Allowed": "Seller Login Not Allowed",
+  "To access the seller dashboard, please login on the website": "To access the seller dashboard, please login on the website",
+  "Open Website": "Open Website",
+  "Request Under Review": "Request Under Review",
+  "Your request is under review. We will notify you via email within 3-4 business days if your verification is successful.": "Your request is under review. We will notify you via email within 3-4 business days if your verification is successful."
 }
 
  

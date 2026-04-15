@@ -60,6 +60,7 @@ import {
     // SafeAreaView,
     StatusBar,
     StyleSheet,
+    Linking
 } from 'react-native';
 import Spinner from './src/Assets/Component/Spinner';
 import Geolocation from 'react-native-geolocation-service';
@@ -68,6 +69,7 @@ import { OneSignal } from 'react-native-onesignal';
 import i18n from './i18n';
 import CuurentLocation from './src/Assets/Component/CuurentLocation';
 import SplashScreen from 'react-native-splash-screen';
+import RNBootSplash from 'react-native-bootsplash';
 import {
     triggerDeviceRegistrationAfterSignIn,
     // handleUserLogout, // TODO: integrate with logout functions in Account components
@@ -110,11 +112,17 @@ const App = () => {
     });
 
     useEffect(() => {
-        SplashScreen.hide();
-        setInitialRoute();
-        checkLng();
-        getCartDetail();
-        CustomCurrentLocation();
+        const init = async () => {
+            await setInitialRoute();
+            await checkLng();
+            await getCartDetail();
+            CustomCurrentLocation();
+            setupDeepLinking();
+            // Hide both splash screens
+            SplashScreen.hide();
+            RNBootSplash.hide({ fade: true, duration: 500 });
+        };
+        init();
     }, []);
     const setInitialRoute = async () => {
         const userData = await AsyncStorage.getItem('userDetail');
@@ -270,11 +278,11 @@ const App = () => {
         }
     };
 
-    const APP_ID = 'cc87775c-3a16-47a0-9158-b68702ac5c2c';
+    const APP_ID = '6e1e440e-fa83-4716-9fba-90f9f9c6df74';
 
-    // useEffect(() => {
-    //     initializeOneSignal();
-    // }, []);
+    useEffect(() => {
+        initializeOneSignal();
+    }, []);
 
     const initializeOneSignal = async () => {
         try {
@@ -282,14 +290,18 @@ const App = () => {
             OneSignal.initialize(APP_ID);
 
             await OneSignal.Notifications.requestPermission(true);
+            
+            OneSignal.Notifications.addEventListener('foregroundWillDisplay', event => {
+                console.log('📱 Foreground notification received:', event);
+                event.preventDefault();
+                event.getNotification().display();
+            });
 
             OneSignal.User.pushSubscription.addEventListener('change', event => {
                 const newId = event?.current?.id;
                 console.log('Subscription changed, new ID:', newId);
                 if (newId) {
-                    // Store the new player ID immediately
                     AsyncStorage.setItem('oneSignalPlayerId', newId);
-                    // triggerDeviceRegistrationAfterSignIn();
                 }
             });
 
@@ -351,6 +363,45 @@ const App = () => {
             i18n.changeLanguage(x);
         }
     };
+
+    const setupDeepLinking = () => {
+        // Handle deep link when app is opened from a link
+        Linking.getInitialURL().then(url => {
+            if (url) {
+                handleDeepLink(url);
+            }
+        });
+
+        // Handle deep link when app is already open
+        const subscription = Linking.addEventListener('url', ({ url }) => {
+            handleDeepLink(url);
+        });
+
+        return () => {
+            subscription.remove();
+        };
+    };
+
+    const handleDeepLink = (url) => {
+        console.log('Deep link received:', url);
+        
+        if (!url) return;
+
+        // Parse the URL - macheglobalapp://product/product-slug
+        const route = url.replace(/.*?:\/\//g, '');
+        const parts = route.split('/');
+        
+        if (parts[0] === 'product' && parts[1]) {
+            const productSlug = parts[1];
+            console.log('Navigating to product:', productSlug);
+            
+            // Navigate to product preview screen
+            setTimeout(() => {
+                navigate('Preview', productSlug);
+            }, 500);
+        }
+    };
+
     const [interval, setinter] = useState();
 
     useEffect(() => {

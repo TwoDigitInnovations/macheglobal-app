@@ -656,8 +656,14 @@ const Favorites = () => {
               )}
             </View>
             
-            <Text style={styles.stockInfo}>
-              {availableStock} {t('in stock')}
+            <Text style={[
+              styles.stockInfo,
+              availableStock <= 0 && styles.outOfStockText
+            ]}>
+              {availableStock > 0 
+                ? `${availableStock} ${t('in stock')}`
+                : t('Out of Stock')
+              }
             </Text>
             
             <View style={styles.cartControlsContainer}>
@@ -952,6 +958,10 @@ const styles = {
     marginTop: 4,
     marginBottom: 8,
     fontWeight: '500',
+  },
+  outOfStockText: {
+    color: '#EF4444',
+    fontWeight: '600',
   },
   cartControlsContainer: {
     marginTop: 12,

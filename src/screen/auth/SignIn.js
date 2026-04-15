@@ -12,6 +12,8 @@ import {
   Alert,
   ActivityIndicator,
   StatusBar,
+  Linking,
+  Modal,
 } from 'react-native';
 import { Post } from '../../Assets/Helpers/Service';
 import { LoadContext, ToastContext } from '../../../App';
@@ -28,6 +30,8 @@ const LoginScreen = ({ navigation }) => {
   });
   const [isLoading, setIsLoading] = useContext(LoadContext);
   const [toast, setToast] = useContext(ToastContext);
+  const [showSellerModal, setShowSellerModal] = useState(false);
+  const [showPendingModal, setShowPendingModal] = useState(false);
 
   // Load saved language on mount
   useEffect(() => {
@@ -77,6 +81,25 @@ const LoginScreen = ({ navigation }) => {
         throw new Error('No response from server');
       }
 
+      // Check if OTP is required (Admin or Seller trying to login from mobile app)
+      if (response.requireOTP && (response.role === 'Admin' || response.role === 'Seller')) {
+        console.log('OTP required - blocking Admin/Seller login from mobile app');
+        setIsLoading(false);
+        
+        if (response.role === 'Seller') {
+          // Show seller modal instead of alert
+          setShowSellerModal(true);
+        } else {
+          // Show alert for admin
+          Alert.alert(
+            'Login Not Allowed',
+            'Admin accounts cannot login from the mobile app. Please use the admin web panel to login.',
+            [{ text: 'OK' }]
+          );
+        }
+        return;
+      }
+
       // Handle error responses (like invalid credentials)
       if (response.status === 'error' || response.message) {
         console.log('Server responded with message:', response.message);
@@ -109,6 +132,9 @@ const LoginScreen = ({ navigation }) => {
         userData.user = userData.user || {};
         userData.user.status = response.status;
       }
+
+      console.log('📦 Full API Response:', JSON.stringify(response, null, 2));
+      console.log('📦 Constructed userData:', JSON.stringify(userData, null, 2));
 
     
       
@@ -152,27 +178,62 @@ const LoginScreen = ({ navigation }) => {
       });
       
       try {
-        // Handle navigation based on user role and status
+        // Handle seller login based on status
         if (userRole === 'seller') {
           console.log('🏪 Seller login detected', { userRole, statusString });
           
-          if (statusString === 'verified') {
-            console.log('✅ Verified seller, navigating to SellerTabs');
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'SellerTabs' }],
+          if (statusString === 'pending') {
+            // Check if seller already has a store created
+            // Check multiple possible locations for hasStore flag
+            const hasStore = responseUserData?.hasStore || 
+                           responseUserData?.store || 
+                           response?.user?.hasStore ||
+                           false;
+            
+            console.log('🔍 Checking hasStore:', {
+              hasStore,
+              'responseUserData.hasStore': responseUserData?.hasStore,
+              'responseUserData.store': responseUserData?.store,
+              'response.user.hasStore': response?.user?.hasStore,
+              'Full responseUserData': responseUserData,
+              'Full response.user': response?.user
             });
-          } else if (statusString === 'pending') {
-            console.log('⏳ Pending seller, navigating to SellerStore');
+            
+            if (hasStore) {
+              // Pending seller with store already created - show pending review modal
+              console.log('⏳ Pending seller with existing store - showing review modal');
+              setShowPendingModal(true);
+              setIsLoading(false);
+              return;
+            } else {
+              // Pending seller without store - allow to create store
+              console.log('⏳ Pending seller without store, navigating to SellerStore');
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'SellerStore' }],
+              });
+            }
+          } else if (statusString === 'verified' || statusString === 'approved') {
+            // Verified/Approved seller - block login and show popup to use website
+            console.log('🚫 Verified/Approved seller login blocked - redirecting to website');
+            
+            // Clear the saved user data since we're not allowing login
+            await AsyncStorage.removeItem('userDetail');
+            
+            // Show custom modal popup
+            setShowSellerModal(true);
+            setIsLoading(false);
+            return;
+          } else {
+            // Unknown status - default to SellerStore
+            console.log('⚠️ Unknown seller status:', statusString, 'navigating to SellerStore');
             navigation.reset({
               index: 0,
               routes: [{ name: 'SellerStore' }],
             });
-          } else {
-            console.log('⚠️ Unknown seller status:', statusString, 'navigating to App');
-            navigation.replace('App');
           }
         } else {
+          // Handle navigation for non-seller users
           console.log(`👤 Regular user login (${userRole || 'customer'}), navigating to App`);
           navigation.replace('App');
         }
@@ -321,6 +382,92 @@ const LoginScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Seller Login Blocked Modal */}
+      <Modal
+        visible={showSellerModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowSellerModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalIconContainer}>
+              <Icon name="store" size={50} color="#FF7000" />
+            </View>
+            
+            <Text style={styles.modalTitle}>
+              {t('Seller Login Not Allowed')}
+            </Text>
+            
+            <Text style={styles.modalMessage}>
+              {t('To access the seller dashboard, please login on the website')}
+            </Text>
+            
+            <View style={styles.modalButtonsContainer}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => setShowSellerModal(false)}
+              >
+                <Text style={styles.modalCancelButtonText}>
+                  {t('Cancel')}
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.modalWebsiteButton}
+                onPress={() => {
+                  setShowSellerModal(false);
+                  Linking.openURL('https://www.seller.macheglobal.com/login');
+                }}
+              >
+                <Text style={styles.modalWebsiteButtonText}>
+                  {t('Open Website')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Pending Seller Review Modal */}
+      <Modal
+        visible={showPendingModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {
+          setShowPendingModal(false);
+          AsyncStorage.removeItem('userDetail');
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalIconContainer}>
+              <Icon name="clock" size={50} color="#FF7000" />
+            </View>
+            
+            <Text style={styles.modalTitle}>
+              {t('Request Under Review')}
+            </Text>
+            
+            <Text style={styles.modalMessage}>
+              {t('Your request is under review. We will notify you via email within 3-4 business days if your verification is successful.')}
+            </Text>
+            
+            <TouchableOpacity
+              style={styles.modalOkButton}
+              onPress={() => {
+                setShowPendingModal(false);
+                AsyncStorage.removeItem('userDetail');
+              }}
+            >
+              <Text style={styles.modalWebsiteButtonText}>
+                {t('OK')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -533,6 +680,89 @@ const styles = StyleSheet.create({
     color: '#f97316',
     fontSize: 14,
     fontWeight: '500',
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 30,
+    width: '90%',
+    maxWidth: 400,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#FFF5F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 15,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 30,
+    lineHeight: 22,
+  },
+  modalButtonsContainer: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: 12,
+  },
+  modalCancelButton: {
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  modalCancelButtonText: {
+    color: '#6B7280',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalWebsiteButton: {
+    flex: 1,
+    backgroundColor: '#FF7000',
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  modalWebsiteButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalOkButton: {
+    width: '100%',
+    backgroundColor: '#FF7000',
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
   },
 });
 

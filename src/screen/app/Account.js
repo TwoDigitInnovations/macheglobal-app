@@ -16,7 +16,7 @@ import React, { useContext, useEffect, useState, useCallback } from 'react';
 import Constants, { FONTS } from '../../Assets/Helpers/constant';
 import { reset, navigate } from '../../../navigationRef';
 import { LoadContext, ToastContext, UserContext, CartContext } from '../../../App';
-import { GetApi } from '../../Assets/Helpers/Service';
+import { GetApi, Post } from '../../Assets/Helpers/Service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DriverHeader from '../../Assets/Component/DriverHeader';
 import {
@@ -348,7 +348,9 @@ const Account = () => {
               style={styles.aliself}
             />
           </TouchableOpacity> */}
-          <TouchableOpacity style={[styles.box, styles.shadowProp]} onPress={() => navigate('Notification')}>
+          <TouchableOpacity
+            style={[styles.box, styles.shadowProp]}
+            onPress={() => navigate('Notification')}>
             <View style={styles.btmboxfirpart}>
               <View style={styles.iconcov}>
                 <NotificationIcon height={20} width={20} color={Constants.white} />
@@ -362,6 +364,9 @@ const Account = () => {
               style={styles.aliself}
             />
           </TouchableOpacity>
+          
+       
+          
           <TouchableOpacity
             style={[styles.box, styles.shadowProp]}
             onPress={() => navigate('PrivacyPolicy')}>

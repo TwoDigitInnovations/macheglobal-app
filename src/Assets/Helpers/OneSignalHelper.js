@@ -37,14 +37,12 @@ const registerDeviceWithBackend = async playerId => {
       }
 
       const deviceData = {
-        player_id: playerId,
-        device_type: Platform.OS,
-        user: userDetail._id || userDetail.id, // Fixed: changed from user_id to user
+        playerId: playerId,
       };
 
       console.log('Utility: Sending device registration data:', deviceData);
 
-      return Post('registerDevice', deviceData).then(
+      return Post('auth/update-player-id', deviceData).then(
         res => {
           console.log('Utility: Device registered successfully:', res);
           // Store the player ID for future use

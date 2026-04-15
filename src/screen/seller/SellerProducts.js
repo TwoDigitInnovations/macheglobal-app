@@ -17,6 +17,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { GetApi, Delete } from '../../Assets/Helpers/Service';
 import Constants from '../../Assets/Helpers/constant';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 

@@ -143,8 +143,9 @@ export const TabNav = () => {
   }, []);
 
   React.useEffect(() => {
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 10000); // Reduced to 10 seconds for faster updates
+    // fetchUnreadCount();
+    // Poll every 30 seconds instead of 10 to reduce server load
+    const interval = setInterval(fetchUnreadCount, 30000);
     return () => clearInterval(interval);
   }, [fetchUnreadCount]);
 

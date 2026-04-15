@@ -38,6 +38,64 @@ const AddAddressScreen = ({ route }) => {
   const [isDefaultAddress, setIsDefaultAddress] = useState(false);
   const [countryPickerVisible, setCountryPickerVisible] = useState(false);
   const [countryCode, setCountryCode] = useState('HT');
+  const [callingCode, setCallingCode] = useState('509'); // Haiti default
+  
+  // Helper function to get calling code from country code
+  const getCallingCodeFromCountry = (countryCode) => {
+    const callingCodes = {
+      'AD': '376', 'AE': '971', 'AF': '93', 'AG': '1', 'AI': '1', 'AL': '355',
+      'AM': '374', 'AO': '244', 'AR': '54', 'AS': '1', 'AT': '43', 'AU': '61',
+      'AW': '297', 'AX': '358', 'AZ': '994', 'BA': '387', 'BB': '1', 'BD': '880',
+      'BE': '32', 'BF': '226', 'BG': '359', 'BH': '973', 'BI': '257', 'BJ': '229',
+      'BL': '590', 'BM': '1', 'BN': '673', 'BO': '591', 'BQ': '599', 'BR': '55',
+      'BS': '1', 'BT': '975', 'BW': '267', 'BY': '375', 'BZ': '501', 'CA': '1',
+      'CC': '61', 'CD': '243', 'CF': '236', 'CG': '242', 'CH': '41', 'CI': '225',
+      'CK': '682', 'CL': '56', 'CM': '237', 'CN': '86', 'CO': '57', 'CR': '506',
+      'CU': '53', 'CV': '238', 'CW': '599', 'CX': '61', 'CY': '357', 'CZ': '420',
+      'DE': '49', 'DJ': '253', 'DK': '45', 'DM': '1', 'DO': '1', 'DZ': '213',
+      'EC': '593', 'EE': '372', 'EG': '20', 'EH': '212', 'ER': '291', 'ES': '34',
+      'ET': '251', 'FI': '358', 'FJ': '679', 'FK': '500', 'FM': '691', 'FO': '298',
+      'FR': '33', 'GA': '241', 'GB': '44', 'GD': '1', 'GE': '995', 'GF': '594',
+      'GG': '44', 'GH': '233', 'GI': '350', 'GL': '299', 'GM': '220', 'GN': '224',
+      'GP': '590', 'GQ': '240', 'GR': '30', 'GT': '502', 'GU': '1', 'GW': '245',
+      'GY': '592', 'HK': '852', 'HN': '504', 'HR': '385', 'HT': '509', 'HU': '36',
+      'ID': '62', 'IE': '353', 'IL': '972', 'IM': '44', 'IN': '91', 'IO': '246',
+      'IQ': '964', 'IR': '98', 'IS': '354', 'IT': '39', 'JE': '44', 'JM': '1',
+      'JO': '962', 'JP': '81', 'KE': '254', 'KG': '996', 'KH': '855', 'KI': '686',
+      'KM': '269', 'KN': '1', 'KP': '850', 'KR': '82', 'KW': '965', 'KY': '1',
+      'KZ': '7', 'LA': '856', 'LB': '961', 'LC': '1', 'LI': '423', 'LK': '94',
+      'LR': '231', 'LS': '266', 'LT': '370', 'LU': '352', 'LV': '371', 'LY': '218',
+      'MA': '212', 'MC': '377', 'MD': '373', 'ME': '382', 'MF': '590', 'MG': '261',
+      'MH': '692', 'MK': '389', 'ML': '223', 'MM': '95', 'MN': '976', 'MO': '853',
+      'MP': '1', 'MQ': '596', 'MR': '222', 'MS': '1', 'MT': '356', 'MU': '230',
+      'MV': '960', 'MW': '265', 'MX': '52', 'MY': '60', 'MZ': '258', 'NA': '264',
+      'NC': '687', 'NE': '227', 'NF': '672', 'NG': '234', 'NI': '505', 'NL': '31',
+      'NO': '47', 'NP': '977', 'NR': '674', 'NU': '683', 'NZ': '64', 'OM': '968',
+      'PA': '507', 'PE': '51', 'PF': '689', 'PG': '675', 'PH': '63', 'PK': '92',
+      'PL': '48', 'PM': '508', 'PR': '1', 'PS': '970', 'PT': '351', 'PW': '680',
+      'PY': '595', 'QA': '974', 'RE': '262', 'RO': '40', 'RS': '381', 'RU': '7',
+      'RW': '250', 'SA': '966', 'SB': '677', 'SC': '248', 'SD': '249', 'SE': '46',
+      'SG': '65', 'SH': '290', 'SI': '386', 'SJ': '47', 'SK': '421', 'SL': '232',
+      'SM': '378', 'SN': '221', 'SO': '252', 'SR': '597', 'SS': '211', 'ST': '239',
+      'SV': '503', 'SX': '1', 'SY': '963', 'SZ': '268', 'TC': '1', 'TD': '235',
+      'TG': '228', 'TH': '66', 'TJ': '992', 'TK': '690', 'TL': '670', 'TM': '993',
+      'TN': '216', 'TO': '676', 'TR': '90', 'TT': '1', 'TV': '688', 'TW': '886',
+      'TZ': '255', 'UA': '380', 'UG': '256', 'US': '1', 'UY': '598', 'UZ': '998',
+      'VA': '39', 'VC': '1', 'VE': '58', 'VG': '1', 'VI': '1', 'VN': '84',
+      'VU': '678', 'WF': '681', 'WS': '685', 'XK': '383', 'YE': '967', 'YT': '262',
+      'ZA': '27', 'ZM': '260', 'ZW': '263'
+    };
+    return callingCodes[countryCode] || '1';
+  };
+
+  // Helper function to get country flag emoji
+  const getCountryFlag = (countryCode) => {
+    const codePoints = countryCode
+      .toUpperCase()
+      .split('')
+      .map(char => 127397 + char.charCodeAt());
+    return String.fromCodePoint(...codePoints);
+  };
   
   // Check if we're in edit mode
   const isEditMode = route.params?.editMode || false;
@@ -116,9 +174,30 @@ const AddAddressScreen = ({ route }) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSaveAddress = async () => {
+    // Validate required fields
     if (!formData.fullName || !formData.phoneNumber || !formData.streetAddress || 
         !formData.city || !formData.state || !formData.postalCode) {
       Alert.alert(t('Error'), t('Please fill in all required fields'));
+      return;
+    }
+
+    // Validate postal code (3-10 characters, alphanumeric with spaces/hyphens)
+    const postalCodeRegex = /^[a-zA-Z0-9\s-]{3,10}$/;
+    if (!postalCodeRegex.test(formData.postalCode)) {
+      Alert.alert(
+        t('Invalid Postal Code'), 
+        t('Postal code must be 3-10 characters (letters, numbers, spaces, or hyphens)')
+      );
+      return;
+    }
+
+    // Validate phone number (7-15 digits)
+    const phoneRegex = /^[0-9]{7,15}$/;
+    if (!phoneRegex.test(formData.phoneNumber)) {
+      Alert.alert(
+        t('Invalid Phone Number'), 
+        t('Phone number must be 7-15 digits')
+      );
       return;
     }
 
@@ -286,15 +365,47 @@ const AddAddressScreen = ({ route }) => {
           {/* Phone Number */}
           <View style={styles.formGroup}>
             <Text style={styles.label}>{t('Phone Number')}</Text>
-            <TextInput
-              style={styles.input}
-              placeholder={t('Phone Number')}
-              placeholderTextColor="#CCCCCC"
-              keyboardType="phone-pad"
-              value={formData.phoneNumber}
-              onChangeText={(text) => setFormData({...formData, phoneNumber: text})}
-            />
+            <View style={styles.phoneInputWrapper}>
+              <TouchableOpacity
+                style={styles.countryCodeButton}
+                onPress={() => setCountryPickerVisible(true)}
+              >
+                <Text style={styles.flagEmoji}>{getCountryFlag(countryCode)}</Text>
+                <Text style={styles.callingCodeText}>+{getCallingCodeFromCountry(countryCode)}</Text>
+                <Icon name="keyboard-arrow-down" size={16} color="#666666" />
+              </TouchableOpacity>
+              <TextInput
+                style={styles.phoneInput}
+                placeholder={t('Phone Number')}
+                placeholderTextColor="#CCCCCC"
+                keyboardType="phone-pad"
+                value={formData.phoneNumber}
+                onChangeText={(text) => setFormData({...formData, phoneNumber: text.replace(/[^0-9]/g, '')})}
+                maxLength={15}
+              />
+            </View>
           </View>
+
+          {/* Country Picker Modal */}
+          <CountryPicker
+            countryCode={countryCode}
+            withFilter
+            withFlag
+            withCallingCode
+            withEmoji
+            onSelect={(country) => {
+              console.log('Country selected:', country);
+              setCountryCode(country.cca2);
+              setCallingCode(country.callingCode[0]);
+              setFormData({
+                ...formData,
+                country: country.name,
+              });
+            }}
+            visible={countryPickerVisible}
+            onClose={() => setCountryPickerVisible(false)}
+            containerButtonStyle={{ display: 'none' }}
+          />
 
           {/* Address */}
           <View style={styles.formGroup}>
@@ -416,9 +527,14 @@ const AddAddressScreen = ({ route }) => {
                   style={styles.input}
                   placeholder={t('Enter postal code')}
                   placeholderTextColor="#CCCCCC"
-                  keyboardType="number-pad"
                   value={formData.postalCode}
-                  onChangeText={(text) => setFormData({...formData, postalCode: text})}
+                  onChangeText={(text) => {
+                    // Allow alphanumeric, spaces, and hyphens only
+                    const cleaned = text.replace(/[^a-zA-Z0-9\s-]/g, '').toUpperCase();
+                    setFormData({...formData, postalCode: cleaned});
+                  }}
+                  maxLength={10}
+                  autoCapitalize="characters"
                 />
                 <Text style={styles.helperText}>
                   {t('Provide the exact postal code of your address to ensure delivery to the correct location')}
@@ -521,6 +637,41 @@ const styles = StyleSheet.create({
     color: '#000000',
     borderWidth: 1,
     borderColor: '#E0E0E0',
+  },
+  phoneInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    overflow: 'hidden',
+  },
+  countryCodeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    borderRightWidth: 1,
+    borderRightColor: '#E0E0E0',
+    backgroundColor: '#F9FAFB',
+  },
+  flagEmoji: {
+    fontSize: 24,
+    marginRight: 4,
+  },
+  callingCodeText: {
+    fontSize: 15,
+    color: '#000000',
+    fontWeight: '500',
+    marginRight: 4,
+  },
+  phoneInput: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: '#000000',
   },
   dropdown: {
     backgroundColor: '#FFFFFF',
